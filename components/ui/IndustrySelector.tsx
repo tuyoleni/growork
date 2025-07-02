@@ -19,11 +19,11 @@ interface IndustrySelectorProps {
 
 const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIndex, onChange, style, onMorePress }) => {
   const colorScheme = useColorScheme() ?? 'light';
-  const badgeBg = Colors[colorScheme].background;
+  const badgeBg = colorScheme === 'dark' ? '#23272A' : '#F3F4F6';
   const badgeSelectedBg = Colors[colorScheme].tint;
   const badgeText = Colors[colorScheme].text;
   const badgeSelectedText = Colors[colorScheme].background;
-  const plusBg = Colors[colorScheme].border;
+  const plusBg = badgeBg;
   const plusColor = Colors[colorScheme].text;
 
   return (
@@ -74,7 +74,6 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
 
 const styles = StyleSheet.create({
   badgeRow: {
-    paddingHorizontal: 10,
     flexDirection: 'row',
     gap: 8,
     paddingVertical: 2,

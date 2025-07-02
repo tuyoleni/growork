@@ -1,3 +1,4 @@
+import { Colors } from '@/constants/Colors';
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import SegmentedControlTab from 'react-native-segmented-control-tab';
@@ -11,11 +12,7 @@ interface SegmentedControlProps {
 
 const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIndex, onChange, style }) => {
   const colorScheme = useColorScheme() ?? 'light';
-  const isDark = colorScheme === 'dark';
-
-  const containerBg = isDark ? '#23272A' : '#F3F4F6';
-  const activeBg = isDark ? '#000' : '#fff';
-  const textColor = isDark ? '#ECEDEE' : '#222';
+  const theme = Colors[colorScheme];
 
   return (
     <SegmentedControlTab
@@ -23,35 +20,29 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
       selectedIndex={selectedIndex}
       onTabPress={onChange}
       tabsContainerStyle={{
-        backgroundColor: containerBg,
+        backgroundColor: colorScheme === 'dark' ? '#23272A' : '#F3F4F6',
         borderRadius: 8,
         margin: 8,
         height: 40,
-        borderWidth: 0,
+        borderWidth: 2,
+        borderColor: colorScheme === 'dark' ? '#23272A' : '#F3F4F6',
       }}
       tabStyle={{
-        backgroundColor: 'transparent',
         borderWidth: 0,
-        borderRadius: 8,
         margin: 2,
+        backgroundColor: 'transparent',
       }}
       activeTabStyle={{
-        backgroundColor: activeBg,
-        borderRadius: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
+        backgroundColor: theme.tint,
+        borderRadius: 6,
         elevation: 2,
       }}
       tabTextStyle={{
-        color: textColor,
-        fontWeight: '500',
+        color: theme.text,
         fontSize: 16,
       }}
       activeTabTextStyle={{
-        color: textColor,
-        fontWeight: '500',
+        color: theme.background,
       }}
     />
   );

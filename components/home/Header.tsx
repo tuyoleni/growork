@@ -31,7 +31,7 @@ const Header = () => {
                 options={industryOptions}
                 selectedIndex={selectedIndustry}
                 onChange={setSelectedIndustry}
-                style={{ marginTop: 12 }}
+                style={{ marginVertical: 8 }}
             />
         </ThemedView>
     );
