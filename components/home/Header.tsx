@@ -1,75 +1,40 @@
-import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import SegmentedControl from '@/components/ui/SegmentedControl';
+import CategorySelector from '@/components/ui/CategorySelector';
 import { Colors } from '@/constants/Colors';
-import { Feather } from '@expo/vector-icons'; // Feather icons for badges
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, useColorScheme } from 'react-native';
+import { useColorScheme } from 'react-native';
+import IndustrySelector from '../ui/IndustrySelector';
 
 const Header = () => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const colorScheme = useColorScheme() ?? 'light';
-  const primary = Colors[colorScheme].tint;
-  const badgeBg = colorScheme === 'dark' ? '#222' : '#e0e0e0';
-  const badgeText = colorScheme === 'dark' ? '#fff' : '#111';
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const colorScheme = useColorScheme() ?? 'light';
+    const primary = Colors[colorScheme].tint;
+    const badgeBg = colorScheme === 'dark' ? '#222' : '#e0e0e0';
+    const badgeText = colorScheme === 'dark' ? '#fff' : '#111';
 
-  return (
-    <ThemedView style={styles.container}>
-      <SegmentedControl
-        options={['All', 'Jobs', 'News']}
-        selectedIndex={selectedIndex}
-        onChange={setSelectedIndex}
-        style={styles.segmentedPicker}
-      />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgeRow}>
-        <ThemedView style={[styles.badge, { backgroundColor: badgeBg }]}> 
-          <Feather name="briefcase" size={18} color={badgeText} />
-          <ThemedText style={[styles.badgeText, { color: badgeText }]}>Marketing</ThemedText>
+    const industryOptions = [
+        { icon: 'briefcase', label: 'Marketing' },
+        { icon: 'bar-chart', label: 'Sales' },
+        { icon: 'pen-tool', label: 'Creative' },
+        { icon: 'monitor', label: 'Tech' },
+    ];
+    const [selectedIndustry, setSelectedIndustry] = useState(0);
+
+    return (
+        <ThemedView style={{height: 'auto' }}>
+            <CategorySelector
+                options={['All', 'Jobs', 'News']}
+                selectedIndex={selectedIndex}
+                onChange={setSelectedIndex}
+            />
+            <IndustrySelector
+                options={industryOptions}
+                selectedIndex={selectedIndustry}
+                onChange={setSelectedIndustry}
+                style={{ marginTop: 12 }}
+            />
         </ThemedView>
-        <ThemedView style={[styles.badge, { backgroundColor: badgeBg }]}> 
-          <Feather name="bar-chart" size={18} color={badgeText} />
-          <ThemedText style={[styles.badgeText, { color: badgeText }]}>Sales</ThemedText>
-        </ThemedView>
-        <ThemedView style={[styles.badge, { backgroundColor: badgeBg }]}> 
-          <Feather name="pen-tool" size={18} color={badgeText} />
-          <ThemedText style={[styles.badgeText, { color: badgeText }]}>Creative</ThemedText>
-        </ThemedView>
-        <ThemedView style={[styles.badge, { backgroundColor: badgeBg }]}> 
-          <Feather name="monitor" size={18} color={badgeText} />
-          <ThemedText style={[styles.badgeText, { color: badgeText }]}>Tech</ThemedText>
-        </ThemedView>
-      </ScrollView>
-    </ThemedView>
-  );
+    );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: 12,
-    paddingBottom: 8,
-    paddingHorizontal: 16,
-    gap: 10,
-  },
-  segmentedPicker: {
-    marginBottom: 0,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 2,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    marginRight: 0,
-  },
-  badgeText: {
-    marginLeft: 6,
-    fontSize: 14,
-  },
-});
 
 export default Header;
