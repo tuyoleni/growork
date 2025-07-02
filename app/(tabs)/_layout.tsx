@@ -1,43 +1,49 @@
+import { HapticTab } from '@/components/HapticTab';
+import { Colors } from '@/constants/Colors';
+import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+  const colorScheme = useColorScheme() ?? 'light';
+  const tabBarBackground = Colors[colorScheme].background;
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
+        tabBarStyle: { backgroundColor: tabBarBackground },
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="home" size={20} color={color} />,
+          tabBarButton: (props) => <HapticTab {...props} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="search"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Search',
+          tabBarIcon: ({ color }) => <Feather name="search" size={20} color={color} />,
+          tabBarButton: (props) => <HapticTab {...props} />,
+        }}
+      />
+      <Tabs.Screen
+        name="bookmarks"
+        options={{
+          title: 'Bookmarks',
+          tabBarIcon: ({ color }) => <Feather name="bookmark" size={20} color={color} />,
+          tabBarButton: (props) => <HapticTab {...props} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <Feather name="user" size={20} color={color} />,
+          tabBarButton: (props) => <HapticTab {...props} />,
         }}
       />
     </Tabs>
