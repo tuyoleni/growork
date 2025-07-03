@@ -1,7 +1,7 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 
@@ -44,7 +44,9 @@ type SponsoredProps = {
   onPressLearnMore?: () => void;
 };
 
-export type ContentCardProps = BaseProps & (JobProps | NewsProps | SponsoredProps);
+export type ContentCardProps = BaseProps & (JobProps | NewsProps | SponsoredProps) & {
+  style?: ViewStyle;
+};
 
 const badgeColors = {
   error: { background: '#ef4444', text: '#fff' },
@@ -147,7 +149,7 @@ export default function ContentCard(props: ContentCardProps) {
   };
 
   return (
-    <ThemedView style={[styles.card, { borderBottomColor: borderColor }]}>
+    <ThemedView style={[styles.card, { borderBottomColor: borderColor }, props.style]}>
       {/* Header */}
       <View style={styles.headerRow}>
         <Image source={{ uri: props.avatarImage }} style={styles.avatar} />

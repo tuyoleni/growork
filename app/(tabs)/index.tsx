@@ -2,7 +2,7 @@ import ContentCard, { ContentCardProps } from '@/components/content/ContentCard'
 import Header, { HEADER_HEIGHT } from '@/components/home/Header';
 import ScreenContainer from '@/components/ScreenContainer';
 import React, { useRef, useState } from 'react';
-import { Animated, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { Animated, Easing, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 const POSTS: ContentCardProps[] = [
   {
@@ -175,12 +175,17 @@ export default function Home() {
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
     const diff = y - lastScrollY.current;
+    if (y < 40) {
+      lastScrollY.current = y;
+      return;
+    }
     if (diff > 10 && !isAnimating.current && headerVisible) {
       // Scrolling down, hide header immediately
       isAnimating.current = true;
       Animated.timing(headerAnim, {
         toValue: -HEADER_HEIGHT,
-        duration: 200,
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start(() => {
         setHeaderVisible(false);
@@ -192,7 +197,8 @@ export default function Home() {
       setTimeout(() => {
         Animated.timing(headerAnim, {
           toValue: 0,
-          duration: 200,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }).start(() => {
           setHeaderVisible(true);
@@ -219,10 +225,14 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={handleScroll}
-        contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
+        contentContainerStyle={{ paddingTop: 0 }}
       >
         {POSTS.map((post, index) => (
-          <ContentCard key={index} {...post} />
+          <ContentCard
+            key={index}
+            {...post}
+            style={index === 0 ? { marginTop: HEADER_HEIGHT - 48 } : undefined}
+          />
         ))}
       </Animated.ScrollView>
     </ScreenContainer>
