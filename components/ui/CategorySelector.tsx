@@ -32,15 +32,15 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
         backgroundColor: 'transparent',
       }}
       activeTabStyle={{
-        backgroundColor: theme.tint,
+        backgroundColor: colorScheme === 'dark' ? '#fff' : '#111',
         elevation: 2,
       }}
       tabTextStyle={{
-        color: theme.text,
+        color: colorScheme === 'dark' ? '#fff' : '#111',
         fontSize: 16,
       }}
       activeTabTextStyle={{
-        color: theme.text,
+        color: colorScheme === 'dark' ? '#111' : '#fff',
       }}
     />
   );

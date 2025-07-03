@@ -1,8 +1,7 @@
 import CategorySelector from '@/components/ui/CategorySelector';
 import { Colors } from '@/constants/Colors';
-import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, useColorScheme, View } from 'react-native';
+import { SafeAreaView, StyleSheet, useColorScheme } from 'react-native';
 import IndustrySelector from '../ui/IndustrySelector';
 
 const Header = () => {
@@ -26,12 +25,6 @@ const Header = () => {
                 backgroundColor: theme.background,
             },
         ]}>
-            <View style={styles.topRow}>
-                <View style={{ flex: 1 }} />
-                <Pressable onPress={() => { /* Notification action */ }} style={styles.iconButton}>
-                    <Feather name="bell" size={20} color={theme.text} />
-                </Pressable>
-            </View>
             <CategorySelector
                 options={['All', 'Jobs', 'News']}
                 selectedIndex={selectedIndex}
@@ -53,16 +46,6 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         paddingBottom: 8,
         justifyContent: 'center',
-    },
-    topRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        marginTop: 8,
-        marginBottom: 8,
-    },
-    iconButton: {
-        padding: 16,
     },
 });
 

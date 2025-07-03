@@ -1,5 +1,4 @@
 import { ThemedText } from '@/components/ThemedText';
-import { Colors } from '@/constants/Colors';
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, useColorScheme } from 'react-native';
@@ -20,11 +19,11 @@ interface IndustrySelectorProps {
 const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIndex, onChange, style, onMorePress }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const badgeBg = colorScheme === 'dark' ? '#23272A' : '#F3F4F6';
-  const badgeSelectedBg = Colors[colorScheme].tint;
-  const badgeText = Colors[colorScheme].text;
-  const badgeSelectedText = Colors[colorScheme].background;
+  const badgeSelectedBg = colorScheme === 'dark' ? '#fff' : '#111';
+  const badgeText = colorScheme === 'dark' ? '#fff' : '#111';
+  const badgeSelectedText = colorScheme === 'dark' ? '#111' : '#fff';
   const plusBg = badgeBg;
-  const plusColor = Colors[colorScheme].text;
+  const plusColor = badgeText;
 
   return (
     <ScrollView
@@ -46,8 +45,8 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
               },
             ]}
           >
-            <Feather name={option.icon as any} size={18} color={badgeText} />
-            <ThemedText style={[styles.badgeText, { color: badgeText }]}>{option.label}</ThemedText>
+            <Feather name={option.icon as any} size={18} color={selected ? badgeSelectedText : badgeText} />
+            <ThemedText style={[styles.badgeText, { color: selected ? badgeSelectedText : badgeText }]}>{option.label}</ThemedText>
           </Pressable>
         );
       })}
