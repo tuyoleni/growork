@@ -1,7 +1,8 @@
 import ContentCard, { ContentCardProps } from '@/components/content/ContentCard';
+import Header, { HEADER_HEIGHT } from '@/components/home/Header';
 import ScreenContainer from '@/components/ScreenContainer';
-import React from 'react';
-import { ScrollView } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Animated, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 const POSTS: ContentCardProps[] = [
   {
@@ -165,13 +166,65 @@ const POSTS: ContentCardProps[] = [
 ];
 
 export default function Home() {
+  const headerHeight = HEADER_HEIGHT;
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const headerAnim = useRef(new Animated.Value(0)).current; // 0: visible, -HEADER_HEIGHT: hidden
+  const lastScrollY = useRef(0);
+  const isAnimating = useRef(false);
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    const diff = y - lastScrollY.current;
+    if (diff > 10 && !isAnimating.current && headerVisible) {
+      // Scrolling down, hide header immediately
+      isAnimating.current = true;
+      Animated.timing(headerAnim, {
+        toValue: -HEADER_HEIGHT,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setHeaderVisible(false);
+        isAnimating.current = false;
+      });
+    } else if (diff < -10 && !isAnimating.current && !headerVisible) {
+      // Scrolling up, show header after a delay
+      isAnimating.current = true;
+      setTimeout(() => {
+        Animated.timing(headerAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          setHeaderVisible(true);
+          isAnimating.current = false;
+        });
+      }, 300); // 300ms delay before revealing
+    }
+    lastScrollY.current = y;
+  };
+
   return (
     <ScreenContainer>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <Animated.View style={{
+        transform: [{ translateY: headerAnim }],
+        zIndex: 10,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+      }}>
+        <Header />
+      </Animated.View>
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
+      >
         {POSTS.map((post, index) => (
           <ContentCard key={index} {...post} />
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
     </ScreenContainer>
   );
 }

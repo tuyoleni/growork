@@ -1,5 +1,4 @@
 import { HapticTab } from '@/components/HapticTab';
-import Header from '@/components/home/Header';
 import { Colors } from '@/constants/Colors';
 import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
@@ -21,8 +20,7 @@ export default function TabLayout() {
           title: 'Home',
           tabBarIcon: ({ color }) => <Feather name="home" size={20} color={color} />,
           tabBarButton: (props) => <HapticTab {...props} />,
-          headerShown: true,
-          header: () => <Header />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen

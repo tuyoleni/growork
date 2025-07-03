@@ -1,7 +1,7 @@
 import CategorySelector from '@/components/ui/CategorySelector';
 import { Colors } from '@/constants/Colors';
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, useColorScheme } from 'react-native';
+import { StyleSheet, useColorScheme, View } from 'react-native';
 import IndustrySelector from '../ui/IndustrySelector';
 
 const Header = () => {
@@ -17,7 +17,7 @@ const Header = () => {
     const [selectedIndustry, setSelectedIndustry] = useState(0);
 
     return (
-        <SafeAreaView style={[
+        <View style={[
             styles.header,
             {
                 borderBottomWidth: StyleSheet.hairlineWidth,
@@ -36,17 +36,19 @@ const Header = () => {
                 onChange={setSelectedIndustry}
                 style={{ marginTop: 8, marginBottom: 12 }}
             />
-        </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     header: {
-        paddingHorizontal: 16,
-        paddingTop: 0,
+        paddingTop: 10,
         paddingBottom: 8,
         justifyContent: 'center',
     },
 });
 
+const HEADER_HEIGHT = 200;
+
+export { HEADER_HEIGHT };
 export default Header;
