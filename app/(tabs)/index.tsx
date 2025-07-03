@@ -175,7 +175,7 @@ export default function Home() {
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
     const diff = y - lastScrollY.current;
-    if (y < 40) {
+    if (y < 45) {
       lastScrollY.current = y;
       return;
     }
