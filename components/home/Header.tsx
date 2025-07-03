@@ -1,17 +1,14 @@
-import { ThemedView } from '@/components/ThemedView';
 import CategorySelector from '@/components/ui/CategorySelector';
 import { Colors } from '@/constants/Colors';
+import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { Pressable, SafeAreaView, StyleSheet, useColorScheme, View } from 'react-native';
 import IndustrySelector from '../ui/IndustrySelector';
 
 const Header = () => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const colorScheme = useColorScheme() ?? 'light';
-    const primary = Colors[colorScheme].tint;
-    const badgeBg = colorScheme === 'dark' ? '#222' : '#e0e0e0';
-    const badgeText = colorScheme === 'dark' ? '#fff' : '#111';
-
+    const theme = Colors[colorScheme];
     const industryOptions = [
         { icon: 'briefcase', label: 'Marketing' },
         { icon: 'bar-chart', label: 'Sales' },
@@ -21,7 +18,20 @@ const Header = () => {
     const [selectedIndustry, setSelectedIndustry] = useState(0);
 
     return (
-        <ThemedView style={{height: 'auto' }}>
+        <SafeAreaView style={[
+            styles.header,
+            {
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                borderBottomColor: theme.border,
+                backgroundColor: theme.background,
+            },
+        ]}>
+            <View style={styles.topRow}>
+                <View style={{ flex: 1 }} />
+                <Pressable onPress={() => { /* Notification action */ }} style={styles.iconButton}>
+                    <Feather name="bell" size={20} color={theme.text} />
+                </Pressable>
+            </View>
             <CategorySelector
                 options={['All', 'Jobs', 'News']}
                 selectedIndex={selectedIndex}
@@ -31,10 +41,29 @@ const Header = () => {
                 options={industryOptions}
                 selectedIndex={selectedIndustry}
                 onChange={setSelectedIndustry}
-                style={{ marginVertical: 8 }}
+                style={{ marginTop: 8, marginBottom: 12 }}
             />
-        </ThemedView>
+        </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    header: {
+        paddingHorizontal: 16,
+        paddingTop: 0,
+        paddingBottom: 8,
+        justifyContent: 'center',
+    },
+    topRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: 8,
+        marginBottom: 8,
+    },
+    iconButton: {
+        padding: 16,
+    },
+});
 
 export default Header;

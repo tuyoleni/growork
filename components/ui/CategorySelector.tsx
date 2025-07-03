@@ -24,8 +24,7 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
         borderRadius: 8,
         marginHorizontal: 12,
         height: 40,
-        borderWidth: 2,
-        borderColor: colorScheme === 'dark' ? '#23272A' : '#F3F4F6',
+        borderWidth: 0,
       }}
       tabStyle={{
         borderWidth: 0,
@@ -34,7 +33,6 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
       }}
       activeTabStyle={{
         backgroundColor: theme.tint,
-        borderRadius: 6,
         elevation: 2,
       }}
       tabTextStyle={{
@@ -42,7 +40,7 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
         fontSize: 16,
       }}
       activeTabTextStyle={{
-        color: theme.background,
+        color: theme.text,
       }}
     />
   );

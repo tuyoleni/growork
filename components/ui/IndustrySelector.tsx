@@ -46,8 +46,8 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
               },
             ]}
           >
-            <Feather name={option.icon as any} size={18} color={selected ? badgeSelectedText : badgeText} />
-            <ThemedText style={[styles.badgeText, { color: selected ? badgeSelectedText : badgeText }]}>{option.label}</ThemedText>
+            <Feather name={option.icon as any} size={18} color={badgeText} />
+            <ThemedText style={[styles.badgeText, { color: badgeText }]}>{option.label}</ThemedText>
           </Pressable>
         );
       })}
@@ -58,7 +58,6 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
           {
             backgroundColor: plusBg,
             opacity: pressed ? 0.7 : 1,
-            marginLeft: 8,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
