@@ -1,5 +1,6 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
@@ -47,7 +48,12 @@ export default function SponsoredCard({
             </View>
           )}
         </View>
-        <Pressable style={styles.iconButton} hitSlop={8} onPress={onPressMore}>
+        <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+          if (process.env.EXPO_OS === 'ios') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+          onPressMore && onPressMore();
+        }}>
           <Feather name="more-horizontal" size={20} color={iconColor} />
         </Pressable>
       </View>
@@ -58,14 +64,29 @@ export default function SponsoredCard({
         <ThemedText style={styles.description}>{description}</ThemedText>
         <View style={styles.actionsRow}>
           <View style={styles.iconActions}>
-            <Pressable style={styles.iconButton} hitSlop={8} onPress={onPressHeart}>
+            <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+              onPressHeart && onPressHeart();
+            }}>
               <Feather name="heart" size={20} color={iconColor} />
             </Pressable>
-            <Pressable style={styles.iconButton} hitSlop={8} onPress={onPressShare}>
+            <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+              onPressShare && onPressShare();
+            }}>
               <Feather name="share" size={20} color={iconColor} />
             </Pressable>
           </View>
-          <Pressable style={[styles.learnMoreButton, { backgroundColor: textColor }]} onPress={onPressLearnMore}>
+          <Pressable style={[styles.learnMoreButton, { backgroundColor: textColor }]} onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            onPressLearnMore && onPressLearnMore();
+          }}>
             <ThemedText style={[styles.learnMoreButtonText, { color: backgroundColor }]}>Learn More</ThemedText>
           </Pressable>
         </View>

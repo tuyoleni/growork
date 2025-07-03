@@ -1,5 +1,6 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
@@ -57,7 +58,12 @@ export default function NewsCard({
             </View>
           )}
         </View>
-        <Pressable style={styles.iconButton} hitSlop={8} onPress={onPressMore}>
+        <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+          if (process.env.EXPO_OS === 'ios') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+          onPressMore && onPressMore();
+        }}>
           <Feather name="more-horizontal" size={20} color={iconColor} />
         </Pressable>
       </View>
@@ -67,16 +73,36 @@ export default function NewsCard({
       <View style={styles.body}>
         <ThemedText style={styles.headline}>{headline}</ThemedText>
         <View style={styles.actionsRow}>
-          <Pressable style={styles.iconButton} hitSlop={8} onPress={onPressHeart}>
+          <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            onPressHeart && onPressHeart();
+          }}>
             <Feather name="heart" size={20} color={iconColor} />
           </Pressable>
-          <Pressable style={styles.iconButton} hitSlop={8} onPress={onPressMessage}>
+          <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            onPressMessage && onPressMessage();
+          }}>
             <Feather name="message-circle" size={20} color={iconColor} />
           </Pressable>
-          <Pressable style={styles.iconButton} hitSlop={8} onPress={onPressShare}>
+          <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            onPressShare && onPressShare();
+          }}>
             <Feather name="share" size={20} color={iconColor} />
           </Pressable>
-          <Pressable style={styles.iconButton} hitSlop={8} onPress={onPressBookmark}>
+          <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            onPressBookmark && onPressBookmark();
+          }}>
             <Feather name="bookmark" size={20} color={iconColor} />
           </Pressable>
         </View>

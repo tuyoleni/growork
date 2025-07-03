@@ -1,4 +1,5 @@
 import { Colors } from '@/constants/Colors';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import SegmentedControlTab from 'react-native-segmented-control-tab';
@@ -14,11 +15,18 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
+  const handleTabPress = (index: number) => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onChange(index);
+  };
+
   return (
     <SegmentedControlTab
       values={options}
       selectedIndex={selectedIndex}
-      onTabPress={onChange}
+      onTabPress={handleTabPress}
       tabsContainerStyle={{
         backgroundColor: colorScheme === 'dark' ? '#23272A' : '#F3F4F6',
         borderRadius: 8,

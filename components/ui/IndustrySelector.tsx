@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/ThemedText';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, useColorScheme } from 'react-native';
 
@@ -25,6 +26,20 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
   const plusBg = badgeBg;
   const plusColor = badgeText;
 
+  const handlePress = (idx: number) => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onChange(idx);
+  };
+
+  const handleMorePress = () => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onMorePress && onMorePress();
+  };
+
   return (
     <ScrollView
       horizontal
@@ -36,7 +51,7 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
         return (
           <Pressable
             key={option.label}
-            onPress={() => onChange(idx)}
+            onPress={() => handlePress(idx)}
             style={({ pressed }) => [
               styles.badge,
               {
@@ -51,7 +66,7 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
         );
       })}
       <Pressable
-        onPress={onMorePress}
+        onPress={handleMorePress}
         style={({ pressed }) => [
           styles.badge,
           {

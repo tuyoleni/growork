@@ -1,5 +1,6 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Image, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import { ThemedText } from '../ThemedText';
@@ -91,7 +92,12 @@ export default function ContentCard(props: ContentCardProps) {
     name: keyof typeof Feather.glyphMap;
     onPress?: () => void;
   }) => (
-    <Pressable style={styles.iconButton} hitSlop={8} onPress={onPress}>
+    <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
+      if (process.env.EXPO_OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      onPress && onPress();
+    }}>
       <Feather name={name} size={20} color={iconColor} />
     </Pressable>
   );
@@ -123,7 +129,12 @@ export default function ContentCard(props: ContentCardProps) {
       return (
         <Pressable
           style={[styles.applyButton, { backgroundColor: textColor }]}
-          onPress={props.onPressApply}
+          onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            props.onPressApply && props.onPressApply();
+          }}
         >
           <ThemedText style={[styles.applyButtonText, { color: backgroundColor }]}>
             Apply Now
@@ -136,7 +147,12 @@ export default function ContentCard(props: ContentCardProps) {
       return (
         <Pressable
           style={[styles.learnMoreButton, { backgroundColor: textColor }]}
-          onPress={props.onPressLearnMore}
+          onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            props.onPressLearnMore && props.onPressLearnMore();
+          }}
         >
           <ThemedText style={[styles.learnMoreButtonText, { color: backgroundColor }]}>
             Learn More
@@ -236,7 +252,7 @@ const styles = StyleSheet.create({
   },
   mainImage: {
     width: '100%',
-    height: 260,
+    height: 300,
     borderRadius: 4,
     marginBottom: 8,
   },
