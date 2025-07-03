@@ -22,7 +22,7 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
       tabsContainerStyle={{
         backgroundColor: colorScheme === 'dark' ? '#23272A' : '#F3F4F6',
         borderRadius: 8,
-        margin: 8,
+        marginHorizontal: 12,
         height: 40,
         borderWidth: 2,
         borderColor: colorScheme === 'dark' ? '#23272A' : '#F3F4F6',

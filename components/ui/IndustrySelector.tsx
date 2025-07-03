@@ -75,8 +75,8 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
 const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: 'row',
+    paddingHorizontal: 12,
     gap: 8,
-    paddingVertical: 2,
     alignItems: 'center',
   },
   badge: {
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 14,
+    borderRadius: 8,
     marginRight: 0,
   },
   badgeText: {
