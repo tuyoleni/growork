@@ -1,8 +1,8 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, Pressable, StyleSheet, TextInput, useColorScheme } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 
@@ -93,30 +93,41 @@ export default function CompaniesList() {
   const textColor = useThemeColor({}, 'text');
   const cardBg = backgroundColor;
   const [search, setSearch] = useState('');
+  const colorScheme = useColorScheme() ?? 'light';
+  const searchBg = colorScheme === 'dark' ? '#23272A' : '#F3F4F6';
 
-  // Pagination logic
+  // Filter and pagination logic
   const COMPANIES_PER_PAGE = 3;
   const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(DATA.length / COMPANIES_PER_PAGE);
-  const paginatedData = DATA.slice((page - 1) * COMPANIES_PER_PAGE, page * COMPANIES_PER_PAGE);
+  const filteredData = DATA.filter(company =>
+    company.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / COMPANIES_PER_PAGE));
+  const paginatedData = filteredData.slice((page - 1) * COMPANIES_PER_PAGE, page * COMPANIES_PER_PAGE);
+  // Reset to page 1 if search changes and current page is out of range
+  useEffect(() => {
+    if ((page - 1) * COMPANIES_PER_PAGE >= filteredData.length) {
+      setPage(1);
+    }
+  }, [search, filteredData.length]);
 
   return (
     <ThemedView style={styles.container}> 
       {/* Search + Header */}
       <ThemedView style={[styles.headerCard, { backgroundColor: backgroundColor }]}> 
-        <ThemedView style={[styles.searchRow, { backgroundColor: backgroundColor, borderColor }]}> 
-          <Feather name="search" size={18} color={borderColor} style={{ marginRight: 8 }} />
+        <ThemedView style={[styles.searchRow, { backgroundColor: searchBg }]}> 
+          <Feather name="search" size={18} color={tintColor} style={{ marginRight: 8 }} />
           <TextInput
             style={[styles.searchInput, { color: textColor }]}
             placeholder="Search companies..."
-            placeholderTextColor={borderColor}
+            placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
             value={search}
             onChangeText={setSearch}
           />
         </ThemedView>
         <ThemedView style={styles.headerRow}>
           <ThemedText style={styles.headerTitle}>Following Companies</ThemedText>
-          <ThemedText style={styles.headerCount}>{DATA.length}</ThemedText>
+          <ThemedText style={styles.headerCount}>{filteredData.length}</ThemedText>
         </ThemedView>
       </ThemedView>
       {/* Companies List */}
@@ -127,7 +138,7 @@ export default function CompaniesList() {
             style={[
               styles.card,
               { paddingHorizontal: 0 },
-              (idx !== paginatedData.length - 1 || page * COMPANIES_PER_PAGE < DATA.length) && { borderBottomWidth: 1, borderBottomColor: borderColor },
+              (idx !== paginatedData.length - 1 || page * COMPANIES_PER_PAGE < filteredData.length) && { borderBottomWidth: 1, borderBottomColor: borderColor },
             ]}
           >
             <ThemedView style={styles.cardInnerNew}>
@@ -153,7 +164,6 @@ export default function CompaniesList() {
                     // handle unfollow
                   }}
                 >
-                  <Feather name="user-minus" size={16} color={textColor} style={{ marginRight: 6 }} />
                   <ThemedText style={[styles.unfollowText, { color: textColor }]}>Unfollow</ThemedText>
                 </Pressable>
               </ThemedView>
@@ -229,7 +239,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderWidth: 1,
+    borderWidth: 0,
   },
   headerRow: {
     width: '100%',
@@ -327,7 +337,10 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    padding: 0,
+    padding: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderRadius: 8,
   },
   avatar: {
     width: 40,
