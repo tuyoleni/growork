@@ -15,15 +15,15 @@ export default function Profile() {
   const paddingHorizontal = 16;
   // Demo data for header
   const headerProps = {
-    name: 'John Cooper',
+    name: 'Simeon Tuyoleni',
     avatarUrl:
       'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     status: 'Available',
-    subtitle: 'Senior Product Designer • San Francisco',
+    subtitle: 'Senior Product Designer • Windhoek, Namibiar',
     profileStrength: 'Profile Strength: Excellent',
     profileStrengthDescription: 'Your profile is optimized for job searching',
     stats: [
-      { label: 'Following', value: 156 },
+      { label: 'Following', value: 10 },
       { label: 'Channels', value: 8 },
     ],
     onEdit: () => {},

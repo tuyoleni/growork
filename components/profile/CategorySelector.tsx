@@ -65,6 +65,7 @@ export default function ProfileCategorySelector({ value, onValueChange, style }:
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    backgroundColor: "red",
     alignItems: 'flex-end',
     paddingVertical: 8,
   },

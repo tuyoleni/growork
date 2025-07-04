@@ -79,7 +79,7 @@ function Badge({ label, icon }: { label: string; icon?: React.ReactElement }) {
   const borderColor = useThemeColor({}, 'border');
   const textColor = useThemeColor({}, 'text');
   return (
-    <ThemedView style={[styles.badge, { borderColor }]}> 
+    <ThemedView style={[styles.badge, { borderColor }]}>
       {icon ? <ThemedView style={{ marginRight: 4 }}>{icon}</ThemedView> : null}
       <ThemedText style={[styles.badgeText, { color: textColor }]}>{label}</ThemedText>
     </ThemedView>
@@ -112,10 +112,10 @@ export default function CompaniesList() {
   }, [search, filteredData.length]);
 
   return (
-    <ThemedView style={styles.container}> 
+    <ThemedView style={styles.container}>
       {/* Search + Header */}
-      <ThemedView style={[styles.headerCard, { backgroundColor: backgroundColor }]}> 
-        <ThemedView style={[styles.searchRow, { backgroundColor: searchBg }]}> 
+      <ThemedView style={[styles.headerCard, { backgroundColor: backgroundColor }]}>
+        <ThemedView style={[styles.searchRow, { backgroundColor: searchBg }]}>
           <Feather name="search" size={18} color={tintColor} style={{ marginRight: 8 }} />
           <TextInput
             style={[styles.searchInput, { color: textColor }]}
@@ -317,6 +317,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 16,
+    paddingHorizontal: PADDING,
   },
   pageButton: {
     flexDirection: 'row',
