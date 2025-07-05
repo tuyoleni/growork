@@ -33,6 +33,16 @@ const ALL_DOCUMENT_OPTIONS = [
   { icon: 'certificate', label: 'Diploma' },
   { icon: 'award', label: 'Achievement' },
   { icon: 'folder-open', label: 'Project' },
+  { icon: 'file', label: 'Contract' },
+  { icon: 'shield', label: 'License' },
+  { icon: 'star', label: 'Award' },
+  { icon: 'calendar', label: 'Schedule' },
+  { icon: 'map', label: 'Blueprint' },
+  { icon: 'code', label: 'Code Sample' },
+  { icon: 'image', label: 'Design' },
+  { icon: 'video', label: 'Presentation' },
+  { icon: 'music', label: 'Audio' },
+  { icon: 'database', label: 'Data' },
 ];
 
 interface DocumentsListProps {
@@ -311,6 +321,8 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
           selectedIndex={selectedDocumentFilterIndex}
           onChange={handleDocumentFilterChange}
           allOptions={ALL_DOCUMENT_OPTIONS}
+          minVisibleOptions={2}
+          maxVisibleOptions={6}
         />
       </View>
 

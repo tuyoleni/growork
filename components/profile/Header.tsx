@@ -33,14 +33,12 @@ function ProfileHeader({
   const borderColor = useThemeColor({}, 'border');
   const backgroundColor = useThemeColor({}, 'background');
   const iconColor = useThemeColor({}, 'icon');
-  const tintColor = useThemeColor({}, 'tint');
-  const badgeBg = useThemeColor({}, 'icon');
-  const badgeText = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
   const subtitleColor = useThemeColor({}, 'mutedText');
-  const profileStrengthCardBg = useThemeColor({}, 'backgroundSecondary');
-  const strengthIconWrapBg = useThemeColor({}, 'backgroundTertiary');
-  const strengthTitleColor = useThemeColor({}, 'text');
-  const pressedBg = useThemeColor({}, 'backgroundSecondary');
+  const cardBg = useThemeColor({}, 'backgroundSecondary');
+  const pressedBg = useThemeColor({}, 'backgroundTertiary');
+  const accentColor = '#a5b4fc'; // Soft pastel indigo
+  const successColor = '#86efac'; // Soft pastel green
 
   return (
     <ThemedView style={[styles.container, { borderBottomColor: borderColor, backgroundColor }]}> 
@@ -50,7 +48,11 @@ function ProfileHeader({
         <Pressable
           style={({ pressed }) => [
             styles.iconButton,
-            { backgroundColor: pressed ? pressedBg : backgroundColor, borderColor },
+            { 
+              backgroundColor: pressed ? pressedBg : backgroundColor, 
+              borderColor: borderColor,
+              shadowColor: theme.shadow,
+            },
           ]}
           hitSlop={8}
           onPress={() => {
@@ -60,36 +62,39 @@ function ProfileHeader({
             onEdit && onEdit();
           }}
         >
-          <Feather name="edit-2" size={20} color={iconColor} />
+          <Feather name="edit-2" size={16} color={iconColor} />
         </Pressable>
       </ThemedView>
-      {/* Name, Badge, Subtitle */}
+      
+      {/* Name and Status */}
       <ThemedView style={styles.infoSection}>
         <ThemedView style={styles.nameRow}>
-          <ThemedText style={styles.name}>{name}</ThemedText>
-          <ThemedView style={[styles.badge, { backgroundColor: badgeBg }]}> 
-            <ThemedText style={[styles.badgeText, { color: badgeText }]}>{status}</ThemedText>
+          <ThemedText style={[styles.name, { color: textColor }]}>{name}</ThemedText>
+          <ThemedView style={[styles.badge, { backgroundColor: successColor, borderColor: successColor }]}> 
+            <ThemedText style={[styles.badgeText, { color: '#374151' }]}>{status}</ThemedText>
           </ThemedView>
         </ThemedView>
         <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>{subtitle}</ThemedText>
       </ThemedView>
-      {/* Profile Strength */}
-      <ThemedView style={[styles.profileStrengthCard, { backgroundColor: profileStrengthCardBg }]}> 
-        <ThemedView style={[styles.strengthIconWrap, { backgroundColor: strengthIconWrapBg }]}> 
-          <Feather name="shield" size={20} color={tintColor} />
+      
+      {/* Profile Strength Card */}
+      <ThemedView style={[styles.profileStrengthCard, { borderColor: borderColor }]}> 
+        <ThemedView style={[styles.strengthIconWrap, { backgroundColor: accentColor, borderColor: accentColor }]}> 
+          <Feather name="shield" size={16} color="#374151" />
         </ThemedView>
         <ThemedView style={styles.strengthTextWrap}>
-          <ThemedText style={[styles.strengthTitle, { color: strengthTitleColor }]}>{profileStrength}</ThemedText>
-          <ThemedText style={styles.strengthSubtitle}>{profileStrengthDescription}</ThemedText>
+          <ThemedText style={[styles.strengthTitle, { color: textColor }]}>{profileStrength}</ThemedText>
+          <ThemedText style={[styles.strengthSubtitle, { color: subtitleColor }]}>{profileStrengthDescription}</ThemedText>
         </ThemedView>
       </ThemedView>
+      
       {/* Stats Row */}
       <ThemedView style={[styles.statsRow, { borderTopColor: borderColor }]}> 
         {stats.map((stat) => (
-          <ThemedView key={stat.label} style={styles.statItem}>
-            <ThemedText style={styles.statValue}>{stat.value}</ThemedText>
-            <ThemedText style={styles.statLabel}>{stat.label}</ThemedText>
-          </ThemedView>
+                  <ThemedView key={stat.label} style={styles.statItem}>
+          <ThemedText style={[styles.statValue, { color: textColor }]}>{stat.value}</ThemedText>
+          <ThemedText style={[styles.statLabel, { color: subtitleColor }]}>{stat.label}</ThemedText>
+        </ThemedView>
         ))}
       </ThemedView>
     </ThemedView>
@@ -117,10 +122,10 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-start',
     borderBottomWidth: 1,
-    paddingHorizontal: 0,
-    paddingTop: 20,
-    paddingBottom: 16,
-    gap: 16,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 20,
+    gap: 20,
   },
   topRow: {
     width: '100%',
@@ -129,65 +134,68 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#f0f0f0',
   },
   iconButton: {
-    padding: 8,
-    borderRadius: 20,
+    padding: 10,
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
   },
   infoSection: {
     width: '100%',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 6,
+    gap: 8,
   },
   nameRow: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 12,
   },
   name: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
   },
   badge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 8,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
   },
   badgeText: {
-    fontWeight: 'bold',
-    fontSize: 12,
+    fontWeight: '500',
+    fontSize: 11,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
   },
   profileStrengthCard: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginTop: 8,
-    marginBottom: 8,
+    paddingVertical: 14,
+    borderWidth: 1,
   },
   strengthIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    borderWidth: 1,
   },
   strengthTextWrap: {
     flex: 1,
@@ -195,12 +203,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   strengthTitle: {
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontWeight: '600',
+    fontSize: 13,
     marginBottom: 2,
   },
   strengthSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 16,
   },
   statsRow: {
     width: '100%',
@@ -208,8 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    paddingTop: 16,
-    marginTop: 8,
+    paddingTop: 20,
   },
   statItem: {
     flex: 1,
@@ -217,11 +225,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontWeight: '600',
+    fontSize: 15,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 14,
   },
 });
 

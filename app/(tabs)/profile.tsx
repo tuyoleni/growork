@@ -38,19 +38,22 @@ export default function Profile() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
-        <ThemedView>
+        <ThemedView style={styles.container}>
           <ProfileHeader {...headerProps} />
           
-          <CategorySelector
-            options={CATEGORY_OPTIONS}
-            selectedIndex={selectedIndex}
-            onChange={setSelectedIndex}
-            style={{ marginTop: 8 }}
-          />
+          <ThemedView style={styles.categorySection}>
+            <CategorySelector
+              options={CATEGORY_OPTIONS}
+              selectedIndex={selectedIndex}
+              onChange={setSelectedIndex}
+            />
+          </ThemedView>
 
-          {selectedIndex === 0 && <DocumentsList />}
-          {selectedIndex === 1 && <CompaniesList />}
-          {selectedIndex === 2 && <FollowingGrid />}
+          <ThemedView style={styles.contentSection}>
+            {selectedIndex === 0 && <DocumentsList />}
+            {selectedIndex === 1 && <CompaniesList />}
+            {selectedIndex === 2 && <FollowingGrid />}
+          </ThemedView>
         </ThemedView>
       </Animated.ScrollView>
     </ScreenContainer>
@@ -58,6 +61,18 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  categorySection: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  contentSection: {
+    flex: 1,
+    paddingTop: 8,
+  },
   documentFilterSection: {
     paddingHorizontal: 16,
     paddingVertical: 16,

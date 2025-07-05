@@ -65,6 +65,8 @@ export default function ContentCard(props: ContentCardProps) {
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
 
+  const mutedTextColor = useThemeColor({}, 'mutedText');
+
   const renderBadge = () => {
     if (props.variant === 'news' && props.badgeText) {
       const badgeStyle = badgeColors(theme)[props.badgeVariant || 'error'];
@@ -79,7 +81,7 @@ export default function ContentCard(props: ContentCardProps) {
 
     if (props.variant === 'sponsored') {
       return (
-        <ThemedText style={[styles.sponsoredLabel, { color: useThemeColor({}, 'mutedText') }]}>
+        <ThemedText style={[styles.sponsoredLabel, { color: mutedTextColor }]}>
           Sponsored
         </ThemedText>
       );

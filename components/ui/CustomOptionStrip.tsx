@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 import GlobalBottomSheet from '../GlobalBottomSheet';
 
 interface OptionItem {
@@ -21,6 +21,8 @@ interface CustomOptionStripProps {
   title?: string;
   subtitle?: string;
   allOptions?: OptionItem[];
+  minVisibleOptions?: number;
+  maxVisibleOptions?: number;
 }
 
 const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({ 
@@ -32,6 +34,8 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
   title,
   subtitle,
   allOptions,
+  minVisibleOptions = 1,
+  maxVisibleOptions = 8,
 }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const badgeBg = useThemeColor({}, 'backgroundSecondary');
@@ -48,6 +52,7 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
   const [showOptionsSheet, setShowOptionsSheet] = useState(false);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const [internalVisibleOptions, setInternalVisibleOptions] = useState(visibleOptions);
+  const [searchQuery, setSearchQuery] = useState('');
 
   React.useEffect(() => {
     setInternalVisibleOptions(visibleOptions);
@@ -78,9 +83,15 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
     const isCurrentlyVisible = internalVisibleOptions.some(opt => opt.label === option.label);
     
     if (isCurrentlyVisible) {
+      if (internalVisibleOptions.length <= minVisibleOptions) {
+        return;
+      }
       const newOptions = internalVisibleOptions.filter(opt => opt.label !== option.label);
       setInternalVisibleOptions(newOptions);
     } else {
+      if (internalVisibleOptions.length >= maxVisibleOptions) {
+        return;
+      }
       const newOptions = [...internalVisibleOptions, option];
       setInternalVisibleOptions(newOptions);
     }
@@ -92,6 +103,14 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
   };
 
   const availableOptions = allOptions || visibleOptions;
+
+  const filteredOptions = React.useMemo(() => {
+    if (!searchQuery.trim()) return availableOptions;
+    
+    return availableOptions.filter(option =>
+      option.label.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [availableOptions, searchQuery]);
 
   return (
     <>
@@ -157,7 +176,7 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
         <GlobalBottomSheet
           ref={bottomSheetRef}
           onDismiss={closeOptionsSheet}
-          snapPoints={['60%']}
+          snapPoints={['70%']}
           header={
             <ThemedText style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>
               Customize Options
@@ -168,8 +187,43 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
               contentContainerStyle={{ padding: 24 }}
               showsVerticalScrollIndicator={false}
             >
-              {availableOptions.map((option, index) => {
+              {/* Search Input */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: badgeBg,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: borderColor,
+              }}>
+                <Feather name="search" size={16} color={badgeText} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    fontSize: 16,
+                    color: badgeText,
+                  }}
+                  placeholder="Search options..."
+                  placeholderTextColor={subtitleColor}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Feather name="x" size={16} color={badgeText} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {filteredOptions.map((option, index) => {
                 const isVisible = internalVisibleOptions.some(opt => opt.label === option.label);
+                const isAtMax = internalVisibleOptions.length >= maxVisibleOptions;
+                const isAtMin = internalVisibleOptions.length <= minVisibleOptions;
+                const canToggle = isVisible ? !isAtMin : !isAtMax;
+                
                 return (
                   <TouchableOpacity
                     key={option.label}
@@ -180,9 +234,9 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
                       paddingHorizontal: 16,
                       borderBottomWidth: 1,
                       borderBottomColor: borderColor,
-                      opacity: 0.8,
+                      opacity: canToggle ? 1 : 0.4,
                     }}
-                    onPress={() => handleOptionToggle(option)}
+                    onPress={() => canToggle && handleOptionToggle(option)}
                   >
                     <Feather 
                       name={option.icon as any} 
@@ -208,6 +262,14 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
                   </TouchableOpacity>
                 );
               })}
+              
+              {filteredOptions.length === 0 && (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <ThemedText style={{ fontSize: 14, color: subtitleColor, fontStyle: 'italic' }}>
+                    No options found for "{searchQuery}"
+                  </ThemedText>
+                </View>
+              )}
             </ScrollView>
           }
         />

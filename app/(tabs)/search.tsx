@@ -3,52 +3,17 @@ import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
+import { MOCK_DOCUMENTS } from '@/dataset/documents';
+import { ALL_INDUSTRIES, DEFAULT_INDUSTRIES } from '@/dataset/industries';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
-const INDUSTRY_OPTIONS = [
-  { icon: 'briefcase', label: 'Marketing' },
-  { icon: 'bar-chart', label: 'Sales' },
-  { icon: 'pen-tool', label: 'Creative' },
-  { icon: 'monitor', label: 'Tech' },
-  { icon: 'heart', label: 'Healthcare' },
-  { icon: 'book', label: 'Education' },
-  { icon: 'shopping-bag', label: 'Retail' },
-  { icon: 'truck', label: 'Logistics' },
-];
-
-// Mock document data for search
-const MOCK_DOCUMENTS: Document[] = [
-  {
-    name: 'Resume_2024.pdf',
-    updated: 'Updated 2 days ago',
-    category: 'CV',
-    note: 'For tech positions',
-  },
-  {
-    name: 'Portfolio_2024.pdf',
-    updated: 'Updated 1 week ago',
-    category: 'CV',
-    note: 'Design portfolio',
-  },
-  {
-    name: 'CoverLetter_Google.pdf',
-    updated: 'Updated 3 days ago',
-    category: 'Cover Letter',
-    note: 'For Google application',
-  },
-  {
-    name: 'Certificate_React.pdf',
-    updated: 'Updated 2 months ago',
-    category: 'Certificate',
-    note: 'React certification',
-  },
-];
-
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedIndustry, setSelectedIndustry] = useState(0);
+  const [selectedIndustry, setSelectedIndustry] = useState(-1);
+  const [selectedCategory, setSelectedCategory] = useState(-1);
+  const [visibleIndustries, setVisibleIndustries] = useState(DEFAULT_INDUSTRIES);
   const [searchResults, setSearchResults] = useState<Document[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const textColor = useThemeColor({}, 'text');
@@ -133,10 +98,12 @@ export default function Search() {
         <View style={styles.industrySection}>
           <ThemedText style={styles.sectionTitle}>Filter by Industry</ThemedText>
           <CustomOptionStrip
-            visibleOptions={INDUSTRY_OPTIONS}
+            visibleOptions={visibleIndustries}
             selectedIndex={selectedIndustry}
             onChange={setSelectedIndustry}
-            style={styles.industrySelector}
+            allOptions={ALL_INDUSTRIES}
+            minVisibleOptions={1}
+            maxVisibleOptions={6}
           />
         </View>
 
@@ -157,7 +124,7 @@ export default function Search() {
                   onDocumentDownload={handleDocumentDownload}
                   onDocumentShare={handleDocumentShare}
                   onDocumentDelete={handleDocumentDelete}
-                  emptyText={`No documents found for "${searchQuery}" in ${INDUSTRY_OPTIONS[selectedIndustry]?.label}`}
+                  emptyText={`No documents found for "${searchQuery}" in ${visibleIndustries[selectedIndustry]?.label}`}
                 />
               )}
             </>
@@ -209,9 +176,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
-  },
-  industrySelector: {
-    paddingHorizontal: 0,
   },
   resultsSection: {
     flex: 1,

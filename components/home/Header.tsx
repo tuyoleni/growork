@@ -1,22 +1,31 @@
 import CategorySelector from '@/components/ui/CategorySelector';
 import { Colors } from '@/constants/Colors';
+import { ALL_INDUSTRIES, DEFAULT_INDUSTRIES } from '@/dataset/industries';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import CustomOptionStrip from '../ui/CustomOptionStrip';
 
-const Header = () => {
-    const [selectedIndex, setSelectedIndex] = useState(0);
+interface HeaderProps {
+  selectedContentType: number;
+  onContentTypeChange: (index: number) => void;
+  selectedIndustry: number;
+  onIndustryChange: (index: number) => void;
+}
+
+const Header = ({ 
+  selectedContentType, 
+  onContentTypeChange, 
+  selectedIndustry, 
+  onIndustryChange 
+}: HeaderProps) => {
+    const [visibleIndustries, setVisibleIndustries] = useState(DEFAULT_INDUSTRIES);
+    const textColor = useThemeColor({}, 'text');
+    const mutedText = useThemeColor({}, 'mutedText');
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
-    const industryOptions = [
-        { icon: 'briefcase', label: 'Marketing' },
-        { icon: 'bar-chart', label: 'Sales' },
-        { icon: 'pen-tool', label: 'Creative' },
-        { icon: 'monitor', label: 'Tech' },
-    ];
-    const [selectedIndustry, setSelectedIndustry] = useState(0);
 
     return (
         <View style={[
@@ -35,13 +44,16 @@ const Header = () => {
             </View>
             <CategorySelector
                 options={['All', 'Jobs', 'News']}
-                selectedIndex={selectedIndex}
-                onChange={setSelectedIndex}
+                selectedIndex={selectedContentType}
+                onChange={onContentTypeChange}
             />
             <CustomOptionStrip
-                visibleOptions={industryOptions}
+                visibleOptions={visibleIndustries}
                 selectedIndex={selectedIndustry}
-                onChange={setSelectedIndustry}
+                onChange={onIndustryChange}
+                allOptions={ALL_INDUSTRIES}
+                minVisibleOptions={1}
+                maxVisibleOptions={6}
                 style={styles.industrySelector}
             />
         </View>
