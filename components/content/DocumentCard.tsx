@@ -19,6 +19,7 @@ export interface DocumentCardProps {
   showMenu?: boolean;
   showCategory?: boolean;
   variant?: 'default' | 'compact' | 'detailed';
+  onPressMenu?: () => void;
 }
 
 function IconWithBackground({ icon }: { icon: React.ReactElement }) {
@@ -43,6 +44,7 @@ export default function DocumentCard({
   showMenu = true,
   showCategory = false,
   variant = 'default',
+  onPressMenu,
 }: DocumentCardProps) {
   const borderColor = useThemeColor({}, 'border');
   const backgroundColor = useThemeColor({}, 'background');
@@ -145,7 +147,7 @@ export default function DocumentCard({
           styles.menuButton,
           { backgroundColor: pressed ? borderColor + '11' : 'transparent' }
         ]}
-        onPress={handleMenuPress}
+        onPress={onPressMenu ? onPressMenu : handleMenuPress}
       >
         <Feather name="more-vertical" size={20} color={iconColor} />
       </Pressable>

@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import IndustrySelector from '../ui/IndustrySelector';
+import CustomOptionStrip from '../ui/CustomOptionStrip';
 
 const Header = () => {
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -38,11 +38,11 @@ const Header = () => {
                 selectedIndex={selectedIndex}
                 onChange={setSelectedIndex}
             />
-            <IndustrySelector
-                options={industryOptions}
+            <CustomOptionStrip
+                visibleOptions={industryOptions}
                 selectedIndex={selectedIndustry}
                 onChange={setSelectedIndustry}
-                style={{ marginTop: 8, marginBottom: 0 }}
+                style={styles.industrySelector}
             />
         </View>
     );
@@ -67,6 +67,10 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         paddingBottom: 8,
         justifyContent: 'center',
+    },
+    industrySelector: {
+        marginTop: 8,
+        marginBottom: 0,
     },
 });
 

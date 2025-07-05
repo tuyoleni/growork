@@ -4,14 +4,36 @@ import { BottomSheetModal, TouchableOpacity } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActionSheetIOS, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import GlobalBottomSheet from '../GlobalBottomSheet';
 import { ThemedText } from '../ThemedText';
+import DocumentCard from '../content/DocumentCard';
 import DocumentList, { Document } from '../content/DocumentList';
-import DocumentUploadSheet from './DocumentUploadSheet';
+import CustomOptionStrip from '../ui/CustomOptionStrip';
 import { useDocumentUpload } from './useDocumentUpload';
 
 const MODAL_CATEGORIES = ['CV', 'Cover Letter', 'Certificate'];
+
+const DOCUMENT_FILTERS = [
+  { icon: 'briefcase', label: 'CV' },
+  { icon: 'mail', label: 'Cover Letter' },
+  { icon: 'award', label: 'Certificate' },
+  { icon: 'folder', label: 'Portfolio' },
+  { icon: 'clipboard', label: 'Other' },
+];
+
+const ALL_DOCUMENT_OPTIONS = [
+  { icon: 'briefcase', label: 'CV' },
+  { icon: 'mail', label: 'Cover Letter' },
+  { icon: 'award', label: 'Certificate' },
+  { icon: 'folder', label: 'Portfolio' },
+  { icon: 'clipboard', label: 'Other' },
+  { icon: 'file-text', label: 'Resume' },
+  { icon: 'book', label: 'Reference' },
+  { icon: 'certificate', label: 'Diploma' },
+  { icon: 'award', label: 'Achievement' },
+  { icon: 'folder-open', label: 'Project' },
+];
 
 interface DocumentsListProps {
   selectedDocumentFilter?: string;
@@ -53,6 +75,9 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
+  const mutedText = useThemeColor({}, 'mutedText');
+  const [selectedDocumentFilterIndex, setSelectedDocumentFilterIndex] = useState(-1);
+  const [visibleDocumentFilters, setVisibleDocumentFilters] = useState(DOCUMENT_FILTERS);
 
   const handlePickPdf = async () => {
     try {
@@ -146,8 +171,99 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
     }
   };
 
+  const handleReplaceDocument = async (docType: string, currentDoc: any) => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: false,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.mimeType === 'application/pdf') {
+          setPendingDocs(prev => prev.map(doc => 
+            doc.name === currentDoc.name && doc.category === currentDoc.category
+              ? {
+                  name: asset.name,
+                  uri: asset.uri,
+                  mimeType: asset.mimeType,
+                  category: docType,
+                  updated: 'Just now',
+                }
+              : doc
+          ));
+        } else {
+          alert('Please select a PDF file.');
+        }
+      }
+    } catch (e) {
+      alert('An error occurred while picking the file.');
+    }
+  };
+
+  const handleRemoveDocument = (doc: any) => {
+    setPendingDocs(prev => prev.filter(d => 
+      !(d.name === doc.name && d.category === doc.category)
+    ));
+  };
+
+  const handlePendingDocMenu = (docType: string, doc: any) => {
+    const options = ['Cancel', 'Replace', 'Remove'];
+    const actions = [
+      () => {},
+      () => handleReplaceDocument(docType, doc),
+      () => handleRemoveDocument(doc),
+    ];
+    if (process.env.EXPO_OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: 2,
+        },
+        (buttonIndex) => {
+          if (buttonIndex > 0) actions[buttonIndex]();
+        }
+      );
+    } else {
+      Alert.alert(
+        'Document',
+        `What would you like to do with "${doc.name}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Replace', onPress: () => handleReplaceDocument(docType, doc) },
+          { text: 'Remove', style: 'destructive', onPress: () => handleRemoveDocument(doc) },
+        ]
+      );
+    }
+  };
+
+  const handleDocumentFilterChange = (index: number) => {
+    setSelectedDocumentFilterIndex(index);
+    if (index >= 0) {
+      console.log('Document filter changed to:', DOCUMENT_FILTERS[index]?.label);
+    } else {
+      console.log('Filter cleared');
+    }
+  };
+
+  const handleMoreDocumentFilters = () => {
+    console.log('Show more document filters');
+  };
+
+  const getSelectedDocumentFilterLabel = () => {
+    return selectedDocumentFilterIndex >= 0 ? DOCUMENT_FILTERS[selectedDocumentFilterIndex]?.label : 'All';
+  };
+
+  const handleDocumentFiltersChange = (newFilters: any[]) => {
+    setVisibleDocumentFilters(newFilters);
+    // Reset selection if the currently selected filter is no longer visible
+    if (selectedDocumentFilterIndex >= 0 && selectedDocumentFilterIndex >= newFilters.length) {
+      setSelectedDocumentFilterIndex(-1);
+    }
+  };
+
   // Filter documents by category, then convert to Document interface
-  const categoryFilteredDocuments = filterDocumentsByCategory(documents, selectedDocumentFilter);
+  const categoryFilteredDocuments = filterDocumentsByCategory(documents, getSelectedDocumentFilterLabel());
   const documentsForList: Document[] = categoryFilteredDocuments.map(doc => ({
     name: doc.name,
     updated: doc.updated,
@@ -184,15 +300,18 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   return (
     <>
       {/* Document Heading */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 16 }}>
+      <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
         <ThemedText style={{ fontSize: 18, fontWeight: 'bold' }}>Documents</ThemedText>
-        <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-          onPress={openModal}
-        >
-          <Feather name="plus" size={20} color={tintColor} />
-          <ThemedText style={{ fontSize: 15, fontWeight: '600', color: tintColor }}>Add Document</ThemedText>
-        </TouchableOpacity>
+      </View>
+
+      {/* Document Filter */}
+      <View style={{ paddingHorizontal: 16, paddingVertical: 8, marginBottom: 16 }}>
+        <CustomOptionStrip
+          visibleOptions={visibleDocumentFilters}
+          selectedIndex={selectedDocumentFilterIndex}
+          onChange={handleDocumentFilterChange}
+          allOptions={ALL_DOCUMENT_OPTIONS}
+        />
       </View>
 
       {/* Documents List */}
@@ -203,23 +322,102 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
         onDocumentDownload={handleDocumentDownload}
         onDocumentShare={handleDocumentShare}
         onDocumentDelete={handleDocumentDelete}
-        emptyText={`No ${selectedDocumentFilter.toLowerCase()} documents found`}
+        emptyText={`No ${getSelectedDocumentFilterLabel().toLowerCase()} documents found`}
       />
 
       {/* Upload Modal */}
       <GlobalBottomSheet
         ref={bottomSheetRef}
         onDismiss={closeModal}
-        snapPoints={['80%']}
-      >
-        <DocumentUploadSheet
-          pendingDocs={pendingDocs}
-          setPendingDocs={setPendingDocs}
-          handleContinue={handleContinue}
-          closeModal={closeModal}
-          MODAL_CATEGORIES={MODAL_CATEGORIES}
-        />
-      </GlobalBottomSheet>
+        snapPoints={['70%']}
+        header={
+          <ThemedText style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>
+            Upload Your Documents
+          </ThemedText>
+        }
+        body={
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={0}
+          >
+            <ScrollView 
+              contentContainerStyle={{ 
+                padding: 24, 
+                paddingBottom: 24 // Reduced padding since footer is fixed
+              }}
+              showsVerticalScrollIndicator={false}
+              style={{ flex: 1 }}
+            >
+              {MODAL_CATEGORIES.map((docType) => {
+                const docsOfType = pendingDocs.filter(doc => doc.category === docType);
+                return (
+                  <View key={docType} style={{ marginBottom: 32 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                      <ThemedText style={{ fontSize: 16, fontWeight: 'bold', flex: 1 }}>{docType}</ThemedText>
+                      <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'transparent', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 8 }}
+                        onPress={() => handlePickPdfForType(docType)}
+                      >
+                        <Feather name="plus" size={18} color={tintColor} style={{ marginRight: 4 }} />
+                        <ThemedText style={{ fontSize: 15, color: tintColor, fontWeight: '600' }}>Add</ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                    
+                    {docsOfType.length === 0 ? (
+                      <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                        <ThemedText style={{ fontSize: 14, color: mutedText, fontStyle: 'italic' }}>
+                          No {docType} uploaded yet.
+                        </ThemedText>
+                      </View>
+                    ) : (
+                      <View style={{ gap: 0 }}>
+                        {docsOfType.map((doc, index) => (
+                          <React.Fragment key={`${doc.name}-${index}`}>
+                            <DocumentCard
+                              name={doc.name}
+                              updated={doc.updated}
+                              category={doc.category}
+                              variant="compact"
+                              showCategory={false}
+                              onPress={() => console.log('Document pressed:', doc.name)}
+                              showMenu={true}
+                              onDownload={undefined}
+                              onShare={undefined}
+                              onDelete={undefined}
+                              onPressMenu={() => handlePendingDocMenu(docType, doc)}
+                            />
+                            {index < docsOfType.length - 1 && (
+                              <View style={{ height: 1, backgroundColor: borderColor, opacity: 0.18, marginLeft: 52 }} />
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </KeyboardAvoidingView>
+        }
+        footer={
+          <TouchableOpacity
+            style={{ 
+              backgroundColor: textColor, 
+              borderRadius: 8, 
+              paddingVertical: 16, 
+              alignItems: 'center',
+              opacity: pendingDocs.length === 0 ? 0.5 : 1,
+            }}
+            onPress={handleContinue}
+            disabled={pendingDocs.length === 0}
+          >
+            <ThemedText style={{ fontSize: 16, color: backgroundColor, fontWeight: 'bold' }}>
+              Upload ({pendingDocs.length} document{pendingDocs.length !== 1 ? 's' : ''})
+            </ThemedText>
+          </TouchableOpacity>
+        }
+      />
     </>
   );
 }

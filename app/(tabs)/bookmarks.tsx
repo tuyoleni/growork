@@ -2,7 +2,7 @@ import DocumentList, { Document } from '@/components/content/DocumentList';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import IndustrySelector from '@/components/ui/IndustrySelector';
+import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -109,11 +109,10 @@ export default function Bookmarks() {
         {/* Category Filter */}
         <View style={styles.categorySection}>
           <ThemedText style={styles.sectionTitle}>Filter by Category</ThemedText>
-          <IndustrySelector
-            options={BOOKMARK_CATEGORIES}
+          <CustomOptionStrip
+            visibleOptions={BOOKMARK_CATEGORIES}
             selectedIndex={selectedCategory}
-            onChange={handleCategoryChange}
-            onMorePress={handleMoreCategories}
+            onChange={setSelectedCategory}
             style={styles.categorySelector}
           />
         </View>

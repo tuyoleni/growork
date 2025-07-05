@@ -2,7 +2,7 @@ import DocumentList, { Document } from '@/components/content/DocumentList';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import IndustrySelector from '@/components/ui/IndustrySelector';
+import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
@@ -132,11 +132,10 @@ export default function Search() {
         {/* Industry Filter */}
         <View style={styles.industrySection}>
           <ThemedText style={styles.sectionTitle}>Filter by Industry</ThemedText>
-          <IndustrySelector
-            options={INDUSTRY_OPTIONS}
+          <CustomOptionStrip
+            visibleOptions={INDUSTRY_OPTIONS}
             selectedIndex={selectedIndustry}
-            onChange={handleIndustryChange}
-            onMorePress={handleMoreIndustries}
+            onChange={setSelectedIndustry}
             style={styles.industrySelector}
           />
         </View>
