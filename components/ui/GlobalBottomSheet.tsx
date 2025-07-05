@@ -1,3 +1,4 @@
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import React, { forwardRef } from 'react';
 import { KeyboardAvoidingView, Platform, StyleProp, TouchableOpacity, ViewStyle } from 'react-native';
@@ -19,6 +20,11 @@ const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetFormProp
     { title, onDismiss, onSubmit, submitLabel, children, footer, style, backgroundColor },
     ref
   ) => {
+    const textColor = useThemeColor({}, 'text');
+    const backgroundThemeColor = useThemeColor({}, 'background');
+    const buttonBg = textColor;
+    const buttonTextColor = backgroundThemeColor;
+
     return (
       <BottomSheetModal
         ref={ref}
@@ -39,8 +45,8 @@ const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetFormProp
               <TouchableOpacity onPress={onSubmit} style={{ marginTop: 8 }}>
                 <ThemedText
                   style={{
-                    backgroundColor: '#111',
-                    color: '#fff',
+                    backgroundColor: buttonBg,
+                    color: buttonTextColor,
                     borderRadius: 8,
                     paddingVertical: 16,
                     textAlign: 'center',

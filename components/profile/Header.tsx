@@ -1,8 +1,9 @@
+import { Colors } from '@/constants/Colors';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { Image, Pressable, StyleSheet } from 'react-native';
+import { Image, Pressable, StyleSheet, useColorScheme } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 
@@ -27,10 +28,19 @@ function ProfileHeader({
   stats,
   onEdit,
 }: ProfileHeaderProps) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
   const borderColor = useThemeColor({}, 'border');
   const backgroundColor = useThemeColor({}, 'background');
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
+  const badgeBg = useThemeColor({}, 'icon');
+  const badgeText = useThemeColor({}, 'background');
+  const subtitleColor = useThemeColor({}, 'mutedText');
+  const profileStrengthCardBg = useThemeColor({}, 'backgroundSecondary');
+  const strengthIconWrapBg = useThemeColor({}, 'backgroundTertiary');
+  const strengthTitleColor = useThemeColor({}, 'text');
+  const pressedBg = useThemeColor({}, 'backgroundSecondary');
 
   return (
     <ThemedView style={[styles.container, { borderBottomColor: borderColor, backgroundColor }]}> 
@@ -40,7 +50,7 @@ function ProfileHeader({
         <Pressable
           style={({ pressed }) => [
             styles.iconButton,
-            { backgroundColor: pressed ? '#f3f4f6' : backgroundColor, borderColor },
+            { backgroundColor: pressed ? pressedBg : backgroundColor, borderColor },
           ]}
           hitSlop={8}
           onPress={() => {
@@ -57,19 +67,19 @@ function ProfileHeader({
       <ThemedView style={styles.infoSection}>
         <ThemedView style={styles.nameRow}>
           <ThemedText style={styles.name}>{name}</ThemedText>
-          <ThemedView style={styles.badge}>
-            <ThemedText style={styles.badgeText}>{status}</ThemedText>
+          <ThemedView style={[styles.badge, { backgroundColor: badgeBg }]}> 
+            <ThemedText style={[styles.badgeText, { color: badgeText }]}>{status}</ThemedText>
           </ThemedView>
         </ThemedView>
-        <ThemedText style={styles.subtitle}>{subtitle}</ThemedText>
+        <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>{subtitle}</ThemedText>
       </ThemedView>
       {/* Profile Strength */}
-      <ThemedView style={styles.profileStrengthCard}>
-        <ThemedView style={styles.strengthIconWrap}>
+      <ThemedView style={[styles.profileStrengthCard, { backgroundColor: profileStrengthCardBg }]}> 
+        <ThemedView style={[styles.strengthIconWrap, { backgroundColor: strengthIconWrapBg }]}> 
           <Feather name="shield" size={20} color={tintColor} />
         </ThemedView>
         <ThemedView style={styles.strengthTextWrap}>
-          <ThemedText style={styles.strengthTitle}>{profileStrength}</ThemedText>
+          <ThemedText style={[styles.strengthTitle, { color: strengthTitleColor }]}>{profileStrength}</ThemedText>
           <ThemedText style={styles.strengthSubtitle}>{profileStrengthDescription}</ThemedText>
         </ThemedView>
       </ThemedView>
@@ -122,7 +132,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 16,
-    backgroundColor: '#eee',
   },
   iconButton: {
     padding: 8,
@@ -153,24 +162,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: '#22c55e',
     marginLeft: 8,
   },
   badgeText: {
-    color: '#fff',
     fontWeight: 'bold',
     fontSize: 12,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
   },
   profileStrengthCard: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginTop: 8,
@@ -180,7 +185,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#e0e7ff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -194,11 +198,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
     marginBottom: 2,
-    color: '#111',
   },
   strengthSubtitle: {
     fontSize: 12,
-    color: '#888',
   },
   statsRow: {
     width: '100%',
@@ -220,7 +222,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#888',
   },
 });
 

@@ -1,4 +1,5 @@
 import { ThemedText } from '@/components/ThemedText';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
@@ -15,16 +16,30 @@ interface IndustrySelectorProps {
   onChange: (index: number) => void;
   style?: any;
   onMorePress?: () => void;
+  showMoreButton?: boolean;
+  title?: string;
+  subtitle?: string;
 }
 
-const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIndex, onChange, style, onMorePress }) => {
+const IndustrySelector: React.FC<IndustrySelectorProps> = ({ 
+  options, 
+  selectedIndex, 
+  onChange, 
+  style, 
+  onMorePress,
+  showMoreButton = true,
+  title,
+  subtitle
+}) => {
   const colorScheme = useColorScheme() ?? 'light';
-  const badgeBg = colorScheme === 'dark' ? '#23272A' : '#F3F4F6';
-  const badgeSelectedBg = colorScheme === 'dark' ? '#fff' : '#111';
-  const badgeText = colorScheme === 'dark' ? '#fff' : '#111';
-  const badgeSelectedText = colorScheme === 'dark' ? '#111' : '#fff';
+  const badgeBg = useThemeColor({}, 'backgroundSecondary');
+  const badgeSelectedBg = useThemeColor({}, 'icon');
+  const badgeText = useThemeColor({}, 'text');
+  const badgeSelectedText = useThemeColor({}, 'background');
   const plusBg = badgeBg;
   const plusColor = badgeText;
+  const titleColor = useThemeColor({}, 'text');
+  const subtitleColor = useThemeColor({}, 'mutedText');
 
   const handlePress = (idx: number) => {
     if (process.env.EXPO_OS === 'ios') {
@@ -46,6 +61,17 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={[styles.badgeRow, style]}
     >
+      {/* Optional Title and Subtitle */}
+      {title && (
+        <Pressable style={styles.titleContainer}>
+          <ThemedText style={[styles.titleText, { color: titleColor }]}>{title}</ThemedText>
+          {subtitle && (
+            <ThemedText style={[styles.subtitleText, { color: subtitleColor }]}>{subtitle}</ThemedText>
+          )}
+        </Pressable>
+      )}
+
+      {/* Industry Options */}
       {options.map((option, idx) => {
         const selected = idx === selectedIndex;
         return (
@@ -65,22 +91,26 @@ const IndustrySelector: React.FC<IndustrySelectorProps> = ({ options, selectedIn
           </Pressable>
         );
       })}
-      <Pressable
-        onPress={handleMorePress}
-        style={({ pressed }) => [
-          styles.badge,
-          {
-            backgroundColor: plusBg,
-            opacity: pressed ? 0.7 : 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-        ]}
-      >
-        <Feather name="plus" size={18} color={plusColor} />
-        <ThemedText style={[styles.badgeText, { color: plusColor, marginLeft: 2 }]}>More</ThemedText>
-      </Pressable>
+
+      {/* Optional More Button */}
+      {showMoreButton && (
+        <Pressable
+          onPress={handleMorePress}
+          style={({ pressed }) => [
+            styles.badge,
+            {
+              backgroundColor: plusBg,
+              opacity: pressed ? 0.7 : 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
+        >
+          <Feather name="plus" size={18} color={plusColor} />
+          <ThemedText style={[styles.badgeText, { color: plusColor, marginLeft: 2 }]}>More</ThemedText>
+        </Pressable>
+      )}
     </ScrollView>
   );
 };
@@ -103,6 +133,19 @@ const styles = StyleSheet.create({
   badgeText: {
     marginLeft: 6,
     fontSize: 14,
+  },
+  titleContainer: {
+    marginRight: 8,
+    paddingHorizontal: 4,
+  },
+  titleText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  subtitleText: {
+    fontSize: 12,
+    opacity: 0.7,
   },
 });
 

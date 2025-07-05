@@ -5,54 +5,40 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import GlobalBottomSheet from '../GlobalBottomSheet';
 import { ThemedText } from '../ThemedText';
-import { ThemedView } from '../ThemedView';
-import DocumentMenu from './DocumentMenu';
+import DocumentList, { Document } from '../content/DocumentList';
 import DocumentUploadSheet from './DocumentUploadSheet';
 import { useDocumentUpload } from './useDocumentUpload';
 
-const DATA = [
-  {
-    name: 'Resume_2024.pdf',
-    updated: 'Updated 2 days ago',
-    category: 'CV',
-  },
-  {
-    name: 'Portfolio_2024.pdf',
-    updated: 'Updated 1 week ago',
-    category: 'CV',
-  },
-  {
-    name: 'CoverLetter_2024.pdf',
-    updated: 'Updated 3 days ago',
-    category: 'Cover Letter',
-  },
-  {
-    name: 'Certificate_React.pdf',
-    updated: 'Updated 2 months ago',
-    category: 'Certificate',
-  },
-  {
-    name: 'Certificate_AWS.pdf',
-    updated: 'Updated 5 months ago',
-    category: 'Certificate',
-  },
-];
-
-const CATEGORIES = ['CV', 'Cover Letter', 'Certificate'];
-
 const MODAL_CATEGORIES = ['CV', 'Cover Letter', 'Certificate'];
 
-function IconWithBackground({ icon }: { icon: React.ReactElement }) {
-  const borderColor = useThemeColor({}, 'border');
-  return (
-    <ThemedView style={[styles.iconBg, { backgroundColor: borderColor + '22' }]}> 
-      {React.isValidElement(icon) ? icon : null}
-    </ThemedView>
-  );
+interface DocumentsListProps {
+  selectedDocumentFilter?: string;
 }
 
-function DocumentsListInner() {
+function filterDocumentsByCategory(documents: any[], categoryFilter: string) {
+  if (!categoryFilter || categoryFilter === 'All') return documents;
+  
+  return documents.filter(doc => {
+    const docCategory = doc.category?.toLowerCase() || '';
+    const filterCategory = categoryFilter.toLowerCase();
+    
+    // Map filter labels to document categories
+    const categoryMapping: Record<string, string[]> = {
+      'cv': ['cv', 'resume'],
+      'cover letter': ['cover letter', 'coverletter'],
+      'certificate': ['certificate', 'cert'],
+      'portfolio': ['portfolio'],
+      'other': ['other', 'misc', 'document']
+    };
+    
+    const mappedCategories = categoryMapping[filterCategory] || [filterCategory];
+    return mappedCategories.some(cat => docCategory.includes(cat));
+  });
+}
+
+function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListProps) {
   const {
     documents,
     setDocuments,
@@ -62,10 +48,11 @@ function DocumentsListInner() {
     dismiss,
   } = useDocumentUpload();
   const [modalVisible, setModalVisible] = useState(false);
-  const [category, setCategory] = useState(MODAL_CATEGORIES[0]);
   const [file, setFile] = useState<{ name: string; uri: string; mimeType: string } | null>(null);
   const [pendingDocs, setPendingDocs] = useState<any[]>([]);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const iconColor = useThemeColor({}, 'icon');
+  const tintColor = useThemeColor({}, 'tint');
 
   const handlePickPdf = async () => {
     try {
@@ -97,7 +84,7 @@ function DocumentsListInner() {
         name: file.name,
         uri: file.uri,
         mimeType: file.mimeType,
-        category,
+        category: 'CV',
         updated: 'Just now',
       },
     ]);
@@ -159,108 +146,86 @@ function DocumentsListInner() {
     }
   };
 
-  // Restore old layout: filter by selected category
-  const filteredData = documents.filter((doc: { category: string }) => doc.category === category);
+  // Filter documents by category, then convert to Document interface
+  const categoryFilteredDocuments = filterDocumentsByCategory(documents, selectedDocumentFilter);
+  const documentsForList: Document[] = categoryFilteredDocuments.map(doc => ({
+    name: doc.name,
+    updated: doc.updated,
+    category: doc.category,
+    note: doc.note,
+  }));
+
+  const handleDocumentPress = (document: Document) => {
+    console.log('Document pressed:', document.name);
+    // Handle document press - could open preview, etc.
+  };
+
+  const handleDocumentDownload = (document: Document) => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    console.log('Download document:', document.name);
+  };
+
+  const handleDocumentShare = (document: Document) => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    console.log('Share document:', document.name);
+  };
+
+  const handleDocumentDelete = (document: Document) => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    console.log('Delete document:', document.name);
+  };
 
   return (
     <>
-      {/* Category Selector (old layout) */}
-      <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8, marginBottom: 8 }}>
-        {MODAL_CATEGORIES.map((cat) => {
-          const selected = category === cat;
-          return (
-            <TouchableOpacity
-              key={cat}
-              onPress={() => setCategory(cat)}
-              style={{
-                paddingVertical: 6,
-                paddingHorizontal: 16,
-                borderRadius: 20,
-                backgroundColor: selected ? textColor : borderColor,
-                marginHorizontal: 4,
-              }}
-            >
-              <ThemedText style={{ color: selected ? backgroundColor : textColor, fontWeight: 'bold' }}>{cat}</ThemedText>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {/* Count and Add Button */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 4 }}>
-        <ThemedText style={{ fontSize: 15, color: borderColor }}>{filteredData.length} {category}</ThemedText>
+      {/* Document Heading */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 16 }}>
+        <ThemedText style={{ fontSize: 18, fontWeight: 'bold' }}>Documents</ThemedText>
         <TouchableOpacity
-          style={{ backgroundColor: textColor, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18, alignItems: 'center' }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
           onPress={openModal}
         >
-          <ThemedText style={{ fontSize: 15, color: backgroundColor, fontWeight: 'bold' }}>Add Document</ThemedText>
+          <Feather name="plus" size={20} color={tintColor} />
+          <ThemedText style={{ fontSize: 15, fontWeight: '600', color: tintColor }}>Add Document</ThemedText>
         </TouchableOpacity>
       </View>
-      {/* Main List of Documents (filtered) */}
-      <ThemedView style={styles.list}>
-        {filteredData.map((item: { name: string; updated: string; category: string; note?: string }, idx: number) => (
-          <ThemedView
-            key={item.name + idx}
-            style={[
-              styles.card,
-              idx !== filteredData.length - 1 && { borderBottomWidth: 1, borderBottomColor: borderColor },
-              { backgroundColor },
-            ]}
-          >
-            <IconWithBackground icon={<Feather name="file-text" size={24} color={textColor} />} />
-            <ThemedView style={styles.cardTextWrap}>
-              <ThemedText style={styles.cardTitle}>{item.name}</ThemedText>
-              {item.note && (
-                <ThemedText style={[styles.cardSubtitle, { color: textColor, opacity: 0.6 }]}>{item.note}</ThemedText>
-              )}
-              <ThemedText style={[styles.cardSubtitle, { color: textColor, opacity: 0.6 }]}>{item.updated}</ThemedText>
-            </ThemedView>
-            <DocumentMenu
-              onDownload={() => {
-                if (process.env.EXPO_OS === 'ios') {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-                // handle download
-              }}
-              onShare={() => {
-                if (process.env.EXPO_OS === 'ios') {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-                // handle share
-              }}
-              onDelete={() => {
-                if (process.env.EXPO_OS === 'ios') {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-                // handle delete
-              }}
-            />
-          </ThemedView>
-        ))}
-      </ThemedView>
-      {/* Modal remains unchanged below */}
-      <BottomSheetModal
+
+      {/* Documents List */}
+      <DocumentList
+        documents={documentsForList}
+        groupedByCategory={true}
+        onDocumentPress={handleDocumentPress}
+        onDocumentDownload={handleDocumentDownload}
+        onDocumentShare={handleDocumentShare}
+        onDocumentDelete={handleDocumentDelete}
+        emptyText={`No ${selectedDocumentFilter.toLowerCase()} documents found`}
+      />
+
+      {/* Upload Modal */}
+      <GlobalBottomSheet
         ref={bottomSheetRef}
         onDismiss={closeModal}
         snapPoints={['80%']}
-        backgroundStyle={{ backgroundColor }}
       >
         <DocumentUploadSheet
           pendingDocs={pendingDocs}
           setPendingDocs={setPendingDocs}
           handleContinue={handleContinue}
           closeModal={closeModal}
-          borderColor={borderColor}
-          backgroundColor={backgroundColor}
-          textColor={textColor}
           MODAL_CATEGORIES={MODAL_CATEGORIES}
         />
-      </BottomSheetModal>
+      </GlobalBottomSheet>
     </>
   );
 }
 
-export default function DocumentsList() {
-  return <DocumentsListInner />;
+export default function DocumentsList(props: DocumentsListProps) {
+  return <DocumentsListInner {...props} />;
 }
 
 const styles = StyleSheet.create({
@@ -290,7 +255,6 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 15,
-    color: '#888',
     marginRight: 8,
   },
   uploadButton: {
@@ -341,7 +305,6 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 12,
-    color: '#888',
   },
   iconButton: {
     padding: 6,
@@ -349,24 +312,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  categorySelectorRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    gap: 8,
-    alignItems: 'center',
-    marginBottom: 8,
-    marginTop: 2,
+  categoryHeading: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 2,
   },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginRight: 0,
-  },
-  categoryBadgeText: {
-    marginLeft: 0,
+  categoryCount: {
     fontSize: 14,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  statLabel: {
+    fontSize: 12,
   },
 }); 

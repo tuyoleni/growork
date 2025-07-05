@@ -91,10 +91,12 @@ export default function CompaniesList() {
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
   const cardBg = backgroundColor;
   const [search, setSearch] = useState('');
   const colorScheme = useColorScheme() ?? 'light';
-  const searchBg = colorScheme === 'dark' ? '#23272A' : '#F3F4F6';
+  const searchBg = useThemeColor({}, 'backgroundSecondary');
+  const placeholderTextColor = useThemeColor({}, 'mutedText');
 
   // Filter and pagination logic
   const COMPANIES_PER_PAGE = 3;
@@ -120,7 +122,7 @@ export default function CompaniesList() {
           <TextInput
             style={[styles.searchInput, { color: textColor }]}
             placeholder="Search companies..."
-            placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
+            placeholderTextColor={placeholderTextColor}
             value={search}
             onChangeText={setSearch}
           />
@@ -149,7 +151,7 @@ export default function CompaniesList() {
                   <ThemedText style={styles.cardTitleContentCard} numberOfLines={1} ellipsizeMode="tail">{item.name}</ThemedText>
                   <ThemedView style={styles.jobsRow}>
                     <Feather name="briefcase" size={14} color={textColor} style={{ marginRight: 4 }} />
-                    <ThemedText style={styles.jobsText}>{item.jobs} jobs</ThemedText>
+                    <ThemedText style={[styles.jobsText, { color: mutedText }]}>{item.jobs} jobs</ThemedText>
                   </ThemedView>
                 </ThemedView>
                 <Pressable
@@ -255,7 +257,6 @@ const styles = StyleSheet.create({
   headerCount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#888',
   },
   list: {
     width: '100%',
@@ -333,7 +334,6 @@ const styles = StyleSheet.create({
   },
   pageLabel: {
     fontSize: 14,
-    color: '#888',
   },
   searchInput: {
     flex: 1,
@@ -347,12 +347,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: '#eee',
     marginRight: 2,
   },
   cardInnerNew: { flexDirection: 'column', alignItems: 'flex-start', flex: 1, paddingHorizontal: 16, paddingVertical: 12 },
   topRowNew: { flexDirection: 'row', alignItems: 'center', width: '100%', gap: 10, marginBottom: 4, justifyContent: 'space-between' },
   titleAndJobsRow: { flex: 1, flexDirection: 'column', alignItems: 'flex-start', marginLeft: 10, minWidth: 0 },
   jobsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  jobsText: { fontSize: 13, color: '#888', fontWeight: '500' },
+  jobsText: { fontSize: 13, fontWeight: '500' },
 }); 

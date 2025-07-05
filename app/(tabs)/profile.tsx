@@ -5,14 +5,28 @@ import ProfileHeader from '@/components/profile/Header';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedView } from '@/components/ThemedView';
 import CategorySelector from '@/components/ui/CategorySelector';
+import IndustrySelector from '@/components/ui/IndustrySelector';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useState } from 'react';
-import { Animated } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 
 const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 
+const DOCUMENT_FILTERS = [
+  { icon: 'file-text', label: 'All' },
+  { icon: 'briefcase', label: 'CV' },
+  { icon: 'mail', label: 'Cover Letter' },
+  { icon: 'award', label: 'Certificate' },
+  { icon: 'folder', label: 'Portfolio' },
+  { icon: 'clipboard', label: 'Other' },
+];
+
 export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const paddingHorizontal = 16;
+  const [selectedDocumentFilter, setSelectedDocumentFilter] = useState(0);
+  const textColor = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
+  
   // Demo data for header
   const headerProps = {
     name: 'Simeon Tuyoleni',
@@ -28,6 +42,21 @@ export default function Profile() {
     ],
     onEdit: () => {},
   };
+
+  const handleDocumentFilterChange = (index: number) => {
+    setSelectedDocumentFilter(index);
+    // Here you would typically filter documents based on the selected filter
+    console.log('Document filter changed to:', DOCUMENT_FILTERS[index]?.label);
+  };
+
+  const handleMoreDocumentFilters = () => {
+    console.log('Show more document filters');
+  };
+
+  const getSelectedDocumentFilterLabel = () => {
+    return DOCUMENT_FILTERS[selectedDocumentFilter]?.label || 'All';
+  };
+
   return (
     <ScreenContainer>
       <Animated.ScrollView
@@ -36,13 +65,30 @@ export default function Profile() {
       >
         <ThemedView>
           <ProfileHeader {...headerProps} />
+          
           <CategorySelector
             options={CATEGORY_OPTIONS}
             selectedIndex={selectedIndex}
             onChange={setSelectedIndex}
             style={{ marginTop: 8 }}
           />
-          {selectedIndex === 0 && <DocumentsList />}
+
+          {/* Document Filter - Only show when Documents tab is selected */}
+          {selectedIndex === 0 && (
+            <View style={styles.documentFilterSection}>
+              <IndustrySelector
+                options={DOCUMENT_FILTERS}
+                selectedIndex={selectedDocumentFilter}
+                onChange={handleDocumentFilterChange}
+                onMorePress={handleMoreDocumentFilters}
+                style={styles.documentFilterSelector}
+              />
+            </View>
+          )}
+
+          {selectedIndex === 0 && (
+            <DocumentsList selectedDocumentFilter={getSelectedDocumentFilterLabel()} />
+          )}
           {selectedIndex === 1 && <CompaniesList />}
           {selectedIndex === 2 && <FollowingGrid />}
         </ThemedView>
@@ -50,3 +96,14 @@ export default function Profile() {
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  documentFilterSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 8,
+  },
+  documentFilterSelector: {
+    paddingHorizontal: 0,
+  },
+});

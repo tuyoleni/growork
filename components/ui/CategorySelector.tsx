@@ -1,4 +1,5 @@
 import { Colors } from '@/constants/Colors';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { useColorScheme } from 'react-native';
@@ -14,6 +15,11 @@ interface SegmentedControlProps {
 const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIndex, onChange, style }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
+  const backgroundTertiary = useThemeColor({}, 'backgroundTertiary');
+  const textColor = useThemeColor({}, 'text');
+  const activeTabBg = useThemeColor({}, 'icon');
+  const activeTabText = useThemeColor({}, 'background');
 
   const handleTabPress = (index: number) => {
     if (process.env.EXPO_OS === 'ios') {
@@ -28,7 +34,7 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
       selectedIndex={selectedIndex}
       onTabPress={handleTabPress}
       tabsContainerStyle={{
-        backgroundColor: colorScheme === 'dark' ? '#23272A' : '#F3F4F6',
+        backgroundColor: backgroundSecondary,
         borderRadius: 8,
         marginHorizontal: 12,
         height: 40,
@@ -40,15 +46,15 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
         backgroundColor: 'transparent',
       }}
       activeTabStyle={{
-        backgroundColor: colorScheme === 'dark' ? '#fff' : '#111',
+        backgroundColor: activeTabBg,
         elevation: 2,
       }}
       tabTextStyle={{
-        color: colorScheme === 'dark' ? '#fff' : '#111',
+        color: textColor,
         fontSize: 16,
       }}
       activeTabTextStyle={{
-        color: colorScheme === 'dark' ? '#111' : '#fff',
+        color: activeTabText,
       }}
     />
   );

@@ -20,9 +20,10 @@ export default function ProfileCategorySelector({ value, onValueChange, style }:
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const textColor = useThemeColor({}, 'text');
+  const selectedTextColor = useThemeColor({}, 'background');
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { backgroundColor }, style]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollRow}>
         {CATEGORIES.map((cat) => {
           const selected = value === cat.value;
@@ -51,7 +52,7 @@ export default function ProfileCategorySelector({ value, onValueChange, style }:
                 }
               }}
             >
-              <ThemedText style={[styles.itemText, { color: selected ? '#fff' : textColor }]}> 
+              <ThemedText style={[styles.itemText, { color: selected ? selectedTextColor : textColor }]}> 
                 {cat.label}
               </ThemedText>
             </Pressable>
@@ -65,7 +66,6 @@ export default function ProfileCategorySelector({ value, onValueChange, style }:
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    backgroundColor: "red",
     alignItems: 'flex-end',
     paddingVertical: 8,
   },

@@ -1,8 +1,9 @@
+import { Colors } from '@/constants/Colors';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { Image, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { Image, Pressable, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 
@@ -49,13 +50,15 @@ export type ContentCardProps = BaseProps & (JobProps | NewsProps | SponsoredProp
   style?: ViewStyle;
 };
 
-const badgeColors = {
-  error: { background: '#ef4444', text: '#fff' },
-  info: { background: '#2563eb', text: '#fff' },
-  success: { background: '#22c55e', text: '#fff' },
-};
+const badgeColors = (theme: any) => ({
+  error: { background: theme.mutedText, text: theme.background },
+  info: { background: theme.tint, text: theme.background },
+  success: { background: theme.icon, text: theme.background },
+});
 
 export default function ContentCard(props: ContentCardProps) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
   const borderColor = useThemeColor({}, 'border');
   const iconColor = useThemeColor({}, 'icon');
   const textColor = useThemeColor({}, 'text');
@@ -64,7 +67,7 @@ export default function ContentCard(props: ContentCardProps) {
 
   const renderBadge = () => {
     if (props.variant === 'news' && props.badgeText) {
-      const badgeStyle = badgeColors[props.badgeVariant || 'error'];
+      const badgeStyle = badgeColors(theme)[props.badgeVariant || 'error'];
       return (
         <View style={[styles.badge, { backgroundColor: badgeStyle.background, opacity: 0.7 }]}>
           <ThemedText style={[styles.badgeText, { color: badgeStyle.text }]}>
@@ -76,7 +79,7 @@ export default function ContentCard(props: ContentCardProps) {
 
     if (props.variant === 'sponsored') {
       return (
-        <ThemedText style={styles.sponsoredLabel}>
+        <ThemedText style={[styles.sponsoredLabel, { color: useThemeColor({}, 'mutedText') }]}>
           Sponsored
         </ThemedText>
       );
@@ -298,7 +301,6 @@ const styles = StyleSheet.create({
   },
   sponsoredLabel: {
     fontSize: 10,
-    color: '#888',
     marginLeft: 3,
     fontWeight: '400',
   },

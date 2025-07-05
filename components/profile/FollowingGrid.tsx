@@ -33,8 +33,9 @@ const DATA = [
 ];
 
 function Avatar({ image }: { image: string }) {
+  const avatarBg = useThemeColor({}, 'backgroundSecondary');
   return (
-    <Image source={{ uri: image }} style={styles.avatar} />
+    <Image source={{ uri: image }} style={[styles.avatar, { backgroundColor: avatarBg }]} />
   );
 }
 
@@ -86,7 +87,7 @@ export default function FollowingGrid() {
       {/* Grid */}
       <View style={styles.grid}>
         {DATA.map((item, idx) => (
-          <View key={item.name} style={[styles.card, { borderColor }]}> 
+          <View key={item.name} style={[styles.card, { borderColor, backgroundColor }]}> 
             {item.type === 'company' ? (
               <Avatar image={item.image!} />
             ) : (
@@ -145,7 +146,6 @@ const styles = StyleSheet.create({
     flexBasis: '48%',
     flexGrow: 1,
     flexShrink: 1,
-    backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
@@ -157,7 +157,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 8,
-    backgroundColor: '#eee',
     marginBottom: 2,
   },
   iconBg: {

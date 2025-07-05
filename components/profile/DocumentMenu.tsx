@@ -1,7 +1,8 @@
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, useColorScheme } from 'react-native';
+import { Pressable } from 'react-native';
 
 interface DocumentMenuProps {
   onDownload: () => void;
@@ -11,11 +12,11 @@ interface DocumentMenuProps {
 
 const DocumentMenu: React.FC<DocumentMenuProps> = ({ onDownload, onShare, onDelete }) => {
   const { showActionSheetWithOptions } = useActionSheet();
-  const colorScheme = useColorScheme() ?? 'light';
-  const iconColor = colorScheme === 'dark' ? '#fff' : '#111';
+  const iconColor = useThemeColor({}, 'icon');
+  const pressedBg = useThemeColor({}, 'icon');
   return (
     <Pressable
-      style={({ pressed }) => [{ padding: 6, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: pressed ? iconColor + '11' : 'transparent' }]}
+      style={({ pressed }) => [{ padding: 6, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: pressed ? pressedBg + '11' : 'transparent' }]}
       onPress={() => {
         const options = ['Download', 'Share', 'Delete', 'Cancel'];
         const destructiveButtonIndex = 2;
