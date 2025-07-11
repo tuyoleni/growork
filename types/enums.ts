@@ -22,4 +22,9 @@ export enum DocumentType {
   CoverLetter = 'cover_letter',
   Certificate = 'certificate',
   Other = 'other',
+}
+
+export enum UserType {
+  Business = 'business',
+  User = 'user',
 } 

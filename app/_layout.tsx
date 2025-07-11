@@ -1,13 +1,14 @@
+import FlashBar from '@/components/ui/Flash'; // ✅ Import flash component
+import { useAuth } from '@/hooks/useAuth';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -15,25 +16,30 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
+  const { user, loading } = useAuth();
+  const segments = useSegments();
+
+  if (!loaded || loading) return null;
+
+  const isAuthRoute = segments[0] === 'auth';
 
   return (
-    
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
-      <ActionSheetProvider>
+        <ActionSheetProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name={user ? '(tabs)' : 'auth'}
+                options={{ headerShown: false }}
+              />
               <Stack.Screen name="+not-found" />
             </Stack>
-            <StatusBar style="auto" />
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            <FlashBar /> {/* ✅ Inject FlashBar here */}
           </ThemeProvider>
-      </ActionSheetProvider>
-        </BottomSheetModalProvider>
+        </ActionSheetProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

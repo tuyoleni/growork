@@ -3,5 +3,5 @@ export * from './applications';
 export * from './documents';
 export * from './enums';
 export * from './posts';
-export * from './user';
+export * from './profile';
 

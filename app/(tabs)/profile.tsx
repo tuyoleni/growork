@@ -3,11 +3,13 @@ import DocumentsList from '@/components/profile/DocumentsList';
 import FollowingGrid from '@/components/profile/FollowingGrid';
 import ProfileHeader from '@/components/profile/Header';
 import ScreenContainer from '@/components/ScreenContainer';
+import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CategorySelector from '@/components/ui/CategorySelector';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Animated, StyleSheet } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity } from 'react-native';
 
 const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 
@@ -15,6 +17,7 @@ export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const textColor = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
+  const router = useRouter();
   
   // Demo data for header
   const headerProps = {
@@ -40,6 +43,12 @@ export default function Profile() {
       >
         <ThemedView style={styles.container}>
           <ProfileHeader {...headerProps} />
+          <TouchableOpacity
+            style={{ marginTop: 12, alignSelf: 'flex-end', marginRight: 16 }}
+            onPress={() => router.push('/profile/profile-settings')}
+          >
+            <ThemedText style={{ color: textColor, fontWeight: 'bold' }}>Edit Profile</ThemedText>
+          </TouchableOpacity>
           
           <ThemedView style={styles.categorySection}>
           <CategorySelector
