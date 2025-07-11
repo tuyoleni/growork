@@ -1,13 +1,16 @@
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/utils/superbase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Button, Image, StyleSheet, Text, View } from 'react-native';
 
 export default function ProfileSettings() {
-  const { user, profile, refresh } = useAuth();
+  const { user, profile, refresh, signOut } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const pickImage = async () => {
     setError(null);
@@ -47,6 +50,35 @@ export default function ProfileSettings() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      // First, sign out from Supabase
+      await signOut();
+      
+      // Clear all Supabase-related keys from AsyncStorage
+      const keys = await AsyncStorage.getAllKeys();
+      const supabaseKeys = keys.filter((key) => 
+        key.includes('supabase') || 
+        key.includes('sb-') ||
+        key.startsWith('supabase.')
+      );
+      
+      if (supabaseKeys.length > 0) {
+        await AsyncStorage.multiRemove(supabaseKeys);
+      }
+      
+      // Force clear any remaining session data
+      await supabase.auth.signOut();
+      
+      // Navigate to login screen
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      // Even if there's an error, try to navigate to login
+      router.replace('/auth/login');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Profile Settings</Text>
@@ -59,6 +91,13 @@ export default function ProfileSettings() {
         <Button title="Change Profile Picture" onPress={pickImage} />
       )}
       {error && <Text style={styles.error}>{error}</Text>}
+      <View style={{ marginTop: 24 }}>
+        <Button
+          title="Sign Out"
+          color="#e53935"
+          onPress={handleSignOut}
+        />
+      </View>
     </View>
   );
 }

@@ -6,6 +6,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CategorySelector from '@/components/ui/CategorySelector';
+import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -18,21 +19,39 @@ export default function Profile() {
   const textColor = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
   const router = useRouter();
-  
-  // Demo data for header
+  const { profile, loading, user } = useAuth();
+
+  // Debug: log profile and user data
+  console.log('Profile:', profile);
+  console.log('User:', user);
+
+  // Placeholder image for avatar, use name or username if available
+  const avatarName = profile
+    ? profile.name
+      ? encodeURIComponent(profile.name)
+      : profile.username
+        ? encodeURIComponent(profile.username)
+        : 'User'
+    : 'User';
+  const placeholderAvatar =
+    `https://ui-avatars.com/api/?name=${avatarName}&background=cccccc&color=222222&size=256`;
+
+  // If loading, you can show a loader or return null
+  if (loading) return null;
+
+  // Compose header props from profile or fallback
   const headerProps = {
-    name: 'Simeon Tuyoleni',
-    avatarUrl:
-      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+    name: profile ? `${profile.name} ${profile.surname}` : 'User',
+    avatarUrl: profile && profile.avatar_url ? profile.avatar_url : placeholderAvatar,
     status: 'Available',
-    subtitle: 'Senior Product Designer • Windhoek, Namibiar',
+    subtitle: profile && profile.username ? `@${profile.username}` : 'No username',
     profileStrength: 'Profile Strength: Excellent',
     profileStrengthDescription: 'Your profile is optimized for job searching',
     stats: [
-      { label: 'Following', value: 10 },
-      { label: 'Channels', value: 8 },
+      { label: 'Following', value: 0 }, // TODO: Replace with real data
+      { label: 'Channels', value: 0 },  // TODO: Replace with real data
     ],
-    onEdit: () => {},
+    onEdit: () => router.push('/profile/profile-settings'),
   };
 
   return (

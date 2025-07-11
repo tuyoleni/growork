@@ -1,86 +1,131 @@
-import FlashBar from '@/components/ui/Flash'; // ✅ Import flash component
-import { useAuth } from '@/hooks/useAuth';
+import FlashBar from '@/components/ui/Flash';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { supabase } from '@/utils/superbase';
+import { supabase, clearAllSupabaseData } from '@/utils/superbase';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Session } from '@supabase/supabase-js';
 import { useFonts } from 'expo-font';
-import * as Notifications from 'expo-notifications';
-import { Stack, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import React, { useEffect, useState, createContext, useContext } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+
+// AuthContext and useAuth
+interface AuthContextType {
+  session: Session | null;
+  initialLoading: boolean;
+}
+export const AuthContext = createContext<AuthContextType>({ session: null, initialLoading: true });
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
+function useProtectedRoute() {
+  const { session, initialLoading } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (initialLoading) return;
+    
+    const currentPath = segments.join('/');
+    console.log('Current path:', currentPath);
+    console.log('Session:', session);
+    console.log('Segments:', segments);
+    
+    // Check if we're on an auth route (login, register, etc.)
+    const isAuthRoute = segments.some(segment => segment === 'auth');
+    // Check if we're on the main app route
+    const isTabsRoute = segments.some(segment => segment === '(tabs)');
+    
+    console.log('Is auth route:', isAuthRoute);
+    console.log('Is tabs route:', isTabsRoute);
+    
+    if (!session?.user && !isAuthRoute) {
+      console.log('Redirecting to login - no session and not on auth route');
+      router.replace('/auth/login');
+    } else if (session?.user && !isTabsRoute) {
+      console.log('Redirecting to tabs - has session and not on tabs route');
+      router.replace('/(tabs)');
+    }
+  }, [session, initialLoading, router, segments]);
+}
+
+function AuthGate() {
+  useProtectedRoute();
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="auth" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="+not-found" />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const [session, setSession] = useState<Session | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  const { user, loading } = useAuth();
-  const segments = useSegments();
-
-  // Register for push notifications on mount
   useEffect(() => {
-    async function registerForPushNotificationsAsync() {
-      let token;
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#FF231F7C',
-        });
-      }
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      if (finalStatus !== 'granted') {
-        alert('Failed to get push token for push notification!');
-        return;
-      }
-      token = (await Notifications.getExpoPushTokenAsync()).data;
-      console.log('Expo push token:', token);
-      // Store the push token in the user's profile if logged in
+    clearAllSupabaseData(); // DEVELOPMENT ONLY
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const getInitialSession = async () => {
       try {
-        if (user && user.id) {
-          const { error } = await supabase
-            .from('profiles')
-            .update({ expo_push_token: token })
-            .eq('id', user.id);
-          if (error) {
-            console.error('Failed to update push token in profile:', error);
-          }
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Supabase getSession error:', error.message);
         }
-      } catch (e) {
-        console.error('Error updating push token in profile:', e);
+        console.log('Initial session check:', currentSession);
+        if (isMounted) {
+          setSession(currentSession);
+        }
+      } catch (error) {
+        console.error('Failed to get session (network/other error):', error);
+      } finally {
+        if (isMounted) {
+          setInitialLoading(false);
+        }
       }
-    }
-    registerForPushNotificationsAsync();
-  }, [user]);
+    };
+    getInitialSession();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      console.log('Auth state changed:', _event, currentSession);
+      if (isMounted) {
+        setSession(currentSession);
+      }
+    });
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
-  if (!loaded || loading) return null;
-
-  const isAuthRoute = segments[0] === 'auth';
+  if (!loaded || initialLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <ActionSheetProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen
-                name={user ? '(tabs)' : 'auth'}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen name="+not-found" />
-            </Stack>
+            <AuthContext.Provider value={{ session, initialLoading }}>
+              <AuthGate />
+            </AuthContext.Provider>
             <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
             <FlashBar />
           </ThemeProvider>
