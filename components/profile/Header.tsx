@@ -91,10 +91,10 @@ function ProfileHeader({
       {/* Stats Row */}
       <ThemedView style={[styles.statsRow, { borderTopColor: borderColor }]}> 
         {stats.map((stat) => (
-                  <ThemedView key={stat.label} style={styles.statItem}>
+          <ThemedView key={stat.label} style={styles.statItem}>
           <ThemedText style={[styles.statValue, { color: textColor }]}>{stat.value}</ThemedText>
           <ThemedText style={[styles.statLabel, { color: subtitleColor }]}>{stat.label}</ThemedText>
-        </ThemedView>
+          </ThemedView>
         ))}
       </ThemedView>
     </ThemedView>

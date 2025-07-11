@@ -42,17 +42,17 @@ export default function Profile() {
           <ProfileHeader {...headerProps} />
           
           <ThemedView style={styles.categorySection}>
-            <CategorySelector
-              options={CATEGORY_OPTIONS}
-              selectedIndex={selectedIndex}
-              onChange={setSelectedIndex}
-            />
+          <CategorySelector
+            options={CATEGORY_OPTIONS}
+            selectedIndex={selectedIndex}
+            onChange={setSelectedIndex}
+          />
           </ThemedView>
 
           <ThemedView style={styles.contentSection}>
-            {selectedIndex === 0 && <DocumentsList />}
-            {selectedIndex === 1 && <CompaniesList />}
-            {selectedIndex === 2 && <FollowingGrid />}
+          {selectedIndex === 0 && <DocumentsList />}
+          {selectedIndex === 1 && <CompaniesList />}
+          {selectedIndex === 2 && <FollowingGrid />}
           </ThemedView>
         </ThemedView>
       </Animated.ScrollView>
