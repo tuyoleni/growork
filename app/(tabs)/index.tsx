@@ -7,6 +7,7 @@ import {
   NativeSyntheticEvent,
   Pressable,
   View,
+  Share,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -30,14 +31,13 @@ const INDUSTRIES = [
 ];
 
 export default function Home() {
-  // UI/filter state
   const [selectedContentType, setSelectedContentType] = useState(0);
   const [selectedIndustry, setSelectedIndustry] = useState(-1);
   const headerAnim = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
   const isAnimating = useRef(false);
 
-  // Data from the feed posts hook
+  // Data from feed posts hook
   const {
     posts: dbPosts,
     loading,
@@ -126,6 +126,14 @@ export default function Home() {
     });
   }
 
+  function handleShare(post: ExtendedContentCardProps) {
+    Share.share({
+      message: post.description || post.title || 'Check out this post!',
+      title: post.title || 'Growork Post',
+      url: post.mainImage || undefined,
+    });
+  }
+
   if (loading && !dbPosts.length) {
     return (
       <ScreenContainer>
@@ -150,32 +158,10 @@ export default function Home() {
           onContentTypeChange={setSelectedContentType}
           selectedIndustry={selectedIndustry}
           onIndustryChange={setSelectedIndustry}
+          onAddPost={handleShowCreatePost}
         />
-        {/* Floating Create Post Button */}
-        <Pressable
-          style={{
-            position: 'absolute',
-            right: 16,
-            bottom: 12,
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: '#3b82f6',
-            justifyContent: 'center',
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 3,
-          }}
-          onPress={handleShowCreatePost}
-        >
-          <Feather name="plus" size={24} color="#fff" />
-        </Pressable>
       </Animated.View>
 
-      {/* Posts List */}
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
@@ -187,7 +173,8 @@ export default function Home() {
             <ContentCard
               key={`${post.title}-${post.variant}-${index}-${post.id ?? 'unknown'}`}
               {...post}
-              onCommentPress={() => handleShowComments(post.id!)} // single fix: non-null assertion
+              onCommentPress={() => handleShowComments(post.id!)}
+              onPressShare={() => handleShare(post)}
               style={index === 0 ? { marginTop: HEADER_HEIGHT - 48 } : undefined}
             />
           ))
@@ -197,8 +184,8 @@ export default function Home() {
               {loading
                 ? 'Loading posts...'
                 : error
-                ? 'Error loading posts'
-                : 'No posts found'}
+                  ? 'Error loading posts'
+                  : 'No posts found'}
             </ThemedText>
             {!loading && (
               <Pressable

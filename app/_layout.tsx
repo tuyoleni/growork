@@ -2,7 +2,8 @@ import FlashBar from '@/components/ui/Flash';
 import GlobalBottomSheet, { GlobalBottomSheetProps } from '@/components/GlobalBottomSheet';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppProvider } from '@/utils/AppContext';
-import { supabase, clearAllSupabaseData } from '@/utils/superbase';
+import { supabase } from '@/utils/superbase';
+import { setOpenGlobalSheet } from '@/utils/globalSheet';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -15,7 +16,6 @@ import { ActivityIndicator, View } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-
 
 interface AuthContextType {
   session: Session | null;
@@ -50,7 +50,6 @@ function AuthGate() {
   );
 }
 
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
@@ -59,15 +58,25 @@ export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  // Use proper typing for the bottom sheet ref and props
   const sheetRef = useRef<BottomSheetModal>(null);
   const [sheetProps, setSheetProps] = useState<Partial<GlobalBottomSheetProps> | null>(null);
 
-  // Add proper type to the props parameter
   const openGlobalSheet = (props: Partial<GlobalBottomSheetProps>) => {
     setSheetProps(props);
-    setTimeout(() => sheetRef.current?.present(), 0);
+    if (props.snapPoints && props.snapPoints.length > 0) {
+      setTimeout(() => {
+        if (sheetRef.current) {
+          sheetRef.current.present();
+        }
+      }, 100);
+    } else {
+      console.warn('Cannot open bottom sheet: snapPoints array is empty or undefined');
+    }
   };
+
+  useEffect(() => {
+    setOpenGlobalSheet(openGlobalSheet);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -110,23 +119,28 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <ActionSheetProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <AuthContext.Provider value={{ session, initialLoading }}>
-              <AppProvider>
+      <ActionSheetProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <AuthContext.Provider value={{ session, initialLoading }}>
+            <AppProvider>
+              <BottomSheetModalProvider>
                 <AuthGate />
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 <FlashBar />
                 <GlobalBottomSheet
-                  body={undefined} snapPoints={[]} ref={sheetRef}
-                  {...(sheetProps || {})}
-                  onDismiss={() => setSheetProps(null)} />
-              </AppProvider>
-            </AuthContext.Provider>
-          </ThemeProvider>
-        </ActionSheetProvider>
-      </BottomSheetModalProvider>
+                  ref={sheetRef}
+                  body={sheetProps?.body || <></>}
+                  snapPoints={sheetProps?.snapPoints || ['50%']}
+                  header={sheetProps?.header}
+                  footer={sheetProps?.footer}
+                  onDismiss={() => setSheetProps(null)}
+                />
+              </BottomSheetModalProvider>
+            </AppProvider>
+          </AuthContext.Provider>
+        </ThemeProvider>
+      
+      </ActionSheetProvider>
     </GestureHandlerRootView>
   );
 }

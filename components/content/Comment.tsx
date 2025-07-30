@@ -126,8 +126,14 @@ export default function Comments({ postId, onClose }: CommentsProps) {
           data={comments}
           renderItem={renderComment}
           keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: 80,
+            flexGrow: 1,
+          }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
+              <Feather name="message-circle" size={28} color={mutedTextColor} style={{ marginBottom: 12, opacity: 0.5 }} />
               <ThemedText style={styles.emptyText}>
                 No comments yet. Be the first to comment!
               </ThemedText>
@@ -142,7 +148,7 @@ export default function Comments({ postId, onClose }: CommentsProps) {
 
   // Footer
   const footerComponent = (
-    <View style={[styles.inputContainer, { borderColor }]}>
+    <View style={[styles.inputContainer, { borderColor, backgroundColor: Platform.OS === 'ios' ? backgroundColor : '#fafafc' }]}>
       {user ? (
         <>
           <TextInput
@@ -161,6 +167,7 @@ export default function Comments({ postId, onClose }: CommentsProps) {
               {
                 backgroundColor:
                   !commentText.trim() || isSending ? mutedTextColor : tintColor,
+                opacity: !commentText.trim() || isSending ? 0.7 : 1,
               },
             ]}
             disabled={!commentText.trim() || isSending}
@@ -189,8 +196,6 @@ export default function Comments({ postId, onClose }: CommentsProps) {
       keyboardVerticalOffset={16}
     >
       <View style={{ flex: 1 }}>
-        {/* Header */}
-        <ThemedText style={styles.headerTitle}>Comments</ThemedText>
         {/* Body */}
         {bodyComponent}
         {/* Footer */}
@@ -205,14 +210,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingBottom: 80,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    marginTop: 12,
   },
   loadingContainer: {
     flex: 1, justifyContent: 'center', alignItems: 'center',
@@ -233,12 +230,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   emptyContainer: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 130,
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    minHeight: 200,
+    paddingBottom: 40,
   },
   emptyText: {
     textAlign: 'center',
     fontSize: 15,
     opacity: 0.7,
+    lineHeight: 22,
+    maxWidth: '80%',
   },
   commentContainer: {
     flexDirection: 'row', marginBottom: 18,
@@ -268,19 +271,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderTopWidth: 1,
-    backgroundColor: '#fafafc',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   input: {
     flex: 1,
     minHeight: 40,
     maxHeight: 84,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 20,
     marginRight: 8,
-    paddingHorizontal: 13,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     fontSize: 15,
-    backgroundColor: '#fbfbff',
   },
   sendButton: {
     width: 38,

@@ -1,5 +1,8 @@
-import React, { createContext, useRef, useCallback, ReactNode } from 'react';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import React, { createContext, useCallback, ReactNode } from 'react';
+import { openGlobalSheet } from './globalSheet';
+import { ThemedText } from '@/components/ThemedText';
+import Comments from '@/components/content/Comment';
+import CreatePostSheetUI from '@/components/content/CreatePost';
 
 interface PostBottomSheetsContextType {
   openCommentSheet: (postId: string) => void;
@@ -13,27 +16,29 @@ export const PostBottomSheetsContext = createContext<PostBottomSheetsContextType
 
 interface PostBottomSheetsProviderProps {
   children: ReactNode;
-  commentSheetRef: React.RefObject<BottomSheetModal & {openWithPostId: (postId: string) => void}>;
-  createPostSheetRef: React.RefObject<BottomSheetModal>;
+  onPostSuccess?: () => void;
 }
 
 export function PostBottomSheetsProvider({ 
   children, 
-  commentSheetRef, 
-  createPostSheetRef 
+  onPostSuccess
 }: PostBottomSheetsProviderProps) {
   
   const openCommentSheet = useCallback((postId: string) => {
-    if (commentSheetRef.current?.openWithPostId) {
-      commentSheetRef.current.openWithPostId(postId);
-    }
-  }, [commentSheetRef]);
+    openGlobalSheet({
+      header: <ThemedText style={{ fontWeight: 'bold', fontSize: 18 }}>Comments</ThemedText>,
+      body: <Comments postId={postId} />,
+      snapPoints: ['80%'],
+    });
+  }, []);
 
   const openCreatePostSheet = useCallback(() => {
-    if (createPostSheetRef.current) {
-      createPostSheetRef.current.present();
-    }
-  }, [createPostSheetRef]);
+    openGlobalSheet({
+      header: <ThemedText style={{ fontWeight: 'bold', fontSize: 18 }}>Create Post</ThemedText>,
+      body: <CreatePostSheetUI onSuccess={onPostSuccess} />,
+      snapPoints: ['90%'],
+    });
+  }, [onPostSuccess]);
 
   const contextValue = {
     openCommentSheet,

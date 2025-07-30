@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform, Image, Pressable, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,7 +10,8 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAuth } from '@/hooks/useAuth';
 import { useLikes } from '@/hooks/useLikes';
 import { useBookmarks } from '@/hooks/useBookmarks';
-import { PostBottomSheetsContext } from '@/utils/PostBottomSheetsContext';
+import { openGlobalSheet } from '@/utils/globalSheet';
+import Comments from '@/components/content/Comment';
 
 type Variant = 'job' | 'news' | 'sponsored';
 export interface ContentCardProps {
@@ -52,7 +53,6 @@ export default function ContentCard(props: ContentCardProps) {
   const mutedTextColor = useThemeColor({}, 'mutedText');
 
   const { user } = useAuth();
-  const { openCommentSheet } = useContext(PostBottomSheetsContext);
   const { isLiked, toggleLike } = useLikes();
   const { isBookmarked, toggleBookmark } = useBookmarks();
 
@@ -102,7 +102,11 @@ export default function ContentCard(props: ContentCardProps) {
   // Message/Comments
   const handleComment = () => {
     if (props.id) {
-      openCommentSheet(props.id);
+      openGlobalSheet({
+        header: <ThemedText style={{ fontWeight: 'bold', fontSize: 18 }}>Comments</ThemedText>,
+        body: <Comments postId={props.id} />,
+        snapPoints: ['75%'],
+      });
       props.onPressMessage?.();
     }
   };

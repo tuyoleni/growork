@@ -1,30 +1,28 @@
 import React, { forwardRef, useMemo } from 'react';
 import { SafeAreaView, View, StyleSheet, Platform } from 'react-native';
-import { 
-  BottomSheetBackdrop, 
-  BottomSheetModal, 
-  BottomSheetModalProps, 
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
   BottomSheetView,
-  BottomSheetBackdropProps,
+  BottomSheetBackdropProps
 } from '@gorhom/bottom-sheet';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
-export interface GlobalBottomSheetProps extends Omit<BottomSheetModalProps, 'children'> {
+export interface GlobalBottomSheetProps {
   header?: React.ReactNode;
   body: React.ReactNode;
   footer?: React.ReactNode;
   snapPoints: string[];
+  onDismiss?: () => void;
 }
 
 const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetProps>(
-  ({ header, body, footer, snapPoints, onDismiss, ...props }, ref) => {
-    // Get theme colors
+  ({ header, body, footer, snapPoints, onDismiss }, ref) => {
     const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
     const borderColor = useThemeColor({}, 'border');
     const textColor = useThemeColor({}, 'text');
     const mutedText = useThemeColor({}, 'mutedText');
 
-    // Memoized styles
     const backgroundStyle = useMemo(() => ({
       backgroundColor: backgroundSecondary,
       borderTopLeftRadius: 18,
@@ -33,7 +31,7 @@ const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetProps>(
       shadowOpacity: 0.1,
       shadowRadius: 12,
       elevation: 8,
-      borderColor: borderColor,
+      borderColor,
       borderTopWidth: 1,
     }), [backgroundSecondary, borderColor, textColor]);
 
@@ -43,18 +41,16 @@ const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetProps>(
       height: 4,
     }), [mutedText]);
 
-    // Backdrop memoized with proper TS typing for its props
     const renderBackdrop = useMemo(
       () => (backdropProps: BottomSheetBackdropProps) => (
         <BottomSheetBackdrop
           {...backdropProps}
           appearsOnIndex={0}
           disappearsOnIndex={-1}
-          opacity={0.4}
+          opacity={0.44}
           pressBehavior="close"
         />
-      ),
-      []
+      ), []
     );
 
     return (
@@ -65,33 +61,21 @@ const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetProps>(
         backgroundStyle={backgroundStyle}
         handleIndicatorStyle={handleIndicatorStyle}
         backdropComponent={renderBackdrop}
-        {...props}
       >
         <BottomSheetView style={styles.container}>
           <SafeAreaView style={styles.safeArea}>
-            {/* Header */}
             {header && (
-              <View style={[
-                styles.headerContainer,
-                { borderBottomColor: borderColor }
-              ]}>
+              <View style={[styles.headerContainer, { borderBottomColor: borderColor }]}>
                 {header}
               </View>
             )}
-
-            {/* Body */}
             <View style={styles.bodyContainer}>
               {body}
             </View>
-
-            {/* Footer */}
             {footer && (
               <View style={[
                 styles.footerContainer,
-                { 
-                  backgroundColor: backgroundSecondary, 
-                  borderTopColor: borderColor 
-                }
+                { backgroundColor: backgroundSecondary, borderTopColor: borderColor }
               ]}>
                 {footer}
               </View>
@@ -104,29 +88,11 @@ const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetProps>(
 );
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 0,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  headerContainer: {
-    padding: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
-  bodyContainer: {
-    flex: 1,
-    minHeight: 0,
-  },
-  footerContainer: {
-    width: '100%',
-    borderTopWidth: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
-  },
+  container: { flex: 1, padding: 0 },
+  safeArea: { flex: 1 },
+  headerContainer: { padding: 16, paddingBottom: 12, borderBottomWidth: 1 },
+  bodyContainer: { flex: 1, minHeight: 0 },
+  footerContainer: { width: '100%', borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === 'ios' ? 24 : 16 },
 });
 
 export default GlobalBottomSheet;
