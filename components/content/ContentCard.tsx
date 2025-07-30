@@ -1,23 +1,18 @@
-import { Colors } from '@/constants/Colors';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import React, { useContext, useEffect, useState } from 'react';
+import { Platform, Image, Pressable, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useContext } from 'react';
-import { supabase } from '@/utils/superbase';
-import { useAuth } from '@/hooks/useAuth';
-import { Image, Pressable, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
+
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
-// Contexts and cards
-import JobCard from './JobCard';
-import NewsCard from './NewsCard';
-import SponsoredCard from './SponsoredCard';
-
-// If you use PostBottomSheetsContext, import it; else, remove reference
-// import { PostBottomSheetsContext } from '...';
+import { Colors } from '@/constants/Colors';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth } from '@/hooks/useAuth';
+import { useLikes } from '@/hooks/useLikes';
+import { useBookmarks } from '@/hooks/useBookmarks';
+import { PostBottomSheetsContext } from '@/utils/PostBottomSheetsContext';
 
 type Variant = 'job' | 'news' | 'sponsored';
-
 export interface ContentCardProps {
   variant: Variant;
   title: string;
@@ -28,20 +23,17 @@ export interface ContentCardProps {
   badgeVariant?: 'error' | 'info' | 'success';
   isVerified?: boolean;
   onPressHeart?: () => void;
-  onPressMessage?: () => void;
+  onCommentPress?: () => void;      // <--- Add this!
+  onPressMessage?: () => void;      // (Keep for compatibility, optional)
   onPressShare?: () => void;
   onPressBookmark?: () => void;
   onPressApply?: () => void;
   onPressLearnMore?: () => void;
   onPressMore?: () => void;
   style?: ViewStyle;
-  // Add database fields
   id?: string;
-  post_id?: string;
-  user_id?: string;
 }
 
-// For color mapping of badges
 const badgeColors = (theme: any) => ({
   error: { background: theme.mutedText, text: theme.background },
   info: { background: theme.tint, text: theme.background },
@@ -49,6 +41,7 @@ const badgeColors = (theme: any) => ({
 });
 
 export default function ContentCard(props: ContentCardProps) {
+
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const borderColor = useThemeColor({}, 'border');
@@ -59,59 +52,62 @@ export default function ContentCard(props: ContentCardProps) {
   const mutedTextColor = useThemeColor({}, 'mutedText');
 
   const { user } = useAuth();
-  // Uncomment if you have a comment sheet context:
-  // const { openCommentSheet } = useContext(PostBottomSheetsContext);
+  const { openCommentSheet } = useContext(PostBottomSheetsContext);
+  const { isLiked, toggleLike } = useLikes();
+  const { isBookmarked, toggleBookmark } = useBookmarks();
 
-  // Add ability to like posts
-  const handleLike = async () => {
-    if (!user || !props.id) return;
-    try {
-      // Check if already liked
-      const { data: existingLike, error: checkError } = await supabase
-        .from('likes')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('post_id', props.id)
-        .maybeSingle();
+  // UI state
+  const [liked, setLiked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
 
-      if (checkError) throw checkError;
-
-      if (existingLike) {
-        // Unlike
-        const { error: unlikeError } = await supabase
-          .from('likes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('post_id', props.id);
-
-        if (unlikeError) throw unlikeError;
-      } else {
-        // Like
-        const { error: likeError } = await supabase
-          .from('likes')
-          .insert({
-            user_id: user.id,
-            post_id: props.id,
-          });
-
-        if (likeError) throw likeError;
+  // On mount or post/user change, sync state to hooks
+  useEffect(() => {
+    let cancelled = false;
+    async function syncState() {
+      if (!props.id) {
+        setLiked(false);
+        setBookmarked(false);
+        return;
       }
-
-      // Call the original handler if provided
-      props.onPressHeart?.();
-    } catch (error) {
-      console.error('Error toggling like:', error);
+      // isLiked is async, isBookmarked is sync
+      const isLikedValue = await isLiked(props.id);
+      if (!cancelled) setLiked(!!isLikedValue);
+      if (!cancelled) setBookmarked(isBookmarked(props.id));
     }
+    syncState();
+    return () => { cancelled = true; };
+  }, [props.id, isLiked, isBookmarked]);
+
+  // Like logic via your hooks
+  const handleLike = async () => {
+    if (!props.id) return;
+    // haptic feedback
+    if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Optimistic UI
+    setLiked((curr) => !curr);
+    await toggleLike(props.id);
+    props.onPressHeart?.();
   };
 
-  // Handle comments (if context available)
+  // Bookmark logic via your hooks
+  const handleBookmark = async () => {
+    if (!props.id) return;
+    if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Optimistic UI
+    setBookmarked((curr) => !curr);
+    await toggleBookmark(props.id);
+    props.onPressBookmark?.();
+  };
+
+  // Message/Comments
   const handleComment = () => {
-    if (props.id /* && openCommentSheet */) {
-      // openCommentSheet(props.id);
+    if (props.id) {
+      openCommentSheet(props.id);
+      props.onPressMessage?.();
     }
   };
 
-  // Render badge
+  // Badge
   const renderBadge = () => {
     if (props.variant === 'news' && props.badgeText) {
       const badgeStyle = badgeColors(theme)[props.badgeVariant || 'error'];
@@ -123,7 +119,6 @@ export default function ContentCard(props: ContentCardProps) {
         </View>
       );
     }
-
     if (props.variant === 'sponsored') {
       return (
         <ThemedText style={[styles.sponsoredLabel, { color: mutedTextColor }]}>
@@ -134,62 +129,54 @@ export default function ContentCard(props: ContentCardProps) {
     return null;
   };
 
-  // Icon Button
+  // IconButton - your own simple mini-component
   const IconButton = ({
     name,
+    filled,
+    color,
     onPress,
   }: {
     name: keyof typeof Feather.glyphMap;
+    filled?: boolean; // only cosmetic: Feather only has outlines
+    color?: string;
     onPress?: () => void;
   }) => (
-    <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
-      if (process.env.EXPO_OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-      onPress && onPress();
-    }}>
-      <Feather name={name} size={20} color={iconColor} />
+    <Pressable style={styles.iconButton} hitSlop={8} onPress={onPress}>
+      {/* For "filled" icons you could use a different icon set; here we just change color */}
+      <Feather name={name} size={20} color={color || iconColor} />
     </Pressable>
   );
 
-  // Render icon actions
-  const renderIconActions = () => {
-    switch (props.variant) {
-      case 'job':
-      case 'news':
-        return (
-          <>
-            <IconButton name="heart" onPress={handleLike} />
-            <IconButton name="message-circle" onPress={handleComment} />
-            <IconButton name="share" onPress={props.onPressShare} />
-            <IconButton name="bookmark" onPress={props.onPressBookmark} />
-          </>
-        );
-      case 'sponsored':
-        return (
-          <>
-            <IconButton name="heart" onPress={props.onPressHeart} />
-            <IconButton name="share" onPress={props.onPressShare} />
-          </>
-        );
-      default:
-        return null;
-    }
-  };
+  // Icon actions for bottom of card
+  const renderIconActions = () => (
+    <>
+      <IconButton
+        name="heart"
+        filled={liked}
+        color={liked ? 'red' : iconColor}
+        onPress={handleLike}
+      />
+      <IconButton name="message-circle" onPress={handleComment} />
+      <IconButton name="share" onPress={props.onPressShare} />
+      <IconButton
+        name="bookmark"
+        filled={bookmarked}
+        color={bookmarked ? tintColor : iconColor}
+        onPress={handleBookmark}
+      />
+    </>
+  );
 
-  // Render CTA button
+  // CTA for jobs/sponsored
   const renderCTAButton = () => {
     if (props.variant === 'job') {
       return (
         <Pressable
           style={[styles.applyButton, { backgroundColor: textColor }]}
           onPress={() => {
-            if (process.env.EXPO_OS === 'ios') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-            props.onPressApply && props.onPressApply();
-          }}
-        >
+            if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            props.onPressApply?.();
+          }}>
           <ThemedText style={[styles.applyButtonText, { color: backgroundColor }]}>
             Apply Now
           </ThemedText>
@@ -201,12 +188,9 @@ export default function ContentCard(props: ContentCardProps) {
         <Pressable
           style={[styles.learnMoreButton, { backgroundColor: textColor }]}
           onPress={() => {
-            if (process.env.EXPO_OS === 'ios') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-            props.onPressLearnMore && props.onPressLearnMore();
-          }}
-        >
+            if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            props.onPressLearnMore?.();
+          }}>
           <ThemedText style={[styles.learnMoreButtonText, { color: backgroundColor }]}>
             Learn More
           </ThemedText>
@@ -233,7 +217,7 @@ export default function ContentCard(props: ContentCardProps) {
         <IconButton name="more-horizontal" onPress={props.onPressMore} />
       </View>
 
-      {/* Optional Main Image */}
+      {/* Main Image, if present */}
       {props.mainImage && (
         <Image
           source={{ uri: props.mainImage }}
@@ -242,7 +226,7 @@ export default function ContentCard(props: ContentCardProps) {
         />
       )}
 
-      {/* Description + Actions */}
+      {/* Description and actions row */}
       <View style={styles.body}>
         <ThemedText style={styles.description}>{props.description}</ThemedText>
         <View style={styles.actionsRow}>

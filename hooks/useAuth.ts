@@ -1,54 +1,183 @@
 import { Profile, UserType } from '@/types';
-import { supabase } from '@/utils/superbase';
-import type { User } from '@supabase/supabase-js';
-import { useCallback, useEffect, useState } from 'react';
+import { supabase, CACHE_TTL } from '@/utils/superbase';
+import type { User, Session } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Cache key constants
+const CACHE_KEYS = {
+  PROFILE: 'user_profile_cache',
+};
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch user and profile on mount
-  useEffect(() => {
-    const getUserAndProfile = async () => {
-      setLoading(true);
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) {
-        setError(error.message);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
+  // Use refs to track whether we've already loaded profile data
+  const profileLoaded = useRef(false);
+  const profileFetching = useRef(false);
+
+  // Load profile from cache
+  const loadProfileFromCache = async (userId: string): Promise<Profile | null> => {
+    try {
+      const cachedProfileString = await AsyncStorage.getItem(`${CACHE_KEYS.PROFILE}_${userId}`);
+      if (cachedProfileString) {
+        const { profile, timestamp } = JSON.parse(cachedProfileString);
+        // Check if cache is still valid (less than cache TTL old)
+        if (Date.now() - timestamp < CACHE_TTL.PROFILE) {
+          console.log('Using cached profile data');
+          return profile;
+        }
+      }
+      return null;
+    } catch (e) {
+      console.error('Error loading profile from cache:', e);
+      return null;
+    }
+  };
+
+  // Save profile to cache
+  const saveProfileToCache = async (userId: string, profileData: Profile) => {
+    try {
+      await AsyncStorage.setItem(
+        `${CACHE_KEYS.PROFILE}_${userId}`,
+        JSON.stringify({
+          profile: profileData,
+          timestamp: Date.now()
+        })
+      );
+    } catch (e) {
+      console.error('Error saving profile to cache:', e);
+    }
+  };
+
+  // Fetch user profile efficiently
+  const fetchUserProfile = async (userId: string, force = false) => {
+    // Prevent concurrent profile fetches
+    if (profileFetching.current) return;
+
+    try {
+      profileFetching.current = true;
+
+      // Skip if we've already loaded the profile and not forcing a refresh
+      if (profileLoaded.current && !force) return;
+
+      // Try to load from cache first
+      const cachedProfile = await loadProfileFromCache(userId);
+      if (cachedProfile && !force) {
+        setProfile(cachedProfile);
+        profileLoaded.current = true;
         return;
       }
-      setUser(user);
-      if (user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (profileError) {
-          setError(profileError.message);
-          setProfile(null);
-        } else {
-          setProfile(profile);
-        }
-      } else {
+
+      // If not in cache or force refresh, fetch from API
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.warn('Error fetching profile:', profileError.message);
+        setError(profileError.message);
         setProfile(null);
+      } else {
+        console.log('Profile loaded from API');
+        setProfile(profileData);
+        profileLoaded.current = true;
+
+        // Cache the profile for future use
+        saveProfileToCache(userId, profileData);
       }
-      setLoading(false);
+    } catch (err: any) {
+      console.error('Error in fetchUserProfile:', err.message);
+      setError(err.message);
+    } finally {
+      profileFetching.current = false;
+    }
+  };
+
+  // Fetch user and profile on mount
+  useEffect(() => {
+    const getUserAndSession = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // First check for an existing session (this uses the cached token internally)
+        const { data: sessionData } = await supabase.auth.getSession();
+
+        // If we have a session, get the user
+        if (sessionData?.session) {
+          console.log('Found existing session in useAuth');
+
+          // Get user from session to avoid additional network request
+          const sessionUser = sessionData.session.user;
+          setUser(sessionUser);
+          setSession(sessionData.session);
+
+          // Fetch the user's profile if we have a user
+          if (sessionUser) {
+            // First try to get it from cache (non-blocking)
+            fetchUserProfile(sessionUser.id);
+          }
+        } else {
+          // No session found
+          console.log('No session found in useAuth');
+          setUser(null);
+          setProfile(null);
+          setSession(null);
+        }
+      } catch (err: any) {
+        console.error('Error in getUserAndSession:', err.message);
+        setError(err.message);
+        setUser(null);
+        setProfile(null);
+        setSession(null);
+      } finally {
+        setLoading(false);
+      }
     };
-    getUserAndProfile();
+
+    // Initial load
+    getUserAndSession();
+
     // Listen for auth state changes
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      getUserAndProfile();
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log('Auth state changed in useAuth hook:', event);
+
+      if (event === 'SIGNED_IN') {
+        // When the user signs in, update the session and user
+        setSession(newSession);
+        if (newSession?.user) {
+          setUser(newSession.user);
+          // Fetch profile (with cache)
+          fetchUserProfile(newSession.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        // When the user signs out, clear their data
+        setUser(null);
+        setProfile(null);
+        setSession(null);
+        profileLoaded.current = false;
+      } else if (event === 'TOKEN_REFRESHED') {
+        // When the token is refreshed, update the session and user
+        setSession(newSession);
+        if (newSession?.user) {
+          setUser(newSession.user);
+        }
+      }
     });
+
     return () => {
       listener?.subscription.unsubscribe();
     };
   }, []);
 
+  // Sign up
   const signUp = useCallback(async (
     email: string,
     password: string,
@@ -92,18 +221,38 @@ export function useAuth() {
     return { user };
   }, []);
 
-  // Sign in
+  // Sign in (single declaration, no persistSession!)
   const signIn = useCallback(async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('Signing in user:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        console.error('Sign in error:', error.message);
+        setError(error.message);
+        return { error };
+      }
+
+      console.log('Sign in successful, session established');
+
+      // Update state
+      setUser(data.user);
+      setSession(data.session);
+
+      // Fetch the user's profile in the background (non-blocking)
+      if (data.user) fetchUserProfile(data.user.id, true);
+
+      return { user: data.user };
+    } catch (err: any) {
+      console.error('Unexpected error during sign in:', err.message);
+      setError(err.message);
+      return { error: err };
+    } finally {
       setLoading(false);
-      return { error };
     }
-    setLoading(false);
-    return { user: data.user };
   }, []);
 
   // Sign out
@@ -129,33 +278,47 @@ export function useAuth() {
     signIn,
     signOut,
     refresh: async () => {
-      setLoading(true);
-      setError(null);
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) {
-        setError(error.message);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-      setUser(user);
-      if (user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (profileError) {
-          setError(profileError.message);
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Refresh the session first
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          setError(sessionError.message);
+          setUser(null);
           setProfile(null);
-        } else {
-          setProfile(profile);
+          setSession(null);
+          return;
         }
-      } else {
-        setProfile(null);
+
+        if (session) {
+          setSession(session);
+          setUser(session.user);
+
+          // Fetch profile in the background with force refresh
+          if (session.user) {
+            fetchUserProfile(session.user.id, true);
+          }
+        } else {
+          setUser(null);
+          setProfile(null);
+          setSession(null);
+        }
+      } catch (err: any) {
+        console.error('Error refreshing auth state:', err.message);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
+    },
+
+    // Add a method to refresh just the profile
+    refreshProfile: async () => {
+      if (user) {
+        return fetchUserProfile(user.id, true);
+      }
     },
   };
-} 
+}

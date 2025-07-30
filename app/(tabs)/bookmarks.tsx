@@ -14,7 +14,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 const BOOKMARK_CATEGORIES = [
   { icon: 'briefcase', label: 'Jobs' },
   { icon: 'newspaper', label: 'News' },
-  { icon: 'building', label: 'Companies' },
+  { icon: 'briefcase', label: 'Companies' },
   { icon: 'users', label: 'People' },
   { icon: 'bookmark', label: 'Articles' },
   { icon: 'video', label: 'Videos' },

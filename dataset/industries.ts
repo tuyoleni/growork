@@ -5,11 +5,11 @@ export interface Industry {
 
 export const ALL_INDUSTRIES: Industry[] = [
   { icon: 'briefcase', label: 'Technology' },
-  { icon: 'building', label: 'Finance' },
+  { icon: 'briefcase', label: 'Finance' },
   { icon: 'heart', label: 'Healthcare' },
   { icon: 'shopping-bag', label: 'Retail' },
   { icon: 'truck', label: 'Logistics' },
-  { icon: 'graduation-cap', label: 'Education' },
+  { icon: 'book', label: 'Education' },
   { icon: 'heart', label: 'Non-profit' },
   { icon: 'globe', label: 'Government' },
   { icon: 'home', label: 'Real Estate' },
@@ -62,15 +62,15 @@ export const ALL_INDUSTRIES: Industry[] = [
   { icon: 'credit-card', label: 'Fintech' },
   { icon: 'home', label: 'PropTech' },
   { icon: 'heart', label: 'HealthTech' },
-  { icon: 'graduation-cap', label: 'EdTech' },
+  { icon: 'book', label: 'EdTech' },
   { icon: 'shopping-bag', label: 'RetailTech' },
 ];
 
 export const DEFAULT_INDUSTRIES: Industry[] = [
   { icon: 'briefcase', label: 'Technology' },
-  { icon: 'building', label: 'Finance' },
+  { icon: 'briefcase', label: 'Finance' },
   { icon: 'heart', label: 'Healthcare' },
   { icon: 'shopping-bag', label: 'Retail' },
   { icon: 'truck', label: 'Logistics' },
-  { icon: 'graduation-cap', label: 'Education' },
+  { icon: 'book', label: 'Education' },
 ]; 

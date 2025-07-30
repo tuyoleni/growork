@@ -1,15 +1,17 @@
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/utils/superbase';
-import { Document } from '@/types';
-import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from './useAuth';
 
-export function useBookmarks(userId?: string) {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useBookmarks() {
+  const [bookmarks, setBookmarks] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const fetchBookmarkedDocuments = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
+  // Fetch user's bookmarks
+  const fetchBookmarks = useCallback(async () => {
+    if (!user) {
+      setBookmarks([]);
       return;
     }
 
@@ -17,86 +19,134 @@ export function useBookmarks(userId?: string) {
       setLoading(true);
       setError(null);
       
-      // Get all documents for this user
-      const { data, error: fetchError } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', userId)
-        .order('uploaded_at', { ascending: false });
-      
-      if (fetchError) {
-        throw fetchError;
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select('post_id')
+        .eq('user_id', user.id);
+        
+      if (error) {
+        throw error;
       }
       
-      setDocuments(data || []);
+      // Extract post IDs from the data
+      const bookmarkedPostIds = data?.map(bookmark => bookmark.post_id) || [];
+      setBookmarks(bookmarkedPostIds);
     } catch (err: any) {
-      console.error('Error fetching bookmarked documents:', err);
+      console.error('Error fetching bookmarks:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [user]);
 
+  // Load bookmarks when user changes
   useEffect(() => {
-    if (userId) {
-      fetchBookmarkedDocuments();
+    fetchBookmarks();
+  }, [fetchBookmarks, user]);
+
+  // Check if a post is bookmarked
+  const isBookmarked = useCallback((postId: string) => {
+    return bookmarks.includes(postId);
+  }, [bookmarks]);
+
+  // Add a bookmark
+  const addBookmark = useCallback(async (postId: string) => {
+    if (!user) {
+      setError('You must be logged in to bookmark a post');
+      return { success: false, error: 'Authentication required' };
     }
-  }, [fetchBookmarkedDocuments, userId]);
-
-  const addDocument = useCallback(async (documentData: Partial<Document>) => {
-    if (!userId) return { error: 'User not logged in' };
-
+    
     try {
-      const { data, error } = await supabase
-        .from('documents')
-        .insert([{
-          ...documentData,
-          user_id: userId
-        }])
-        .select();
+      setLoading(true);
+      setError(null);
       
-      if (error) {
-        throw error;
+      // Check if already bookmarked
+      if (bookmarks.includes(postId)) {
+        return { success: true, error: null }; // Already bookmarked
       }
       
-      // Refresh the documents
-      fetchBookmarkedDocuments();
-      return { data, error: null };
-    } catch (err: any) {
-      console.error('Error adding document:', err);
-      return { data: null, error: err };
-    }
-  }, [fetchBookmarkedDocuments, userId]);
-
-  const deleteDocument = useCallback(async (documentId: string) => {
-    if (!userId) return { error: 'User not logged in' };
-
-    try {
+      // Add bookmark
       const { error } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', documentId)
-        .eq('user_id', userId);
-      
+        .from('bookmarks')
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+        });
+        
       if (error) {
         throw error;
       }
       
-      // Refresh the documents
-      fetchBookmarkedDocuments();
-      return { error: null };
+      // Update local state
+      setBookmarks(prev => [...prev, postId]);
+      
+      return { success: true, error: null };
     } catch (err: any) {
-      console.error('Error deleting document:', err);
-      return { error: err };
+      console.error('Error adding bookmark:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
     }
-  }, [fetchBookmarkedDocuments, userId]);
+  }, [user, bookmarks]);
+
+  // Remove a bookmark
+  const removeBookmark = useCallback(async (postId: string) => {
+    if (!user) {
+      setError('You must be logged in to remove a bookmark');
+      return { success: false, error: 'Authentication required' };
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Check if not bookmarked
+      if (!bookmarks.includes(postId)) {
+        return { success: true, error: null }; // Not bookmarked, nothing to do
+      }
+      
+      // Remove bookmark
+      const { error } = await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('post_id', postId)
+        .eq('user_id', user.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Update local state
+      setBookmarks(prev => prev.filter(id => id !== postId));
+      
+      return { success: true, error: null };
+    } catch (err: any) {
+      console.error('Error removing bookmark:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [user, bookmarks]);
+
+  // Toggle bookmark status
+  const toggleBookmark = useCallback(async (postId: string) => {
+    if (isBookmarked(postId)) {
+      return removeBookmark(postId);
+    } else {
+      return addBookmark(postId);
+    }
+  }, [isBookmarked, addBookmark, removeBookmark]);
 
   return {
-    documents,
+    bookmarks,
     loading,
     error,
-    fetchBookmarkedDocuments,
-    addDocument,
-    deleteDocument
+    isBookmarked,
+    addBookmark,
+    removeBookmark,
+    toggleBookmark,
+    fetchBookmarks
   };
 }
