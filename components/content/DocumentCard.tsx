@@ -1,4 +1,5 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Document } from '@/types';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
@@ -7,11 +8,7 @@ import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 
 export interface DocumentCardProps {
-  name: string;
-  updated: string;
-  category?: string;
-  note?: string;
-  size?: string;
+  document: Document;
   onPress?: () => void;
   onDownload?: () => void;
   onShare?: () => void;
@@ -20,6 +17,7 @@ export interface DocumentCardProps {
   showCategory?: boolean;
   variant?: 'default' | 'compact' | 'detailed';
   onPressMenu?: () => void;
+  selectable?: boolean;
 }
 
 function IconWithBackground({ icon }: { icon: React.ReactElement }) {
@@ -32,11 +30,7 @@ function IconWithBackground({ icon }: { icon: React.ReactElement }) {
 }
 
 export default function DocumentCard({
-  name,
-  updated,
-  category,
-  note,
-  size,
+  document,
   onPress,
   onDownload,
   onShare,
@@ -45,7 +39,10 @@ export default function DocumentCard({
   showCategory = false,
   variant = 'default',
   onPressMenu,
+  selectable = false,
 }: DocumentCardProps) {
+  const { name, type, uploaded_at } = document;
+  const formattedDate = new Date(uploaded_at).toLocaleDateString();
   const borderColor = useThemeColor({}, 'border');
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
@@ -90,7 +87,7 @@ export default function DocumentCard({
         // Show confirmation dialog for delete
         Alert.alert(
           'Delete Document',
-          `Are you sure you want to delete "${name}"?`,
+          `Are you sure you want to delete "${document.name}"?`,
           [
             { text: 'Cancel', style: 'cancel' },
             { 
@@ -128,7 +125,7 @@ export default function DocumentCard({
       const actionText = actionOptions.join('\n');
       Alert.alert(
         'Document Actions',
-        `Choose an action for "${name}":\n\n${actionText}`,
+        `Choose an action for "${document.name}":\n\n${actionText}`,
         actionOptions.map((option, index) => ({
           text: option,
           onPress: () => actions[index + 1](),
@@ -155,24 +152,14 @@ export default function DocumentCard({
   };
 
   const renderCategory = () => {
-    if (!showCategory || !category) return null;
+    if (!showCategory) return null;
     
     return (
       <View style={styles.categoryContainer}>
         <ThemedText style={[styles.categoryText, { color: mutedText }]}>
-          {category}
+          {document.type.replace('_', ' ')}
         </ThemedText>
       </View>
-    );
-  };
-
-  const renderSize = () => {
-    if (!size) return null;
-    
-    return (
-      <ThemedText style={[styles.sizeText, { color: mutedText }]}>
-        {size}
-      </ThemedText>
     );
   };
 
@@ -194,19 +181,12 @@ export default function DocumentCard({
       <IconWithBackground icon={<Feather name="file-text" size={24} color={textColor} />} />
       
       <ThemedView style={styles.cardTextWrap}>
-        <ThemedText style={styles.cardTitle} numberOfLines={1}>{name}</ThemedText>
-        
-        {note && (
-          <ThemedText style={[styles.cardNote, { color: textColor, opacity: 0.7 }]} numberOfLines={1}>
-            {note}
-          </ThemedText>
-        )}
+        <ThemedText style={styles.cardTitle} numberOfLines={1}>{document.name}</ThemedText>
         
         <View style={styles.metaRow}>
           <ThemedText style={[styles.cardSubtitle, { color: mutedText }]}>
-            {updated}
+            {formattedDate}
           </ThemedText>
-          {renderSize()}
         </View>
         
         {renderCategory()}

@@ -1,16 +1,13 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Document } from '@/types';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 import DocumentCard from './DocumentCard';
 
-export interface Document {
-  name: string;
-  updated: string;
-  category?: string;
-  note?: string;
-  size?: string;
+export interface DocumentListItem {
+  document: Document;
 }
 
 export interface DocumentListProps {
@@ -49,12 +46,8 @@ export default function DocumentList({
 
   const renderDocumentCard = (document: Document, index: number) => (
     <DocumentCard
-      key={`${document.name}-${index}`}
-      name={document.name}
-      updated={document.updated}
-      category={document.category}
-      note={document.note}
-      size={document.size}
+      key={`${document.name || document.id}-${index}`}
+      document={document}
       variant={variant}
       showMenu={showMenu}
       showCategory={showCategory}
@@ -69,7 +62,7 @@ export default function DocumentList({
     if (!groupedByCategory) return null;
 
     const grouped = documents.reduce((acc, doc) => {
-      const category = doc.category || 'Other';
+      const category = doc.type || 'Other';
       if (!acc[category]) {
         acc[category] = [];
       }

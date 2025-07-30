@@ -1,5 +1,6 @@
 import FlashBar from '@/components/ui/Flash';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AppProvider } from '@/utils/AppContext';
 import { supabase, clearAllSupabaseData } from '@/utils/superbase';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -124,10 +125,12 @@ export default function RootLayout() {
         <ActionSheetProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <AuthContext.Provider value={{ session, initialLoading }}>
-              <AuthGate />
+              <AppProvider>
+                <AuthGate />
+                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                <FlashBar />
+              </AppProvider>
             </AuthContext.Provider>
-            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-            <FlashBar />
           </ThemeProvider>
         </ActionSheetProvider>
       </BottomSheetModalProvider>

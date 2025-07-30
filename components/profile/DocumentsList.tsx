@@ -8,7 +8,9 @@ import { ActionSheetIOS, Alert, KeyboardAvoidingView, Platform, ScrollView, Styl
 import GlobalBottomSheet from '../GlobalBottomSheet';
 import { ThemedText } from '../ThemedText';
 import DocumentCard from '../content/DocumentCard';
-import DocumentList, { Document } from '../content/DocumentList';
+import DocumentList from '../content/DocumentList';
+import { DocumentType } from '@/types';
+import { Document } from '@/types';
 import CustomOptionStrip from '../ui/CustomOptionStrip';
 import { useDocumentUpload } from './useDocumentUpload';
 
@@ -272,14 +274,29 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
     }
   };
 
-  // Filter documents by category, then convert to Document interface
+  // Filter documents by category
   const categoryFilteredDocuments = filterDocumentsByCategory(documents, getSelectedDocumentFilterLabel());
-  const documentsForList: Document[] = categoryFilteredDocuments.map(doc => ({
-    name: doc.name,
-    updated: doc.updated,
-    category: doc.category,
-    note: doc.note,
-  }));
+  
+  // Create properly typed document objects that are compatible with DocumentList component
+  const documentsForList = categoryFilteredDocuments.map(doc => {
+    // Create a valid Document object with required fields
+    const document: Document = {
+      id: doc.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+      user_id: doc.user_id || 'unknown',
+      type: doc.category as DocumentType || DocumentType.Other,
+      name: doc.name,
+      file_url: doc.uri || '',
+      uploaded_at: new Date().toISOString()
+    };
+    
+    // Add display properties used by DocumentList
+    return {
+      ...document,
+      updated: doc.updated || 'Recently',
+      category: doc.category,
+      note: doc.note
+    };
+  });
 
   const handleDocumentPress = (document: Document) => {
     console.log('Document pressed:', document.name);
@@ -387,16 +404,18 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
                         {docsOfType.map((doc, index) => (
                           <React.Fragment key={`${doc.name}-${index}`}>
                             <DocumentCard
-                              name={doc.name}
-                              updated={doc.updated}
-                              category={doc.category}
+                              document={{
+                                id: `temp-${index}-${Date.now()}`,
+                                user_id: 'temp',
+                                name: doc.name,
+                                type: doc.category,
+                                file_url: doc.uri,
+                                uploaded_at: new Date().toISOString(),
+                              }}
                               variant="compact"
                               showCategory={false}
                               onPress={() => console.log('Document pressed:', doc.name)}
                               showMenu={true}
-                              onDownload={undefined}
-                              onShare={undefined}
-                              onDelete={undefined}
                               onPressMenu={() => handlePendingDocMenu(docType, doc)}
                             />
                             {index < docsOfType.length - 1 && (

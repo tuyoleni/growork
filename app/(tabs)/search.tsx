@@ -1,9 +1,11 @@
-import DocumentList, { Document } from '@/components/content/DocumentList';
+import DocumentList from '@/components/content/DocumentList';
+import { Document, DocumentType } from '@/types';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
-import { MOCK_DOCUMENTS } from '@/dataset/documents';
+// Import mock data but don't use Document type from dataset
+import { MOCK_DOCUMENTS as MOCK_DATA } from '@/dataset/documents';
 import { ALL_INDUSTRIES, DEFAULT_INDUSTRIES } from '@/dataset/industries';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useState } from 'react';
@@ -33,15 +35,42 @@ export default function Search() {
     console.log('Show more industries');
   };
 
+  // Create properly typed mock documents that match our Document interface
+  const MOCK_DOCUMENTS: Document[] = [
+    {
+      id: '1',
+      user_id: 'user1',
+      type: DocumentType.CV,
+      name: 'Tech Resume 2024.pdf',
+      file_url: 'https://example.com/resume.pdf',
+      uploaded_at: new Date().toISOString()
+    },
+    {
+      id: '2',
+      user_id: 'user1',
+      type: DocumentType.CoverLetter,
+      name: 'Cover Letter - Software Engineer.pdf',
+      file_url: 'https://example.com/cover.pdf',
+      uploaded_at: new Date().toISOString()
+    },
+    {
+      id: '3',
+      user_id: 'user1',
+      type: DocumentType.Certificate,
+      name: 'AWS Certification.pdf',
+      file_url: 'https://example.com/cert.pdf',
+      uploaded_at: new Date().toISOString()
+    }
+  ];
+
   const performSearch = (query: string, industryIndex: number) => {
     setIsSearching(true);
     
     // Simulate search delay
     setTimeout(() => {
       const filtered = MOCK_DOCUMENTS.filter(doc => 
-        doc.name.toLowerCase().includes(query.toLowerCase()) ||
-        doc.note?.toLowerCase().includes(query.toLowerCase()) ||
-        doc.category?.toLowerCase().includes(query.toLowerCase())
+        doc.name?.toLowerCase().includes(query.toLowerCase()) ||
+        doc.type.toLowerCase().includes(query.toLowerCase())
       );
       
       setSearchResults(filtered);
@@ -117,7 +146,12 @@ export default function Search() {
               
               {!isSearching && (
                 <DocumentList
-                  documents={searchResults}
+                  documents={searchResults.map(doc => ({
+                    ...doc,
+                    // For compatibility with DocumentList component
+                    updated: new Date(doc.uploaded_at).toLocaleDateString(),
+                    category: doc.type
+                  }))}
                   variant="compact"
                   showCategory={true}
                   onDocumentPress={handleDocumentPress}
