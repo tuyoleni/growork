@@ -5,6 +5,7 @@ export const FILTER_OPTIONS = [
   { key: 'all', label: 'All' },
   { key: 'jobs', label: 'Jobs' },
   { key: 'news', label: 'News' },
+  { key: 'documents', label: 'Documents' },
 ] as const;
 
 export type FilterKey = typeof FILTER_OPTIONS[number]['key'];
@@ -43,4 +44,4 @@ export function filterDocumentsBySearchTerm(docs: any[], searchTerm: string) {
     (d.name && d.name.toLowerCase().includes(term)) ||
     d.type.toLowerCase().includes(term)
   );
-}
+} 

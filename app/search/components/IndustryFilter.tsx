@@ -3,6 +3,7 @@
 import React from 'react';
 import { INDUSTRIES } from '@/dataset/industries';
 import BadgeSelector from '@/components/ui/BadgeSelector';
+import { View } from 'react-native';
 
 interface IndustryFilterProps {
   selectedIndustry: string | null;
@@ -24,13 +25,13 @@ export default function IndustryFilter({
   ];
 
   return (
-    <div className="py-2">
+    <View style={{ paddingVertical: 8 }}>
       <BadgeSelector
         options={badgeOptions}
         selectedValue={selectedIndustry ?? 'All'}
         onValueChange={setSelectedIndustry}
         title="Industries"
       />
-    </div>
+    </View>
   );
 }

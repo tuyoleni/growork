@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { ThemedInput } from '@/components/ThemedInput';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface SearchBarProps {
   value: string;
@@ -17,20 +19,21 @@ export default function SearchBar({
   onClear, 
   placeholder = 'Search...'
 }: SearchBarProps) {
+  const iconColor = useThemeColor({}, 'iconSecondary');
+
   return (
     <View style={styles.container}>
       <View style={styles.searchField}>
-        <Feather name="search" size={20} color="#A0A0A0" style={{ marginLeft: 8 }} />
-        <TextInput
+        <Feather name="search" size={20} color={iconColor} style={styles.searchIcon} />
+        <ThemedInput
           style={styles.textInput}
           placeholder={placeholder}
           value={value}
           onChangeText={onChange}
-          placeholderTextColor="#A0A0A0"
         />
         {!!value && (
-          <TouchableOpacity onPress={onClear}>
-            <Feather name="x-circle" size={20} color="#A0A0A0" style={{ marginRight: 8 }} />
+          <TouchableOpacity onPress={onClear} style={styles.clearButton}>
+            <Feather name="x-circle" size={20} color={iconColor} />
           </TouchableOpacity>
         )}
       </View>
@@ -45,17 +48,20 @@ const styles = StyleSheet.create({
   searchField: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: '#EFF2FA',
     marginBottom: 10,
-    paddingVertical: 5,
+  },
+  searchIcon: {
+    marginRight: 10,
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    color: '#111',
-    backgroundColor: 'transparent',
+    paddingLeft: 10,
+    paddingRight: 40,
+    marginBottom: 0, // Override the default margin in ThemedInput
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 10,
+    top: 14, // Adjusted to vertically center the icon
   },
 });

@@ -12,12 +12,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLikes } from '@/hooks/useLikes';
 import { useAppContext } from '@/utils/AppContext';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-import Comments from '@/components/content/comments/Comment';
 
 type Variant = 'job' | 'news' | 'sponsored';
 export interface ContentCardProps {
   variant: Variant;
-  title: string;
+  title: string; // e.g. company name
+  postTitle: string; // new, the post's main title
+  username: string;  // new, the user's username
+  name: string;      // new, the user's display name
   avatarImage: string;
   mainImage?: string;
   description: string;
@@ -59,11 +61,9 @@ export default function ContentCard(props: ContentCardProps) {
   const { isLiked, toggleLike } = useLikes();
   const { isBookmarked, toggleBookmark } = useAppContext();
 
-  // UI state
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
 
-  // On mount or post/user change, sync state to hooks
   useEffect(() => {
     let cancelled = false;
     async function syncState() {
@@ -72,7 +72,6 @@ export default function ContentCard(props: ContentCardProps) {
         setBookmarked(false);
         return;
       }
-      // isLiked is async, isBookmarked is sync
       const isLikedValue = await isLiked(props.id);
       if (!cancelled) setLiked(!!isLikedValue);
       if (!cancelled) setBookmarked(isBookmarked(props.id));
@@ -81,28 +80,22 @@ export default function ContentCard(props: ContentCardProps) {
     return () => { cancelled = true; };
   }, [props.id, isLiked, isBookmarked]);
 
-  // Like logic via your hooks
   const handleLike = async () => {
     if (!props.id) return;
-    // haptic feedback
     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Optimistic UI
     setLiked((curr) => !curr);
     await toggleLike(props.id);
     props.onPressHeart?.();
   };
 
-  // Bookmark logic via your hooks
   const handleBookmark = async () => {
     if (!props.id) return;
     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Optimistic UI
     setBookmarked((curr) => !curr);
     await toggleBookmark(props.id);
     props.onPressBookmark?.();
   };
 
-  // Message/Comments
   const { openCommentSheet } = useBottomSheetManager();
   const handleComment = () => {
     if (props.id) {
@@ -110,8 +103,7 @@ export default function ContentCard(props: ContentCardProps) {
       props.onPressMessage?.();
     }
   };
-  
-  // Navigate to job details
+
   const handleJobPress = () => {
     if (props.variant === 'job') {
       const id = props.jobId || props.id;
@@ -119,17 +111,11 @@ export default function ContentCard(props: ContentCardProps) {
         if (Platform.OS === 'ios') {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-        console.log('Navigating to job details with ID:', id);
-        
-        // Use a more straightforward navigation approach
         router.push(`/post/${id}`);
-      } else {
-        console.warn('No job ID available for navigation');
       }
     }
   };
 
-  // Badge
   const renderBadge = () => {
     if (props.variant === 'news' && props.badgeText) {
       const badgeStyle = badgeColors(theme)[props.badgeVariant || 'error'];
@@ -151,7 +137,6 @@ export default function ContentCard(props: ContentCardProps) {
     return null;
   };
 
-  // IconButton - your own simple mini-component
   const IconButton = ({
     name,
     filled,
@@ -187,12 +172,12 @@ export default function ContentCard(props: ContentCardProps) {
     </>
   );
 
-  // CTA for jobs/sponsored
   const renderCTAButton = () => {
     if (props.variant === 'job') {
       return (
         <Pressable
-          style={[styles.applyButton, { backgroundColor: textColor }]}onPress={handleJobPress}>
+          style={[styles.applyButton, { backgroundColor: textColor }]}
+          onPress={handleJobPress}>
           <ThemedText style={[styles.applyButtonText, { color: backgroundColor }]}>
             View Details
           </ThemedText>
@@ -227,19 +212,29 @@ export default function ContentCard(props: ContentCardProps) {
         {/* Header */}
         <View style={styles.headerRow}>
           <Image source={{ uri: props.avatarImage }} style={styles.avatar} />
-          <View style={styles.companyRow}>
-            <ThemedText style={styles.companyName} type="defaultSemiBold">
-              {props.title}
-            </ThemedText>
-            {renderBadge()}
-            {props.variant === 'job' && props.isVerified && (
-              <Feather name="shield" size={16} color={tintColor} style={{ marginLeft: 4 }} />
-            )}
-            {props.variant === 'job' && props.industry && (
-              <ThemedText style={[styles.sponsoredLabel, { color: mutedTextColor }]}>
-                {props.industry}
+          <View style={styles.headerTextCol}>
+            {/* Username and Name */}
+            <View style={styles.userLine}>
+              <ThemedText style={styles.username}>@{props.username}</ThemedText>
+              <ThemedText style={styles.name}> {props.name}</ThemedText>
+            </View>
+            {/* Post Title */}
+            <ThemedText style={styles.postTitle}>{props.postTitle}</ThemedText>
+            {/* Company Info row */}
+            <View style={styles.companyRow}>
+              <ThemedText style={styles.companyName} type="defaultSemiBold">
+                {props.title}
               </ThemedText>
-            )}
+              {renderBadge()}
+              {props.variant === 'job' && props.isVerified && (
+                <Feather name="shield" size={16} color={tintColor} style={{ marginLeft: 4 }} />
+              )}
+              {props.variant === 'job' && props.industry && (
+                <ThemedText style={[styles.sponsoredLabel, { color: mutedTextColor }]}>
+                  {props.industry}
+                </ThemedText>
+              )}
+            </View>
           </View>
           <IconButton name="more-horizontal" onPress={props.onPressMore} />
         </View>
@@ -278,7 +273,7 @@ const styles = StyleSheet.create({
   headerRow: {
     width: '100%',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
     paddingBottom: 8,
   },
@@ -288,8 +283,34 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 6,
   },
-  companyRow: {
+  headerTextCol: {
     flex: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 2,
+  },
+  userLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginBottom: 2,
+  },
+  username: {
+    fontSize: 12,
+    color: '#737373',
+    fontWeight: '500',
+  },
+  name: {
+    fontSize: 12,
+    color: '#222',
+    fontWeight: '400',
+  },
+  postTitle: {
+    fontWeight: '700',
+    fontSize: 14,
+    marginBottom: 1,
+  },
+  companyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

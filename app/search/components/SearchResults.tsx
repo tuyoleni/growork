@@ -1,89 +1,123 @@
-'use client';
-
 import React from 'react';
-import { Post, PostType, Document } from '@/types';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { Post } from '@/types/posts';
+import { Document } from '@/types/documents';
+import { Profile } from '@/types/profile';
 import ContentCard from '@/components/content/ContentCard';
 import DocumentCard from '@/components/content/DocumentCard';
-import { SearchResult } from '../SearchClient';
-import { FileQuestion, Loader2, Search } from 'lucide-react';
+import { Feather } from '@expo/vector-icons';
+import { PostType } from '@/types';
+import ScreenContainer from '@/components/ScreenContainer';
+
+interface PostWithProfile extends Post {
+  profiles?: Profile | null;
+}
 
 interface SearchResultsProps {
-  results: SearchResult[];
+  results: (PostWithProfile & { _type: 'post' })[] | (Document & { _type: 'document' })[];
   loading: boolean;
 }
 
 export default function SearchResults({ results, loading }: SearchResultsProps) {
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-      </div>
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
     );
   }
 
   if (results.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="bg-gray-100 p-4 rounded-full mb-4">
-          <Search className="h-8 w-8 text-gray-400" />
-        </div>
-        <p className="text-gray-600 text-lg font-medium">No results found</p>
-        <p className="text-gray-400 text-sm mt-2 max-w-md">
+      <View style={styles.centered}>
+        <View style={styles.iconCircle}>
+          <Feather name="search" size={32} color="#9ca3af" />
+        </View>
+        <Text style={styles.noResultsTitle}>No results found</Text>
+        <Text style={styles.noResultsSub}>
           Try adjusting your search terms or filters to find what you're looking for
-        </p>
-      </div>
+        </Text>
+      </View>
     );
   }
 
-  // Group results by type for better organization
-  const postResults = results.filter(item => item._type === 'post') as (Post & { _type: 'post' })[];
+  const postResults = results.filter(item => item._type === 'post') as (PostWithProfile & { _type: 'post' })[];
   const documentResults = results.filter(item => item._type === 'document') as (Document & { _type: 'document' })[];
 
   return (
-    <div>
-      {/* Posts Section */}
+    <ScreenContainer>
       {postResults.length > 0 && (
-        <div className="divide-y divide-gray-200">
-          {postResults.map((post, index) => (
-            <div key={`post-${post.id || index}`} className="p-4">
-              <PostResultItem post={post} />
-            </div>
-          ))}
-        </div>
+        <FlatList
+          data={postResults}
+          keyExtractor={(item, index) => `post-${item.id || index}`}
+          renderItem={({ item }) => (
+            <View style={styles.itemContainer}>
+              <PostResultItem post={item} />
+            </View>
+          )}
+        />
       )}
 
-      {/* Documents Section - only show if we have both types of results */}
       {documentResults.length > 0 && postResults.length > 0 && (
-        <div className="pt-4 pb-2 px-4 bg-gray-50 border-t border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-500">Your Documents</h3>
-        </div>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeaderText}>Your Documents</Text>
+        </View>
       )}
 
-      {/* Document Results */}
       {documentResults.length > 0 && (
-        <div className="divide-y divide-gray-200">
-          {documentResults.map((document, index) => (
-            <div key={`document-${document.id || index}`} className="p-4">
-              <DocumentResultItem document={document} />
-            </div>
-          ))}
-        </div>
+        <FlatList
+          data={documentResults}
+          keyExtractor={(item, index) => `document-${item.id || index}`}
+          renderItem={({ item }) => (
+            <View style={styles.itemContainer}>
+              <DocumentResultItem document={item} />
+            </View>
+          )}
+        />
       )}
-    </div>
+    </ScreenContainer>
   );
 }
 
-function PostResultItem({ post }: { post: Post }) {
+function PostResultItem({ post }: { post: PostWithProfile }) {
   const cardVariant = post.type === PostType.Job ? 'job' : 'news';
-  
+
+  // Compose post title (may be null for older posts)
+  const postTitle = post.title || '';
+  // Use description/content if available
+  const description = post.content || '';
+  // User profile if available
+  const profile = post.profiles;
+
+  // Compose avatar, username, name
+  const avatarImage =
+    profile?.avatar_url ||
+    (post.criteria?.company
+      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.criteria.company)}&background=random`
+      : 'https://via.placeholder.com/32');
+  const username = profile?.username || 'user';
+  const name = (profile?.name || '') + (profile?.surname ? ` ${profile.surname}` : '');
+
+  // Title is usually company (job) or publisher/source (news)
+  const displayTitle =
+    cardVariant === 'job'
+      ? post.criteria?.company || 'Company'
+      : profile?.name ||
+        post.criteria?.author ||
+        post.criteria?.source ||
+        'Publisher';
+
   return (
     <ContentCard
       variant={cardVariant}
       id={post.id}
-      title={post.criteria?.company || post.title || ''}
-      avatarImage={''}
+      title={displayTitle}
+      postTitle={postTitle}
+      username={username}
+      name={name}
+      avatarImage={avatarImage}
       mainImage={post.image_url ?? undefined}
-      description={post.content ?? post.title ?? ''}
+      description={description}
       badgeText={
         cardVariant === 'job'
           ? post.criteria?.location || 'Remote'
@@ -92,7 +126,7 @@ function PostResultItem({ post }: { post: Post }) {
           : undefined
       }
       badgeVariant={cardVariant === 'news' ? 'error' : undefined}
-      isVerified={false}
+      // isVerified={!!profile?.verified}
       industry={post.industry || undefined}
       onPressHeart={() => {}}
       onPressBookmark={() => {}}
@@ -106,3 +140,49 @@ function PostResultItem({ post }: { post: Post }) {
 function DocumentResultItem({ document }: { document: Document }) {
   return <DocumentCard document={document} />;
 }
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    textAlign: 'center',
+  },
+  iconCircle: {
+    backgroundColor: '#f3f4f6',
+    padding: 16,
+    borderRadius: 50,
+    marginBottom: 16,
+  },
+  noResultsTitle: {
+    color: '#4b5563',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  noResultsSub: {
+    color: '#9ca3af',
+    fontSize: 14,
+    marginTop: 8,
+    maxWidth: 300,
+    textAlign: 'center',
+  },
+  itemContainer: {
+    padding: 16,
+    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 1,
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f9fafb',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+});

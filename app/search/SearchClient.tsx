@@ -1,137 +1,294 @@
-'use client';
-
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { usePosts } from '@/hooks/usePosts';
-import { useDocuments } from '@/hooks/useDocuments';
-import { Post, Document, PostType } from '@/types';
+import React, { useState } from 'react';
+import { View, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { Document } from '@/types/documents';
+import ContentCard from '@/components/content/ContentCard';
+import DocumentCard from '@/components/content/DocumentCard';
+import { Feather } from '@expo/vector-icons';
+import { PostWithProfile } from '@/hooks/usePosts';
+import { SearchResult, useSearch } from '@/hooks/useSearch';
 import SearchBar from './components/SearchBar';
 import FilterTabs from './components/FilterTabs';
 import IndustryFilter from './components/IndustryFilter';
-import SearchResults from './components/SearchResults';
-import { 
-  FILTER_OPTIONS, 
-  FilterKey,
-  filterPostsByType,
-  filterPostsByIndustry,
-  filterPostsBySearchTerm,
-  filterDocumentsBySearchTerm
-} from './config';
-
-export type SearchResult =
-  | (Post & { _type: 'post' })
-  | (Document & { _type: 'document' });
+import { FilterKey } from '@/constants/searchConfig';
+import { PostType } from '@/types/enums';
+import ScreenContainer from '@/components/ScreenContainer';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { Colors } from '@/constants/Colors';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 export default function SearchClient() {
-  const { user } = useAuth();
-  const currentUserId = user?.id || "";
-  const [search, setSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterKey>('all');
-  const [industryFilter, setIndustryFilter] = useState<string | null>(null);
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  
+  const { results, loading, error, search } = useSearch();
 
-  const { posts, loading: postsLoading, fetchPosts } = usePosts();
-  const { documents, loading: docsLoading, fetchDocuments } = useDocuments(currentUserId);
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    search(term);
+  };
 
-  // Fetch data on filter change
-  useEffect(() => {
-    if (selectedFilter === 'jobs') {
-      fetchPosts(PostType.Job, industryFilter ?? undefined);
-    } else if (selectedFilter === 'news') {
-      fetchPosts(PostType.News, industryFilter ?? undefined);
-    } else {
-      fetchPosts(undefined, industryFilter ?? undefined);
-      fetchDocuments();
+  const handleFilterChange = (filter: FilterKey) => {
+    setSelectedFilter(filter);
+    if (searchTerm) {
+      const postType = filter === 'jobs' ? PostType.Job : filter === 'news' ? PostType.News : undefined;
+      search(searchTerm, postType, selectedIndustry || undefined);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFilter, industryFilter, currentUserId]);
+  };
 
-  // Merge and filter results based on search query and filters
-  const mergedResults: SearchResult[] = useMemo(() => {
-    // Apply type filter
-    let filteredPosts = selectedFilter === 'all'
-      ? posts
-      : filterPostsByType(
-          posts, 
-          selectedFilter === 'jobs' ? PostType.Job : PostType.News
-        );
-    
-    // Apply industry filter
-    if (industryFilter && industryFilter !== 'All') {
-      filteredPosts = filterPostsByIndustry(filteredPosts, industryFilter);
+  const handleIndustryChange = (industry: string) => {
+    setSelectedIndustry(industry === 'All' ? null : industry);
+    if (searchTerm) {
+      const postType = selectedFilter === 'jobs' ? PostType.Job : selectedFilter === 'news' ? PostType.News : undefined;
+      search(searchTerm, postType, industry === 'All' ? undefined : industry);
     }
+  };
 
-    // Apply search filter to posts
-    if (search.trim()) {
-      filteredPosts = filterPostsBySearchTerm(filteredPosts, search);
-    }
+  // Filter results based on selected filter
+  const filteredResults = results.filter(result => {
+    if (selectedFilter === 'all') return true;
+    if (selectedFilter === 'jobs' && result._type === 'post') return result.type === PostType.Job;
+    if (selectedFilter === 'news' && result._type === 'post') return result.type === PostType.News;
+    if (selectedFilter === 'documents' && result._type === 'document') return true;
+    return false;
+  });
 
-    // Filter and search documents
-    let filteredDocs = documents.filter(doc => doc.user_id === currentUserId);
-    if (search.trim()) {
-      filteredDocs = filterDocumentsBySearchTerm(filteredDocs, search);
-    }
+  // Calculate counts for each filter
+  const counts = {
+    all: results.length,
+    jobs: results.filter(r => r._type === 'post' && r.type === PostType.Job).length,
+    news: results.filter(r => r._type === 'post' && r.type === PostType.News).length,
+    documents: results.filter(r => r._type === 'document').length,
+  };
 
-    // Combine results based on selected filter
-    if (selectedFilter === 'all') {
-      return [
-        ...filteredPosts.map(p => ({ ...p, _type: 'post' as const })),
-        ...filteredDocs.map(d => ({ ...d, _type: 'document' as const }))
-      ];
-    }
-    
-    return filteredPosts.map(p => ({ ...p, _type: 'post' as const }));
-  }, [posts, documents, selectedFilter, currentUserId, search, industryFilter]);
-
-  // Calculate counts for each filter tab
-  const counts = useMemo(
-    () => ({
-      all: posts.length + documents.filter(d => d.user_id === currentUserId).length,
-      jobs: posts.filter(p => p.type === PostType.Job).length,
-      news: posts.filter(p => p.type === PostType.News).length,
-    }),
-    [posts, documents, currentUserId]
-  );
-
-  const clearSearch = useCallback(() => setSearch(''), []);
-  const loading = postsLoading || docsLoading;
-
-  // Handle industry selection
-  const handleIndustryChange = useCallback((industry: string) => {
-    setIndustryFilter(industry === 'All' ? null : industry);
-  }, []);
+  const filterOptions = [
+    { key: 'all' as FilterKey, label: 'All' },
+    { key: 'jobs' as FilterKey, label: 'Jobs' },
+    { key: 'news' as FilterKey, label: 'News' },
+    { key: 'documents' as FilterKey, label: 'Documents' },
+  ];
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="p-4 border-b border-gray-200">
-        {/* Search Bar */}
-        <SearchBar 
-          value={search} 
-          onChange={setSearch} 
-          onClear={clearSearch} 
-          placeholder="Search companies, jobs, news, and your documents..."
-        />
-        
-        {/* Filter Tabs */}<FilterTabs
-            options={FILTER_OPTIONS}
+    <ScreenContainer>
+      <SearchBar 
+        value={searchTerm}
+        onChange={handleSearch}
+        onClear={() => {
+          setSearchTerm('');
+          search('');
+        }}  
+      />
+      
+      {searchTerm && (
+        <>
+          <FilterTabs
+            options={filterOptions}
             selectedFilter={selectedFilter}
             setSelectedFilter={setSelectedFilter}
             counts={counts}
           />
-        
-        {/* Industry Filter */}
-        <IndustryFilter
-          selectedIndustry={industryFilter}
-          setSelectedIndustry={handleIndustryChange}
-        />
-      </div>
+          
+          <IndustryFilter
+            selectedIndustry={selectedIndustry}
+            setSelectedIndustry={handleIndustryChange}
+          />
+        </>
+      )}
+
+      <SearchResults results={filteredResults} loading={loading} />
       
-      {/* Search Results with more efficient scroll handling */}
-      <div className="flex-1 overflow-auto">
-        <SearchResults 
-          results={mergedResults} 
-          loading={loading} 
-        />
-      </div>
-    </div>
+      {error && (
+        <ThemedView style={styles.errorContainer}>
+          <ThemedText style={styles.errorText}>Error: {error}</ThemedText>
+        </ThemedView>
+      )}
+    </ScreenContainer>
   );
 }
+
+interface SearchResultsProps {
+  results: SearchResult[];
+  loading: boolean;
+}
+
+function SearchResults({ results, loading }: SearchResultsProps) {
+  const tintColor = useThemeColor({}, 'tint');
+  const iconColor = useThemeColor({}, 'iconSecondary');
+  const borderColor = useThemeColor({}, 'border');
+  const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
+  const mutedTextColor = useThemeColor({}, 'mutedText');
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.centered}>
+        <ActivityIndicator size="large" color={tintColor} />
+      </ThemedView>
+    );
+  }
+
+  if (results.length === 0) {
+    return (
+      <ThemedView style={styles.centered}>
+        <ThemedView style={[styles.iconCircle, { backgroundColor: backgroundSecondary }]}>
+          <Feather name="search" size={32} color={iconColor} />
+        </ThemedView>
+        <ThemedText type="subtitle" style={styles.noResultsTitle}>No results found</ThemedText>
+        <ThemedText style={[styles.noResultsSub, { color: mutedTextColor }]}>
+          Try adjusting your search terms or filters to find what you're looking for
+        </ThemedText>
+      </ThemedView>
+    );
+  }
+
+  // Split results into posts and documents for display groups if you want group headers
+  const postResults = results.filter(
+    item => item._type === 'post'
+  ) as (PostWithProfile & { _type: 'post' })[];
+  const documentResults = results.filter(
+    item => item._type === 'document'
+  ) as (Document & { _type: 'document' })[];
+
+  return (
+    <ThemedView>
+      {postResults.length > 0 && (
+        <FlatList
+          data={postResults}
+          keyExtractor={(item, index) => `post-${item.id || index}`}
+          renderItem={({ item }) => (
+            <ThemedView style={[styles.itemContainer, { borderBottomColor: borderColor }]}>
+              <PostResultItem post={item} />
+            </ThemedView>
+          )}
+        />
+      )}
+
+      {documentResults.length > 0 && postResults.length > 0 && (
+        <ThemedView style={[styles.sectionHeader, { backgroundColor: backgroundSecondary, borderColor }]}>
+          <ThemedText style={[styles.sectionHeaderText, { color: mutedTextColor }]}>Your Documents</ThemedText>
+        </ThemedView>
+      )}
+
+      {documentResults.length > 0 && (
+        <FlatList
+          data={documentResults}
+          keyExtractor={(item, index) => `document-${item.id || index}`}
+          renderItem={({ item }) => (
+            <ThemedView style={[styles.itemContainer, { borderBottomColor: borderColor }]}>
+              <DocumentResultItem document={item} />
+            </ThemedView>
+          )}
+        />
+      )}
+    </ThemedView>
+  );
+}
+
+function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } }) {
+  // Card variant: job or news
+  const cardVariant =
+    post.type === PostType.Job ? 'job' : 'news';
+
+  // Profile fields (may be undefined/null)
+  const profile = post.profiles;
+  const username = profile?.username || '';
+  const name = [profile?.name, profile?.surname].filter(Boolean).join(' ') || '';
+  const avatarImage =
+    profile?.avatar_url ||
+    (post.criteria?.company
+      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.criteria.company)}&background=random`
+      : 'https://via.placeholder.com/32');
+
+  // Title for the company/user/author/publisher
+  const displayTitle =
+    cardVariant === 'job'
+      ? post.criteria?.company || post.title || ''
+      : profile?.name ||
+        post.criteria?.author ||
+        post.criteria?.source ||
+        'Publisher';
+
+  // Main post title/headline
+  const postTitle = post.title || '';
+  const description = post.content || '';
+
+  return (
+    <ContentCard
+      variant={cardVariant}
+      id={post.id}
+      title={displayTitle}
+      postTitle={postTitle}
+      username={username}
+      name={name}
+      avatarImage={avatarImage}
+      mainImage={post.image_url ?? undefined}
+      description={description}
+      badgeText={
+        cardVariant === 'job'
+          ? post.criteria?.location || 'Remote'
+          : cardVariant === 'news'
+          ? post.criteria?.source || 'News'
+          : undefined
+      }
+      badgeVariant={cardVariant === 'news' ? 'error' : undefined}
+      isVerified={false} // profile.verified is not present; if you add it, use profile?.verified
+      industry={post.industry || undefined}
+      onPressHeart={() => {}}
+      onPressBookmark={() => {}}
+      onPressShare={() => {}}
+      onPressApply={() => {}}
+      jobId={post.id}
+    />
+  );
+}
+  
+function DocumentResultItem({ document }: { document: Document & { _type: 'document' } }) {
+  return <DocumentCard document={document} />;
+}
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    textAlign: 'center',
+  },
+  iconCircle: {
+    padding: 16,
+    borderRadius: 50,
+    marginBottom: 16,
+  },
+  noResultsTitle: {
+    marginBottom: 8,
+  },
+  noResultsSub: {
+    fontSize: 14,
+    marginTop: 8,
+    maxWidth: 300,
+    textAlign: 'center',
+  },
+  itemContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 8,
+    margin: 16,
+  },
+  errorText: {
+    fontSize: 14,
+  },
+});

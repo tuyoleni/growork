@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FilterKey } from '../config';
+import { FilterKey } from '@/constants/searchConfig';
 import CategorySelector from '@/components/ui/CategorySelector';
 import { View } from 'react-native';
 
@@ -34,7 +34,7 @@ export default function FilterTabs({
   };
 
   return (
-    <View className="my-3">
+    <View style={{ marginVertical: 12 }}>
       <CategorySelector
         options={categoryOptions}
         selectedIndex={selectedIndex}
