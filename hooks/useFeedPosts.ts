@@ -21,6 +21,7 @@ export interface DbPost {
   created_at: string;
   updated_at: string | null;
   is_sponsored: boolean;
+  industry?: string | null;
   profiles?: {
     id: string;
     avatar_url: string | null;
@@ -144,7 +145,7 @@ export function useFeedPosts() {
       badgeText: post.type === PostType.Job ? 'JOB' : 'NEWS',
       badgeVariant: post.type === PostType.Job ? 'success' : 'info',
       isVerified: true,
-      industry: variant === 'job' ? 'Technology' : undefined
+      industry: post.industry || (variant === 'job' ? 'Technology' : undefined)
     };
   }, []);
 

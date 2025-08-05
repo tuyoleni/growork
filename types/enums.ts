@@ -1,7 +1,6 @@
 export enum PostType {
   News = 'news',
   Job = 'job',
-  Ad = 'ad',
 }
 
 export enum AdStatus {

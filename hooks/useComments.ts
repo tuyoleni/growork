@@ -21,18 +21,12 @@ export function useComments() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Track if we're currently fetching, and track last fetched post to avoid redundant fetches
   const isFetchingRef = useRef(false);
   const lastFetchedPostId = useRef<string | null>(null);
 
-  // Fetch comments for a specific post
   const fetchComments = useCallback(async (postId: string) => {
     if (!postId) return;
-
-    // Prevent multiple simultaneous fetches
     if (isFetchingRef.current) return;
-
-    // Skip if we're already loading comments for this post
     if (loading && lastFetchedPostId.current === postId) return;
 
     try {
@@ -41,7 +35,6 @@ export function useComments() {
       setError(null);
       lastFetchedPostId.current = postId;
 
-      // Fetch comments for this post
       const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
         .select('*')
@@ -55,10 +48,8 @@ export function useComments() {
         return;
       }
 
-      // Get user IDs from comments (filter out null values)
       const userIds = [...new Set(commentsData.map(comment => comment.user_id))].filter(Boolean);
 
-      // Fetch profiles for these users
       let profilesData: any[] = [];
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
@@ -68,13 +59,11 @@ export function useComments() {
         profilesData = profiles || [];
       }
 
-      // Create a map of user IDs to profiles
       const profilesMap: Record<string, Comment['profiles']> = (profilesData || []).reduce((map, profile) => {
         map[profile.id] = profile;
         return map;
       }, {} as Record<string, Comment['profiles']>);
 
-      // Combine comments with profiles
       const commentsWithProfiles = commentsData.map(comment => ({
         ...comment,
         profiles: profilesMap[comment.user_id] || null,
@@ -91,7 +80,6 @@ export function useComments() {
     }
   }, [loading]);
 
-  // Add a new comment
   const addComment = useCallback(async (
     postId: string,
     userId: string,
@@ -122,7 +110,6 @@ export function useComments() {
 
       if (error) throw error;
 
-      // Add the new comment to the list with user profile
       if (data && data[0]) {
         const newComment: Comment = {
           ...data[0],
@@ -139,7 +126,25 @@ export function useComments() {
     }
   }, []);
 
-  // Format date for display
+  const deleteComment = useCallback(async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      setComments(prev => prev.filter(comment => comment.id !== commentId));
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('Error deleting comment:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
   const formatCommentDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -163,6 +168,7 @@ export function useComments() {
     error,
     fetchComments,
     addComment,
+    deleteComment,
     formatCommentDate
   };
 }

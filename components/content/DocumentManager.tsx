@@ -2,7 +2,7 @@ import { useDocuments } from '@/hooks/useDocuments';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Document, DocumentType } from '@/types';
-import { supabase } from '@/utils/superbase';
+import { supabase, STORAGE_BUCKETS } from '@/utils/superbase';
 import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
@@ -68,17 +68,13 @@ export default function DocumentManager({
       const filePath = `documents/${fileName}`;
       
       // Upload to Supabase Storage
-      // Create a FormData object for the file
-      const fileData = new FormData();
-      fileData.append('file', {
-        uri: file.uri,
-        name: file.name,
-        type: file.mimeType || 'application/octet-stream',
-      } as any);
-
+      // Fetch the file and convert to blob
+      const response = await fetch(file.uri);
+      const blob = await response.blob();
+      
       const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, fileData, {
+        .from(STORAGE_BUCKETS.DOCUMENTS)
+        .upload(filePath, blob, {
           contentType: file.mimeType || 'application/octet-stream',
         });
       
@@ -86,9 +82,10 @@ export default function DocumentManager({
         throw uploadError;
       }
       
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(filePath);
+      // Get public URL using the shared function
+      const publicUrl = supabase.storage
+        .from(STORAGE_BUCKETS.DOCUMENTS)
+        .getPublicUrl(filePath).data.publicUrl;
       
       // Prompt for document type
       const docType = documentType || DocumentType.CV; 

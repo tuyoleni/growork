@@ -24,6 +24,7 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>({ session: null, initialLoading: true });
 export function useAuth() { return useContext(AuthContext); }
 
+// Protect routes: allow public access to "post" (post detail) routes only.
 function useProtectedRoute() {
   const { session, initialLoading } = useAuth();
   const router = useRouter();
@@ -31,11 +32,19 @@ function useProtectedRoute() {
 
   useEffect(() => {
     if (initialLoading) return;
-    const currentPath = segments.join('/');
+    
     const isAuthRoute = segments.some(segment => segment === 'auth');
-    const isTabsRoute = segments.some(segment => segment === '(tabs)');
-    if (!session?.user && !isAuthRoute) router.replace('/auth/login');
-    else if (session?.user && !isTabsRoute) router.replace('/(tabs)');
+    const isPostRoute = segments.some(segment => segment === 'post');
+
+    // Only redirect unauthenticated users from routes that are NOT post or auth
+    // "post" routes are accessible to public, and "auth" routes are for login/sign-up
+    if (!session?.user && !isAuthRoute && !isPostRoute) {
+      router.replace('/auth/login');
+    } else if (session?.user && isAuthRoute) {
+      // Authenticated users shouldn't see login routes
+      router.replace('/(tabs)');
+    }
+    // Public users can visit /post/[id], but need login for other app routes
   }, [session, initialLoading, router, segments]);
 }
 
@@ -45,6 +54,7 @@ function AuthGate() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="auth" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="post" />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -82,7 +92,7 @@ export default function RootLayout() {
     let isMounted = true;
     const getInitialSession = async () => {
       try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (currentSession) {
           const { data: { user }, error: refreshError } = await supabase.auth.refreshSession();
           if (refreshError) {
@@ -94,7 +104,7 @@ export default function RootLayout() {
         } else {
           if (isMounted) setSession(null);
         }
-      } catch (error) {
+      } catch {
         if (isMounted) setSession(null);
       } finally {
         if (isMounted) setInitialLoading(false);
@@ -139,7 +149,6 @@ export default function RootLayout() {
             </AppProvider>
           </AuthContext.Provider>
         </ThemeProvider>
-      
       </ActionSheetProvider>
     </GestureHandlerRootView>
   );

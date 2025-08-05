@@ -3,7 +3,7 @@ import { SafeAreaView, View, StyleSheet, Platform } from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
-  BottomSheetView,
+  BottomSheetScrollView,
   BottomSheetBackdropProps
 } from '@gorhom/bottom-sheet';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -62,36 +62,36 @@ const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetProps>(
         handleIndicatorStyle={handleIndicatorStyle}
         backdropComponent={renderBackdrop}
       >
-        <BottomSheetView style={styles.container}>
-          <SafeAreaView style={styles.safeArea}>
-            {header && (
-              <View style={[styles.headerContainer, { borderBottomColor: borderColor }]}>
-                {header}
-              </View>
-            )}
+        <SafeAreaView style={styles.safeArea}>
+          {header && (
+            <View style={[styles.headerContainer, { borderBottomColor: borderColor }]}>
+              {header}
+            </View>
+          )}
+          <BottomSheetScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.bodyContainer}>
               {body}
             </View>
-            {footer && (
-              <View style={[
-                styles.footerContainer,
-                { backgroundColor: backgroundSecondary, borderTopColor: borderColor }
-              ]}>
-                {footer}
-              </View>
-            )}
-          </SafeAreaView>
-        </BottomSheetView>
+          </BottomSheetScrollView>
+          {footer && (
+            <View style={[
+              styles.footerContainer,
+              { backgroundColor: backgroundSecondary, borderTopColor: borderColor }
+            ]}>
+              {footer}
+            </View>
+          )}
+        </SafeAreaView>
       </BottomSheetModal>
     );
   }
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 0 },
   safeArea: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
   headerContainer: { padding: 16, paddingBottom: 12, borderBottomWidth: 1 },
-  bodyContainer: { flex: 1, minHeight: 0 },
+  bodyContainer: { flex: 1, minHeight: 0, padding: 16 },
   footerContainer: { width: '100%', borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === 'ios' ? 24 : 16 },
 });
 

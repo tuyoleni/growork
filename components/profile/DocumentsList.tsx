@@ -1,11 +1,10 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
-import { BottomSheetModal, TouchableOpacity } from '@gorhom/bottom-sheet';
+import { TouchableOpacity } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { ActionSheetIOS, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import GlobalBottomSheet from '../GlobalBottomSheet';
 import { ThemedText } from '../ThemedText';
 import DocumentCard from '../content/DocumentCard';
 import DocumentList from '../content/DocumentList';
@@ -13,6 +12,7 @@ import { DocumentType } from '@/types';
 import { Document } from '@/types';
 import CustomOptionStrip from '../ui/CustomOptionStrip';
 import { useDocumentUpload } from './useDocumentUpload';
+import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 
 const MODAL_CATEGORIES = ['CV', 'Cover Letter', 'Certificate'];
 
@@ -84,12 +84,12 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   const [modalVisible, setModalVisible] = useState(false);
   const [file, setFile] = useState<{ name: string; uri: string; mimeType: string } | null>(null);
   const [pendingDocs, setPendingDocs] = useState<any[]>([]);
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
   const mutedText = useThemeColor({}, 'mutedText');
   const [selectedDocumentFilterIndex, setSelectedDocumentFilterIndex] = useState(-1);
   const [visibleDocumentFilters, setVisibleDocumentFilters] = useState(DOCUMENT_FILTERS);
+  const { openDocumentsSheet } = useBottomSheetManager();
 
   const handlePickPdf = async () => {
     try {
@@ -136,22 +136,21 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
     setPendingDocs([]);
     setFile(null);
     setModalVisible(false);
-    bottomSheetRef.current?.dismiss();
+    // Just use the dismiss function from useDocumentUpload
     dismiss();
   };
 
   const openModal = () => {
     setModalVisible(true);
-    setTimeout(() => {
-      bottomSheetRef.current?.present();
-    }, 0);
+    // Use the centralized bottom sheet manager instead of direct ref manipulation
+    openDocumentsSheet();
   };
 
   const closeModal = () => {
     setModalVisible(false);
     setFile(null);
     setPendingDocs([]);
-    bottomSheetRef.current?.dismiss();
+    // Just use the dismiss function from useDocumentUpload
     dismiss();
   };
 
@@ -354,101 +353,7 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
         emptyText={`No ${getSelectedDocumentFilterLabel().toLowerCase()} documents found`}
       />
 
-      {/* Upload Modal */}
-      <GlobalBottomSheet
-        ref={bottomSheetRef}
-        onDismiss={closeModal}
-        snapPoints={['70%']}
-        header={
-          <ThemedText style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>
-            Upload Your Documents
-          </ThemedText>
-        }
-        body={
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={0}
-          >
-            <ScrollView 
-              contentContainerStyle={{ 
-                padding: 24, 
-                paddingBottom: 24 // Reduced padding since footer is fixed
-              }}
-              showsVerticalScrollIndicator={false}
-              style={{ flex: 1 }}
-            >
-              {MODAL_CATEGORIES.map((docType) => {
-                const docsOfType = pendingDocs.filter(doc => doc.category === docType);
-                return (
-                  <View key={docType} style={{ marginBottom: 32 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <ThemedText style={{ fontSize: 16, fontWeight: 'bold', flex: 1 }}>{docType}</ThemedText>
-                      <TouchableOpacity
-                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'transparent', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 8 }}
-                        onPress={() => handlePickPdfForType(docType)}
-                      >
-                        <Feather name="plus" size={18} color={tintColor} style={{ marginRight: 4 }} />
-                        <ThemedText style={{ fontSize: 15, color: tintColor, fontWeight: '600' }}>Add</ThemedText>
-                      </TouchableOpacity>
-                    </View>
-                    
-                    {docsOfType.length === 0 ? (
-                      <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                        <ThemedText style={{ fontSize: 14, color: mutedText, fontStyle: 'italic' }}>
-                          No {docType} uploaded yet.
-                        </ThemedText>
-                      </View>
-                    ) : (
-                      <View style={{ gap: 0 }}>
-                        {docsOfType.map((doc, index) => (
-                          <React.Fragment key={`${doc.name}-${index}`}>
-                            <DocumentCard
-                              document={{
-                                id: `temp-${index}-${Date.now()}`,
-                                user_id: 'temp',
-                                name: doc.name,
-                                type: doc.category,
-                                file_url: doc.uri,
-                                uploaded_at: new Date().toISOString(),
-                              }}
-                              variant="compact"
-                              showCategory={false}
-                              onPress={() => console.log('Document pressed:', doc.name)}
-                              showMenu={true}
-                              onPressMenu={() => handlePendingDocMenu(docType, doc)}
-                            />
-                            {index < docsOfType.length - 1 && (
-                              <View style={{ height: 1, backgroundColor: borderColor, opacity: 0.18, marginLeft: 52 }} />
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </KeyboardAvoidingView>
-        }
-        footer={
-          <TouchableOpacity
-            style={{ 
-              backgroundColor: textColor, 
-              borderRadius: 8, 
-              paddingVertical: 16, 
-              alignItems: 'center',
-              opacity: pendingDocs.length === 0 ? 0.5 : 1,
-            }}
-            onPress={handleContinue}
-            disabled={pendingDocs.length === 0}
-          >
-            <ThemedText style={{ fontSize: 16, color: backgroundColor, fontWeight: 'bold' }}>
-              Upload ({pendingDocs.length} document{pendingDocs.length !== 1 ? 's' : ''})
-            </ThemedText>
-          </TouchableOpacity>
-        }
-      />
+      {/* We're now using the centralized BottomSheetManager via openDocumentsSheet */}
     </>
   );
 }
@@ -556,4 +461,4 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
   },
-}); 
+});

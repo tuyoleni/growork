@@ -125,17 +125,14 @@ export const uploadImage = async ({
     const fileName = `${fileNamePrefix}_${userId}_${new Date().getTime()}.${fileExt}`;
     const filePath = `${fileName}`;
     
-    // Create FormData for upload
-    const formData = new FormData();
-    formData.append('file', {
-      uri,
-      name: fileName,
-      type: `image/${fileExt}`,
-    } as any);
+    // Fetch the image and convert to blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
     
+    // Upload the blob directly instead of using FormData
     const { error } = await supabase.storage
       .from(bucket)
-      .upload(filePath, formData, {
+      .upload(filePath, blob, {
         contentType: `image/${fileExt}`,
       });
       

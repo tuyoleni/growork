@@ -7,7 +7,25 @@ export interface Post {
   title: string | null;
   content: string | null;
   image_url: string | null;
-  criteria: any | null; // JSONB, can be refined
+  industry: string | null;
+  criteria: {
+    // Job fields
+    company?: string;
+    location?: string;
+    salary?: string;
+    jobType?: string;
+    requirements?: string[];
+    benefits?: string[];
+    deadline?: string;
+    // Article fields
+    source?: string;
+    summary?: string;
+    tags?: string[];
+    author?: string;
+    publication_date?: string;
+    // Extendable for future types
+    [key: string]: any;
+  } | null;
   created_at: string;
   updated_at: string | null;
   is_sponsored: boolean;
@@ -26,4 +44,4 @@ export interface Comment {
   post_id: string;
   content: string;
   created_at: string;
-} 
+}

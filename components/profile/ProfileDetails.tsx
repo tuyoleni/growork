@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Profile } from '@/types';
-import { supabase } from '@/utils/superbase';
+import { supabase, uploadImage, STORAGE_BUCKETS } from '@/utils/superbase';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { StyleSheet, View, Pressable, ActivityIndicator, Alert } from 'react-native';
@@ -78,33 +78,19 @@ export default function ProfileDetails({
       }
       
       const uri = result.assets[0].uri;
-      const fileName = uri.split('/').pop() || '';
-      const fileExt = fileName.split('.').pop() || '';
-      const filePath = `avatars/${profile.id}.${fileExt}`;
-      
       setLoading(true);
       
-      const fileData = new FormData();
-      fileData.append('file', {
+      // Use the shared uploadImage function
+      const publicUrl = await uploadImage({
+        bucket: STORAGE_BUCKETS.AVATARS,
+        userId: profile.id,
         uri,
-        name: fileName,
-        type: `image/${fileExt}`,
-      } as any);
+        fileNamePrefix: 'avatar'
+      });
       
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, fileData, {
-          contentType: `image/${fileExt}`,
-        });
-      
-      if (uploadError) {
-        throw uploadError;
+      if (!publicUrl) {
+        throw new Error('Failed to upload avatar');
       }
-      
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
       
       // Update profile
       const { error: updateError } = await supabase

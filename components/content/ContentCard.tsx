@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Platform, Image, Pressable, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
@@ -9,8 +10,8 @@ import { Colors } from '@/constants/Colors';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAuth } from '@/hooks/useAuth';
 import { useLikes } from '@/hooks/useLikes';
-import { useBookmarks } from '@/hooks/useBookmarks';
-import { openGlobalSheet } from '@/utils/globalSheet';
+import { useAppContext } from '@/utils/AppContext';
+import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 import Comments from '@/components/content/Comment';
 
 type Variant = 'job' | 'news' | 'sponsored';
@@ -23,9 +24,10 @@ export interface ContentCardProps {
   badgeText?: string;
   badgeVariant?: 'error' | 'info' | 'success';
   isVerified?: boolean;
+  industry?: string;
   onPressHeart?: () => void;
-  onCommentPress?: () => void;      // <--- Add this!
-  onPressMessage?: () => void;      // (Keep for compatibility, optional)
+  onCommentPress?: () => void; 
+  onPressMessage?: () => void;
   onPressShare?: () => void;
   onPressBookmark?: () => void;
   onPressApply?: () => void;
@@ -33,6 +35,7 @@ export interface ContentCardProps {
   onPressMore?: () => void;
   style?: ViewStyle;
   id?: string;
+  jobId?: string;
 }
 
 const badgeColors = (theme: any) => ({
@@ -42,7 +45,7 @@ const badgeColors = (theme: any) => ({
 });
 
 export default function ContentCard(props: ContentCardProps) {
-
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const borderColor = useThemeColor({}, 'border');
@@ -54,7 +57,7 @@ export default function ContentCard(props: ContentCardProps) {
 
   const { user } = useAuth();
   const { isLiked, toggleLike } = useLikes();
-  const { isBookmarked, toggleBookmark } = useBookmarks();
+  const { isBookmarked, toggleBookmark } = useAppContext();
 
   // UI state
   const [liked, setLiked] = useState(false);
@@ -100,14 +103,29 @@ export default function ContentCard(props: ContentCardProps) {
   };
 
   // Message/Comments
+  const { openCommentSheet } = useBottomSheetManager();
   const handleComment = () => {
     if (props.id) {
-      openGlobalSheet({
-        header: <ThemedText style={{ fontWeight: 'bold', fontSize: 18 }}>Comments</ThemedText>,
-        body: <Comments postId={props.id} />,
-        snapPoints: ['75%'],
-      });
+      openCommentSheet(props.id);
       props.onPressMessage?.();
+    }
+  };
+  
+  // Navigate to job details
+  const handleJobPress = () => {
+    if (props.variant === 'job') {
+      const id = props.jobId || props.id;
+      if (id) {
+        if (Platform.OS === 'ios') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+        console.log('Navigating to job details with ID:', id);
+        
+        // Use a more straightforward navigation approach
+        router.push(`/post/${id}`);
+      } else {
+        console.warn('No job ID available for navigation');
+      }
     }
   };
 
@@ -141,17 +159,15 @@ export default function ContentCard(props: ContentCardProps) {
     onPress,
   }: {
     name: keyof typeof Feather.glyphMap;
-    filled?: boolean; // only cosmetic: Feather only has outlines
+    filled?: boolean;
     color?: string;
     onPress?: () => void;
   }) => (
     <Pressable style={styles.iconButton} hitSlop={8} onPress={onPress}>
-      {/* For "filled" icons you could use a different icon set; here we just change color */}
       <Feather name={name} size={20} color={color || iconColor} />
     </Pressable>
   );
 
-  // Icon actions for bottom of card
   const renderIconActions = () => (
     <>
       <IconButton
@@ -176,13 +192,9 @@ export default function ContentCard(props: ContentCardProps) {
     if (props.variant === 'job') {
       return (
         <Pressable
-          style={[styles.applyButton, { backgroundColor: textColor }]}
-          onPress={() => {
-            if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            props.onPressApply?.();
-          }}>
+          style={[styles.applyButton, { backgroundColor: textColor }]}onPress={handleJobPress}>
           <ThemedText style={[styles.applyButtonText, { color: backgroundColor }]}>
-            Apply Now
+            View Details
           </ThemedText>
         </Pressable>
       );
@@ -206,38 +218,50 @@ export default function ContentCard(props: ContentCardProps) {
 
   return (
     <ThemedView style={[styles.card, { borderBottomColor: borderColor }, props.style]}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <Image source={{ uri: props.avatarImage }} style={styles.avatar} />
-        <View style={styles.companyRow}>
-          <ThemedText style={styles.companyName} type="defaultSemiBold">
-            {props.title}
-          </ThemedText>
-          {renderBadge()}
-          {props.variant === 'job' && props.isVerified && (
-            <Feather name="shield" size={16} color={tintColor} style={{ marginLeft: 4 }} />
-          )}
+      <Pressable 
+        style={[{ flex: 1 }, props.variant === 'job' && styles.cardPressable]}
+        onPress={props.variant === 'job' ? handleJobPress : undefined}
+        android_ripple={props.variant === 'job' ? { color: borderColor, borderless: false } : undefined}
+        hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
+      >
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <Image source={{ uri: props.avatarImage }} style={styles.avatar} />
+          <View style={styles.companyRow}>
+            <ThemedText style={styles.companyName} type="defaultSemiBold">
+              {props.title}
+            </ThemedText>
+            {renderBadge()}
+            {props.variant === 'job' && props.isVerified && (
+              <Feather name="shield" size={16} color={tintColor} style={{ marginLeft: 4 }} />
+            )}
+            {props.variant === 'job' && props.industry && (
+              <ThemedText style={[styles.sponsoredLabel, { color: mutedTextColor }]}>
+                {props.industry}
+              </ThemedText>
+            )}
+          </View>
+          <IconButton name="more-horizontal" onPress={props.onPressMore} />
         </View>
-        <IconButton name="more-horizontal" onPress={props.onPressMore} />
-      </View>
 
-      {/* Main Image, if present */}
-      {props.mainImage && (
-        <Image
-          source={{ uri: props.mainImage }}
-          style={styles.mainImage}
-          resizeMode="cover"
-        />
-      )}
+        {/* Main Image, if present */}
+        {props.mainImage && (
+          <Image
+            source={{ uri: props.mainImage }}
+            style={styles.mainImage}
+            resizeMode="cover"
+          />
+        )}
 
-      {/* Description and actions row */}
-      <View style={styles.body}>
-        <ThemedText style={styles.description}>{props.description}</ThemedText>
-        <View style={styles.actionsRow}>
-          <View style={styles.iconActions}>{renderIconActions()}</View>
-          {renderCTAButton()}
+        {/* Description and actions row */}
+        <View style={styles.body}>
+          <ThemedText style={styles.description}>{props.description}</ThemedText>
+          <View style={styles.actionsRow}>
+            <View style={styles.iconActions}>{renderIconActions()}</View>
+            {renderCTAButton()}
+          </View>
         </View>
-      </View>
+      </Pressable>
     </ThemedView>
   );
 }
@@ -340,5 +364,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginLeft: 3,
     fontWeight: '400',
+  },
+  cardPressable: {
+    borderRadius: 6,
   },
 });

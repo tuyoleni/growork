@@ -3,6 +3,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 
@@ -12,6 +13,8 @@ export type JobCardProps = {
   isVerified?: boolean;
   jobDescription: string;
   mainImage: string;
+  jobId?: string;
+  industry?: string;
   onPressHeart?: () => void;
   onPressMessage?: () => void;
   onPressShare?: () => void;
@@ -26,6 +29,8 @@ export default function JobCard({
   isVerified = true,
   jobDescription = 'Senior Product Designer - Join our team in creating the next generation of design tools. Remote position available.',
   mainImage = 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+  jobId,
+  industry,
   onPressHeart,
   onPressMessage,
   onPressShare,
@@ -33,6 +38,7 @@ export default function JobCard({
   onPressApply,
   onPressMore,
 }: JobCardProps) {
+  const router = useRouter();
   const borderColor = useThemeColor({}, 'border');
   const iconColor = useThemeColor({}, 'icon');
   const textColor = useThemeColor({}, 'text');
@@ -48,6 +54,12 @@ export default function JobCard({
           <ThemedText style={styles.companyName} type="defaultSemiBold">{companyName}</ThemedText>
           {isVerified && (
             <Feather name="shield" size={20} color={tintColor} style={{ marginLeft: 4 }} />
+          )}
+          {industry && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6 }}>
+              <Feather name="layers" size={16} color={iconColor} />
+              <ThemedText style={{ fontSize: 12, marginLeft: 4, color: iconColor }}>{industry}</ThemedText>
+            </View>
           )}
         </View>
         <Pressable style={styles.iconButton} hitSlop={8} onPress={() => {
@@ -104,9 +116,13 @@ export default function JobCard({
             if (process.env.EXPO_OS === 'ios') {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
-            onPressApply && onPressApply();
+            if (jobId) {
+              router.push(`/post/${jobId}`);
+            } else {
+              onPressApply && onPressApply();
+            }
           }}>
-            <ThemedText style={[styles.applyButtonText, { color: backgroundColor }]}>Apply Now</ThemedText>
+            <ThemedText style={[styles.applyButtonText, { color: backgroundColor }]}>View Details</ThemedText>
           </Pressable>
         </View>
       </View>
@@ -189,4 +205,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 15,
   },
-}); 
+});

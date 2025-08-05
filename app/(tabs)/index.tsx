@@ -20,9 +20,7 @@ import {
   ExtendedContentCardProps,
 } from '@/hooks/useFeedPosts';
 import { ThemedText } from '@/components/ThemedText';
-import { openGlobalSheet } from '@/utils/globalSheet';
-import CreatePostSheetUI from '@/components/content/CreatePost';
-import Comments from '@/components/content/Comment';
+import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 
 const INDUSTRIES = [
   'Technology', 'Finance', 'Healthcare', 'Retail', 'Logistics',
@@ -111,19 +109,14 @@ export default function Home() {
   const handlePostSuccess = () => fetchPosts();
 
   // --- SHEET OPENERS ---
+  const { openCreatePostSheet, openCommentSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });
+  
   function handleShowCreatePost() {
-    openGlobalSheet({
-      header: <ThemedText style={{ fontWeight: 'bold', fontSize: 18 }}>Create Post</ThemedText>,
-      body: <CreatePostSheetUI onSuccess={handlePostSuccess} />,
-      snapPoints: ['90%'],
-    });
+    openCreatePostSheet();
   }
+  
   function handleShowComments(postId: string) {
-    openGlobalSheet({
-      header: <ThemedText style={{ fontWeight: 'bold', fontSize: 18 }}>Comments</ThemedText>,
-      body: <Comments postId={postId} />,
-      snapPoints: ['80%'],
-    });
+    openCommentSheet(postId);
   }
 
   function handleShare(post: ExtendedContentCardProps) {
@@ -173,6 +166,7 @@ export default function Home() {
             <ContentCard
               key={`${post.title}-${post.variant}-${index}-${post.id ?? 'unknown'}`}
               {...post}
+              jobId={post.variant === 'job' ? post.id : undefined}
               onCommentPress={() => handleShowComments(post.id!)}
               onPressShare={() => handleShare(post)}
               style={index === 0 ? { marginTop: HEADER_HEIGHT - 48 } : undefined}
@@ -187,20 +181,6 @@ export default function Home() {
                   ? 'Error loading posts'
                   : 'No posts found'}
             </ThemedText>
-            {!loading && (
-              <Pressable
-                style={{
-                  marginTop: 20,
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  backgroundColor: '#3b82f6',
-                  borderRadius: 8
-                }}
-                onPress={handleShowCreatePost}
-              >
-                <ThemedText style={{ color: '#fff' }}>Create a post</ThemedText>
-              </Pressable>
-            )}
           </View>
         )}
         {error && (

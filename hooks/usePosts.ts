@@ -7,7 +7,7 @@ export function usePosts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPosts = useCallback(async (type?: PostType) => {
+  const fetchPosts = useCallback(async (type?: PostType, industryFilter?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -20,6 +20,10 @@ export function usePosts() {
       
       if (type) {
         query = query.eq('type', type);
+      }
+
+      if (industryFilter) {
+        query = query.eq('industry', industryFilter);
       }
       
       const { data: postsData, error: postsError } = await query;

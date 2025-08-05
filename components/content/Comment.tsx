@@ -1,51 +1,137 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useRef } from "react";
 import {
-  FlatList,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
   View,
-  ActivityIndicator,
+  FlatList,
+  Pressable,
   KeyboardAvoidingView,
-} from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { useAuth } from '@/hooks/useAuth';
-import { useComments, Comment } from '@/hooks/useComments';
-import { ThemedText } from '../ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { Image } from 'expo-image';
-import * as Haptics from 'expo-haptics';
+  Platform,
+  ActivityIndicator,
+  StyleSheet,
+  Animated,
+  ScrollView,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { Swipeable, RectButton } from "react-native-gesture-handler";
+import { useAuth } from "@/hooks/useAuth";
+import { useComments, Comment } from "@/hooks/useComments";
+import { useAppContext } from "@/utils/AppContext";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { Image } from "expo-image";
+import { ThemedText } from "../ThemedText";
+import { ThemedInput } from "../ThemedInput";
+
+const ThemedAvatar: React.FC<{
+  image: string;
+  size?: number;
+  square?: boolean;
+  children?: React.ReactNode;
+}> = ({
+  image,
+  size = 42,
+  square = false,
+  children,
+}) => (
+  <View style={{ position: "relative" }}>
+    <Image
+      source={{ uri: image }}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: square ? 4 : size / 2,
+      }}
+    />
+    {children}
+  </View>
+);
+
+const ThemedIconButton = ({
+  icon,
+  onPress,
+  disabled = false,
+}: {
+  icon: React.ReactNode;
+  onPress?: () => void;
+  disabled?: boolean;
+}) => (
+  <Pressable
+    style={({ pressed }) => [
+      {
+        opacity: pressed ? 0.5 : disabled ? 0.3 : 1,
+        padding: 6,
+      },
+    ]}
+    hitSlop={10}
+    onPress={onPress}
+    disabled={disabled}
+  >
+    {icon}
+  </Pressable>
+);
 
 interface CommentsProps {
   postId: string;
-  onClose?: () => void;
+  postTitle?: string;
 }
 
-export default function Comments({ postId, onClose }: CommentsProps) {
+export default function Comments({ postId }: CommentsProps) {
   const { user, profile } = useAuth();
-  const { comments, loading, error, fetchComments, addComment, formatCommentDate } = useComments();
-  const [commentText, setCommentText] = useState('');
+  const {
+    comments,
+    loading,
+    error,
+    fetchComments,
+    addComment,
+    deleteComment,
+    formatCommentDate,
+  } = useComments();
+  const { toggleCommentLike: toggleLike, isCommentLiked: isLiked, getCommentLikeCount: getLikeCount } = useAppContext();
+
+  const [commentText, setCommentText] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [likedComments, setLikedComments] = useState<Record<string, boolean>>({});
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const inputRef = useRef<any>(null);
 
-  const textColor = useThemeColor({}, 'text');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
-  const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
+  // Theme colors
+  const tintColor = useThemeColor({}, "tint");
+  const borderColor = useThemeColor({}, "border");
+  const mutedTextColor = useThemeColor({}, "mutedText");
 
-  // Fetch comments on postId change
   useEffect(() => {
-    if (postId) fetchComments(postId);
-    setCommentText('');
+    if (postId) {
+      fetchComments(postId);
+      setCommentText("");
+    }
   }, [postId]);
 
-  // Submit a new comment
+  useEffect(() => {
+    const loadLikeData = async () => {
+      if (comments.length > 0) {
+        const likeStates: Record<string, boolean> = {};
+        const counts: Record<string, number> = {};
+        for (const comment of comments) {
+          const [liked, count] = await Promise.all([
+            isLiked(comment.id),
+            getLikeCount(comment.id),
+          ]);
+          likeStates[comment.id] = liked;
+          counts[comment.id] = count;
+        }
+        setLikedComments(likeStates);
+        setLikeCounts(counts);
+      }
+    };
+    loadLikeData();
+  }, [comments, isLiked, getLikeCount]);
+
   const handleSubmitComment = async () => {
-    if (!user || !postId || !commentText.trim()) return;
-    try {
-      setIsSending(true);
-      const userProfileData = profile
+    if (!user || !commentText.trim()) return;
+    setIsSending(true);
+    await addComment(
+      postId,
+      user.id,
+      commentText,
+      profile
         ? {
             id: profile.id,
             avatar_url: profile.avatar_url,
@@ -53,248 +139,359 @@ export default function Comments({ postId, onClose }: CommentsProps) {
             surname: profile.surname,
             username: profile.username,
           }
-        : undefined;
-      await addComment(postId, user.id, commentText, userProfileData);
-      if (Platform.OS === 'ios') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      setCommentText('');
-    } catch (error) {
-      if (Platform.OS === 'ios') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-    } finally {
-      setIsSending(false);
+        : undefined
+    );
+    setCommentText("");
+    setIsSending(false);
+  };
+
+  const handleToggleLike = async (commentId: string) => {
+    const prevLiked = likedComments[commentId];
+    setLikedComments((prev) => ({ ...prev, [commentId]: !prevLiked }));
+    setLikeCounts((prev) => ({
+      ...prev,
+      [commentId]: prev[commentId] + (prevLiked ? -1 : 1),
+    }));
+    const result = await toggleLike(commentId);
+    if (!result.success) {
+      // Rollback on error
+      setLikedComments((prev) => ({ ...prev, [commentId]: prevLiked }));
+      setLikeCounts((prev) => ({
+        ...prev,
+        [commentId]: prev[commentId] + (prevLiked ? 1 : -1),
+      }));
     }
   };
 
-  // Retry load comments
-  const handleRetry = useCallback(() => {
-    if (postId) fetchComments(postId);
-  }, [postId, fetchComments]);
-
-  // Pull to refresh logic
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchComments(postId);
-    setRefreshing(false);
+  const handleDeleteComment = async (commentId: string) => {
+    await deleteComment(commentId);
   };
 
-  // Render single comment row
-  const renderComment = ({ item }: { item: Comment }) => {
-    const profile = item.profiles;
-    const displayName = profile ? `${profile.name} ${profile.surname}` : 'Anonymous';
-    const avatarUrl = profile?.avatar_url ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=128`;
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+    item: Comment
+  ) => {
+    const trans = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [0, 100],
+      extrapolate: "clamp",
+    });
     return (
-      <View style={styles.commentContainer}>
-        <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
-        <View style={styles.commentContent}>
-          <View style={styles.commentHeader}>
-            <ThemedText style={styles.userName} type="defaultSemiBold">
-              {displayName}
-            </ThemedText>
-            <ThemedText style={[styles.commentTime, { color: mutedTextColor }]}>
-              {formatCommentDate(item.created_at)}
-            </ThemedText>
-          </View>
-          <ThemedText style={styles.commentText}>{item.content}</ThemedText>
-        </View>
-      </View>
+      <Animated.View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          transform: [{ translateX: trans }],
+        }}
+      >
+        <RectButton
+          style={styles.deleteButton}
+          onPress={() => handleDeleteComment(item.id)}
+        >
+          <Feather name="trash-2" size={20} color="#fff" />
+          <ThemedText style={{ color: "#fff", marginLeft: 8, fontWeight: "600" }}>
+            Delete
+          </ThemedText>
+        </RectButton>
+      </Animated.View>
     );
   };
 
-  // FlatList for body
-  const bodyComponent = (
-    <View style={styles.container}>
-      {loading && !comments.length ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={tintColor} />
-        </View>
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
-          <Pressable
-            style={[styles.retryButton, { backgroundColor: tintColor }]}
-            onPress={handleRetry}
-          >
-            <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
-          </Pressable>
-        </View>
-      ) : (
-        <FlatList
-          data={comments}
-          renderItem={renderComment}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingBottom: 80,
-            flexGrow: 1,
-          }}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Feather name="message-circle" size={28} color={mutedTextColor} style={{ marginBottom: 12, opacity: 0.5 }} />
-              <ThemedText style={styles.emptyText}>
-                No comments yet. Be the first to comment!
-              </ThemedText>
-            </View>
-          }
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-        />
-      )}
-    </View>
-  );
+  const renderComment = ({ item }: { item: Comment }) => {
+    const displayName = item.profiles
+      ? `${item.profiles.name} ${item.profiles.surname}`
+      : "Anonymous";
+    const avatarUrl =
+      item.profiles?.avatar_url ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=128`;
+    const isCommentLiked = likedComments[item.id] || false;
+    const commentLikeCount = likeCounts[item.id] || 0;
 
-  // Footer
-  const footerComponent = (
-    <View style={[styles.inputContainer, { borderColor, backgroundColor: Platform.OS === 'ios' ? backgroundColor : '#fafafc' }]}>
-      {user ? (
-        <>
-          <TextInput
-            style={[styles.input, { color: textColor, borderColor }]}
-            placeholder="Add a comment..."
-            placeholderTextColor={mutedTextColor}
-            value={commentText}
-            onChangeText={setCommentText}
-            multiline
-            maxLength={350}
-            editable={!isSending}
-          />
-          <Pressable
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor:
-                  !commentText.trim() || isSending ? mutedTextColor : tintColor,
-                opacity: !commentText.trim() || isSending ? 0.7 : 1,
-              },
-            ]}
-            disabled={!commentText.trim() || isSending}
-            onPress={handleSubmitComment}
-          >
-            {isSending ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Feather name="send" size={18} color="#fff" />
-            )}
-          </Pressable>
-        </>
-      ) : (
-        <ThemedText style={styles.loginPrompt}>
-          Please log in to comment
-        </ThemedText>
-      )}
-    </View>
+    return (
+      <Swipeable
+        renderRightActions={(progress, dragX) =>
+          renderRightActions(progress, dragX, item)
+        }
+        overshootRight={false}
+      >
+        <View style={[styles.commentRow, { borderColor }]}>
+          <ThemedAvatar image={avatarUrl} />
+          <View style={styles.commentCard}>
+            <View style={styles.commentHeader}>
+              <View style={styles.row}>
+                <ThemedText type="defaultSemiBold" style={styles.displayName}>
+                  {displayName}
+                </ThemedText>
+                <ThemedText style={[styles.timeText, { color: mutedTextColor }]}>
+                  {formatCommentDate(item.created_at)}
+                </ThemedText>
+              </View>
+              <ThemedIconButton
+                icon={
+                  <Feather
+                    name="more-horizontal"
+                    size={16}
+                    color={mutedTextColor}
+                  />
+                }
+                onPress={() => {}}
+              />
+            </View>
+            <ThemedText style={styles.commentContent}>
+              {item.content}
+            </ThemedText>
+            <View style={styles.actionsRow}>
+              <View style={styles.likeContainer}>
+                <ThemedIconButton
+                  icon={
+                    <Feather
+                      name="heart"
+                      size={16}
+                      color={isCommentLiked ? "#ff4757" : mutedTextColor}
+                      fill={isCommentLiked ? "#ff4757" : "none"}
+                    />
+                  }
+                  onPress={() => handleToggleLike(item.id)}
+                />
+                {commentLikeCount > 0 && (
+                  <ThemedText style={[styles.likeCount, { color: mutedTextColor }]}>
+                    {commentLikeCount}
+                  </ThemedText>
+                )}
+              </View>
+            </View>
+          </View>
+        </View>
+      </Swipeable>
+    );
+  };
+
+  const emojiReactions = ["❤️", "👏", "🔥", "🙏", "😢", "😊", "😮", "😂"];
+  const ThemedBadge = ({
+    children,
+    onPress,
+  }: {
+    children: React.ReactNode;
+    onPress?: () => void;
+  }) => (
+    <Pressable
+      style={[
+        styles.badge,
+        {
+          borderColor,
+        },
+      ]}
+      onPress={onPress}
+    >
+      {children}
+    </Pressable>
   );
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      enabled={Platform.OS === 'ios'}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={16}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={[styles.sheet]}
     >
-      <View style={{ flex: 1 }}>
-        {/* Body */}
-        {bodyComponent}
-        {/* Footer */}
-        {footerComponent}
+      {/* Comments List */}
+      <FlatList
+        data={comments}
+        renderItem={renderComment}
+        keyExtractor={(item) => item.id}
+        ListEmptyComponent={
+          loading ? null : (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={[styles.emptyText, { color: mutedTextColor }]}>
+                No comments yet. Be the first!
+              </ThemedText>
+            </View>
+          )
+        }
+        ListHeaderComponent={loading ? <ActivityIndicator /> : null}
+        contentContainerStyle={
+          !comments.length && !loading ? styles.emptyList : undefined
+        }
+      />
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {emojiReactions.map((emoji) => (
+          <ThemedBadge
+            key={emoji}
+            onPress={() => setCommentText((prev) => prev + emoji)}
+          >
+            <ThemedText style={styles.badgeText}>{emoji}</ThemedText>
+          </ThemedBadge>
+        ))}
+      </ScrollView>
+
+      {/* Input Area */}
+      <View style={[styles.inputWrap, { borderColor}]}>
+        {user && (
+          <ThemedAvatar
+            image={
+              profile?.avatar_url ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                profile?.name || "User"
+              )}&size=128`
+            }
+            size={32}
+          />
+        )}
+        <ThemedInput
+          style={styles.textInput}
+          placeholder="Add a comment..."
+          value={commentText}
+          onChangeText={setCommentText}
+          multiline
+        />
+        <ThemedIconButton
+          icon={<Feather name="smile" size={20} color={mutedTextColor} />}
+          onPress={() => {
+            inputRef.current?.focus();
+          }}
+        />
+        <ThemedIconButton
+          icon={
+            isSending ? (
+              <ActivityIndicator size={20} color={tintColor} />
+            ) : (
+              <Feather name="send" size={20} color={tintColor} />
+            )
+          }
+          onPress={handleSubmitComment}
+          disabled={isSending || !commentText.trim()}
+        />
       </View>
+      {/* Error Display */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <ThemedText style={[styles.errorText, { color: "#ff4757" }]}>
+            {error}
+          </ThemedText>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
-// --- UI STYLES ---
+// ---- Styles ----
 const styles = StyleSheet.create({
-  container: {
+  sheet: {
     flex: 1,
-    padding: 16,
+    width: "100%",
+    paddingTop: 2,
+    overflow: "hidden",
   },
-  loadingContainer: {
-    flex: 1, justifyContent: 'center', alignItems: 'center',
+  //mmmmmm
+  commentRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 13,
+
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
   },
-  errorContainer: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20,
-  },
-  errorText: {
-    textAlign: 'center', marginBottom: 14, fontSize: 15,
-  },
-  retryButton: {
-    paddingHorizontal: 22,
-    paddingVertical: 11,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    minHeight: 200,
-    paddingBottom: 40,
-  },
-  emptyText: {
-    textAlign: 'center',
-    fontSize: 15,
-    opacity: 0.7,
-    lineHeight: 22,
-    maxWidth: '80%',
-  },
-  commentContainer: {
-    flexDirection: 'row', marginBottom: 18,
-  },
-  avatar: {
-    width: 37, height: 37, borderRadius: 18, marginRight: 12,
-  },
-  commentContent: {
+  commentCard: {
     flex: 1,
+    gap: 7,
   },
   commentHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4,
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  userName: {
-    fontSize: 14, fontWeight: 'bold',
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  commentTime: {
+  displayName: {
+    fontSize: 15,
+  },
+  timeText: {
     fontSize: 12,
+    marginLeft: 8,
   },
-  commentText: {
+  commentContent: {
     fontSize: 15,
     lineHeight: 21,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  actionsRow: {
+    flexDirection: "row",
+    gap: 18,
+    marginTop: 4,
+    alignItems: "center",
   },
-  input: {
-    flex: 1,
-    minHeight: 40,
-    maxHeight: 84,
-    borderWidth: 1,
-    borderRadius: 20,
-    marginRight: 8,
+  likeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  likeCount: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  badge: {
+    height: 30,
+    minWidth: 36,
+    paddingHorizontal: 11,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 6,
+  },
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 13,
+    borderTopWidth: 1,
+    paddingBottom: 24,
+  },
+  textInput: {
+    flex: 1,
+    borderRadius: 18,
+    minHeight: 34,
+    maxHeight: 80,
     fontSize: 15,
+    marginBottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  sendButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: 'center',
-    alignItems: 'center',
+  badgeText: {
+    fontSize: 16,
   },
-  loginPrompt: {
-    flex: 1, textAlign: 'center', opacity: 0.7, padding: 10,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+  },
+  emptyList: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  errorContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: "center",
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ff4757",
+    flex: 1,
+    justifyContent: "flex-end",
+    paddingHorizontal: 24,
+    borderRadius: 0,
   },
 });

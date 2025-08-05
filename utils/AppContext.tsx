@@ -1,6 +1,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useAds } from '@/hooks/useAds';
 import { useApplications } from '@/hooks/useApplications';
+import { useBookmarks } from '@/hooks/useBookmarks';
+import { useCommentLikes } from '@/hooks/useCommentLikes';
 import { usePosts } from '@/hooks/usePosts';
 import { Ad, Application, Document, Post, Profile } from '@/types';
 import React, { createContext, useContext, ReactNode, useState, useCallback, useEffect } from 'react';
@@ -40,6 +42,25 @@ interface AppContextType {
   fetchAds: (status?: any) => Promise<void>;
   addAd: (adData: Partial<Ad>) => Promise<any>;
   recordAdImpression: (adId: string, userId: string) => Promise<any>;
+  
+  // Bookmarks
+  bookmarks: string[];
+  bookmarksLoading: boolean;
+  bookmarksError: string | null;
+  isBookmarked: (postId: string) => boolean;
+  addBookmark: (postId: string) => Promise<any>;
+  removeBookmark: (postId: string) => Promise<any>;
+  toggleBookmark: (postId: string) => Promise<any>;
+  fetchBookmarks: () => Promise<void>;
+  
+  // Comment Likes
+  commentLikesLoading: boolean;
+  commentLikesError: string | null;
+  isCommentLiked: (commentId: string) => Promise<boolean>;
+  likeComment: (commentId: string) => Promise<any>;
+  unlikeComment: (commentId: string) => Promise<any>;
+  toggleCommentLike: (commentId: string) => Promise<any>;
+  getCommentLikeCount: (commentId: string) => Promise<number>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -50,6 +71,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const postsHook = usePosts();
   const applicationsHook = useApplications(auth.user?.id);
   const adsHook = useAds();
+  const bookmarksHook = useBookmarks();
+  const commentLikesHook = useCommentLikes();
 
   // Initialize state when user changes
   useEffect(() => {
@@ -57,6 +80,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       postsHook.fetchPosts();
       applicationsHook.fetchApplications();
       adsHook.fetchAds();
+      bookmarksHook.fetchBookmarks();
     }
   }, [auth.user]);
 
@@ -95,6 +119,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     fetchAds: adsHook.fetchAds,
     addAd: adsHook.addAd,
     recordAdImpression: adsHook.recordAdImpression,
+    
+    // Bookmarks state and methods
+    bookmarks: bookmarksHook.bookmarks,
+    bookmarksLoading: bookmarksHook.loading,
+    bookmarksError: bookmarksHook.error,
+    isBookmarked: bookmarksHook.isBookmarked,
+    addBookmark: bookmarksHook.addBookmark,
+    removeBookmark: bookmarksHook.removeBookmark,
+    toggleBookmark: bookmarksHook.toggleBookmark,
+    fetchBookmarks: bookmarksHook.fetchBookmarks,
+    
+    // Comment Likes state and methods
+    commentLikesLoading: commentLikesHook.loading,
+    commentLikesError: commentLikesHook.error,
+    isCommentLiked: commentLikesHook.isLiked,
+    likeComment: commentLikesHook.likeComment,
+    unlikeComment: commentLikesHook.unlikeComment,
+    toggleCommentLike: commentLikesHook.toggleLike,
+    getCommentLikeCount: commentLikesHook.getLikeCount,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

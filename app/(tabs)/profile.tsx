@@ -11,6 +11,8 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Animated, StyleSheet, TouchableOpacity } from 'react-native';
+import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+import { DocumentType } from '@/types';
 
 const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 

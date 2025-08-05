@@ -1,17 +1,17 @@
-import React, { createContext, useCallback, ReactNode } from 'react';
-import { openGlobalSheet } from './globalSheet';
-import { ThemedText } from '@/components/ThemedText';
-import Comments from '@/components/content/Comment';
-import CreatePostSheetUI from '@/components/content/CreatePost';
+import React, { createContext, ReactNode } from 'react';
+import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+import { DocumentType } from '@/types';
 
 interface PostBottomSheetsContextType {
   openCommentSheet: (postId: string) => void;
   openCreatePostSheet: () => void;
+  openDocumentsSheet: (userId?: string, documentType?: DocumentType) => void;
 }
 
 export const PostBottomSheetsContext = createContext<PostBottomSheetsContextType>({
   openCommentSheet: () => {},
   openCreatePostSheet: () => {},
+  openDocumentsSheet: () => {},
 });
 
 interface PostBottomSheetsProviderProps {
@@ -24,25 +24,16 @@ export function PostBottomSheetsProvider({
   onPostSuccess
 }: PostBottomSheetsProviderProps) {
   
-  const openCommentSheet = useCallback((postId: string) => {
-    openGlobalSheet({
-      header: <ThemedText style={{ fontWeight: 'bold', fontSize: 18 }}>Comments</ThemedText>,
-      body: <Comments postId={postId} />,
-      snapPoints: ['80%'],
-    });
-  }, []);
-
-  const openCreatePostSheet = useCallback(() => {
-    openGlobalSheet({
-      header: <ThemedText style={{ fontWeight: 'bold', fontSize: 18 }}>Create Post</ThemedText>,
-      body: <CreatePostSheetUI onSuccess={onPostSuccess} />,
-      snapPoints: ['90%'],
-    });
-  }, [onPostSuccess]);
+  const {
+    openCommentSheet,
+    openCreatePostSheet,
+    openDocumentsSheet
+  } = useBottomSheetManager({ onPostSuccess });
 
   const contextValue = {
     openCommentSheet,
-    openCreatePostSheet
+    openCreatePostSheet,
+    openDocumentsSheet
   };
 
   return (

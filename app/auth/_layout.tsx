@@ -1,14 +1,17 @@
-import { Stack } from 'expo-router';
 import React from 'react';
+import StackNavigator from '@/components/navigation/StackNavigator';
 
 export default function AuthLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="login" />
-      <Stack.Screen name="email" />
-      <Stack.Screen name="username" />
-      <Stack.Screen name="verify" />
-      <Stack.Screen name="success" />
-    </Stack>
+    <StackNavigator 
+      screens={[
+        { name: "login" },
+        { name: "email" },
+        { name: "username" },
+        { name: "verify" },
+        { name: "success" }
+      ]}
+      defaultOptions={{ headerShown: false }}
+    />
   );
-} 
+}
