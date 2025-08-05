@@ -1,35 +1,31 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
-import FilterSelector from '@/components/ui/FilterSelector';
+import BadgeSelector, { BadgeOption } from '@/components/ui/BadgeSelector';
 import { JOB_TYPES } from '@/dataset/postTypes';
 
 interface JobTypeSelectorProps {
   selectedJobType: string;
   onJobTypeChange: (jobType: string) => void;
-  style?: ViewStyle;
+  style?: any;
 }
+
+const jobTypeOptions: BadgeOption[] = JOB_TYPES.map(type => ({
+  label: type.value,
+  value: type.value,
+  // Optionally: icon: 'briefcase',
+}));
 
 export default function JobTypeSelector({
   selectedJobType,
   onJobTypeChange,
   style,
 }: JobTypeSelectorProps) {
-  const jobTypeOptions = JOB_TYPES.map(type => type.value);
-
   return (
-    <View style={[styles.container, style]}>
-      <FilterSelector
-        options={jobTypeOptions}
-        selectedValue={selectedJobType}
-        onValueChange={onJobTypeChange}
-        title="Job Type"
-      />
-    </View>
+    <BadgeSelector
+      options={jobTypeOptions}
+      selectedValue={selectedJobType}
+      onValueChange={onJobTypeChange}
+      style={style}
+      title="Job Type"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-});

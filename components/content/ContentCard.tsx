@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLikes } from '@/hooks/useLikes';
 import { useAppContext } from '@/utils/AppContext';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-import Comments from '@/components/content/Comment';
+import Comments from '@/components/content/comments/Comment';
 
 type Variant = 'job' | 'news' | 'sponsored';
 export interface ContentCardProps {

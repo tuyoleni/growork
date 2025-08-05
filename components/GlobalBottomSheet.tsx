@@ -1,23 +1,25 @@
 import React, { forwardRef, useMemo } from 'react';
-import { SafeAreaView, View, StyleSheet, Platform } from 'react-native';
+import {
+  StyleSheet,
+  Platform,
+  KeyboardAvoidingView,
+} from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
-  BottomSheetBackdropProps
+  BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
-export interface GlobalBottomSheetProps {
-  header?: React.ReactNode;
-  body: React.ReactNode;
-  footer?: React.ReactNode;
+export interface SimpleBottomSheetProps {
   snapPoints: string[];
   onDismiss?: () => void;
+  children: React.ReactNode;
 }
 
-const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetProps>(
-  ({ header, body, footer, snapPoints, onDismiss }, ref) => {
+const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
+  ({ snapPoints, onDismiss, children }, ref) => {
     const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
     const borderColor = useThemeColor({}, 'border');
     const textColor = useThemeColor({}, 'text');
@@ -62,37 +64,28 @@ const GlobalBottomSheet = forwardRef<BottomSheetModal, GlobalBottomSheetProps>(
         handleIndicatorStyle={handleIndicatorStyle}
         backdropComponent={renderBackdrop}
       >
-        <SafeAreaView style={styles.safeArea}>
-          {header && (
-            <View style={[styles.headerContainer, { borderBottomColor: borderColor }]}>
-              {header}
-            </View>
-          )}
-          <BottomSheetScrollView contentContainerStyle={styles.scrollContent}>
-            <View style={styles.bodyContainer}>
-              {body}
-            </View>
-          </BottomSheetScrollView>
-          {footer && (
-            <View style={[
-              styles.footerContainer,
-              { backgroundColor: backgroundSecondary, borderTopColor: borderColor }
-            ]}>
-              {footer}
-            </View>
-          )}
-        </SafeAreaView>
+        <BottomSheetScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          >
+            {children}
+          </KeyboardAvoidingView>
+        </BottomSheetScrollView>
       </BottomSheetModal>
     );
   }
 );
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
-  headerContainer: { padding: 16, paddingBottom: 12, borderBottomWidth: 1 },
-  bodyContainer: { flex: 1, minHeight: 0, padding: 16 },
-  footerContainer: { width: '100%', borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === 'ios' ? 24 : 16 },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
 });
 
-export default GlobalBottomSheet;
+export default SimpleBottomSheet;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import { SALARY_RANGES } from '@/dataset/salaryRanges';
-import FilterSelector from '@/components/ui/FilterSelector';
+import BadgeSelector, { BadgeOption } from '@/components/ui/BadgeSelector';
 
 interface SalarySelectorProps {
   selectedSalary: string;
@@ -14,17 +14,21 @@ export default function SalarySelector({
   onSalaryChange,
   style,
 }: SalarySelectorProps) {
-  // No need to map options anymore as FilterSelector handles this internally
+  // If SALARY_RANGES is an array of strings, map to BadgeOption.
+  const salaryOptions: BadgeOption[] = SALARY_RANGES.map((range) => ({
+    label: range,
+    value: range,
+    // Optionally: icon: 'dollar-sign',
+  }));
 
   return (
-    <View style={[styles.container, style]}>
-      <FilterSelector
-        options={SALARY_RANGES}
-        selectedValue={selectedSalary}
-        onValueChange={onSalaryChange}
-        title="Salary Range"
-      />
-    </View>
+    <BadgeSelector
+      options={salaryOptions}
+      selectedValue={selectedSalary}
+      onValueChange={onSalaryChange}
+      style={style}
+      title="Salary Range"
+    />
   );
 }
 

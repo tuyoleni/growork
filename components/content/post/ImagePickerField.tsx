@@ -1,19 +1,22 @@
 import React from 'react';
-import { Alert, Image, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { Alert, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
-interface ImagePickerFieldProps {
+export interface ImagePickerFieldProps {
   imageUri: string | null;
   onImageSelected: (uri: string | null, file: any | null) => void;
   style?: ViewStyle;
+  buttonText?: string;
 }
 
 export default function ImagePickerField({ 
   imageUri, 
-  onImageSelected,
-  style 
+  onImageSelected, 
+  style, 
+  buttonText 
 }: ImagePickerFieldProps) {
   const tintColor = useThemeColor({}, 'tint');
 
@@ -21,7 +24,6 @@ export default function ImagePickerField({
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
         aspect: [4, 3],
         quality: 0.82,
       });
@@ -29,60 +31,36 @@ export default function ImagePickerField({
         const asset = result.assets[0];
         onImageSelected(asset.uri, asset);
       }
-    } catch (err) {
+    } catch {
       Alert.alert("Image Error", "Couldn't pick image");
     }
   };
 
   return (
-    <View style={[styles.container, style]}>
-      {imageUri ? (
-        <View style={styles.imagePreviewContainer}>
-          <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
-          <Pressable 
-            style={styles.removeImageButton} 
-            onPress={() => onImageSelected(null, null)}
-          >
-            <Feather name="x" size={17} color="#fff" />
-          </Pressable>
-        </View>
-      ) : (
-        <Pressable style={styles.attachImageButton} onPress={pickImage}>
-          <Feather name="image" size={22} color={tintColor} />
-        </Pressable>
-      )}
+    <View style={style}>
+      <TouchableOpacity
+        style={styles.attachImageButton}
+        onPress={pickImage}
+        accessibilityLabel={imageUri ? "Change image" : "Add image"}
+      >
+        <Feather name="image" size={22} color={tintColor} />
+        <ThemedText style={{ marginLeft: 8 }}>
+          {buttonText || (imageUri ? "Change Image" : "Add Image")}
+        </ThemedText>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  imagePreviewContainer: {
-    position: 'relative',
-    marginTop: 16,
-    marginBottom: 14,
-    alignItems: 'center',
-  },
-  imagePreview: {
-    width: 180,
-    height: 120,
-    borderRadius: 10,
-    resizeMode: 'cover',
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: 6,
-    right: 12,
-    backgroundColor: '#000a',
-    borderRadius: 12,
-    padding: 2,
-  },
   attachImageButton: {
-    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 0,
+    margin: 0,
+    backgroundColor: 'transparent',
+    minHeight: 36,
+    minWidth: 48,
     borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-    marginRight: 10,
-  },
+  }
 });

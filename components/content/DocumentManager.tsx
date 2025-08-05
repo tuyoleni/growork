@@ -17,6 +17,7 @@ type DocumentManagerProps = {
   documentType?: DocumentType;
   selectable?: boolean;
   onSelect?: (document: Document) => void;
+  disableScrolling?: boolean; // Add this prop to disable FlatList when inside a ScrollView
 };
 
 export default function DocumentManager({
@@ -24,6 +25,7 @@ export default function DocumentManager({
   documentType,
   selectable = false,
   onSelect,
+  disableScrolling = false,
 }: DocumentManagerProps) {
   const { user } = useAuth();
   const { documents, loading, error, fetchDocuments, addDocument, deleteDocument } = useDocuments(userId || user?.id);
@@ -195,24 +197,40 @@ export default function DocumentManager({
         </Pressable>
       </View>
       
-      <FlatList
-        data={documents}
-        keyExtractor={(item) => item.id}
-        renderItem={renderDocument}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={textColor}
-          />
-        }
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <ThemedText>No documents found</ThemedText>
-          </View>
-        }
-      />
+      {disableScrolling ? (
+        <View style={styles.listContent}>
+          {documents.length > 0 ? (
+            documents.map(item => (
+              <View key={item.id} style={{ marginBottom: 12 }}>
+                {renderDocument({ item })}
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <ThemedText>No documents found</ThemedText>
+            </View>
+          )}
+        </View>
+      ) : (
+        <FlatList
+          data={documents}
+          keyExtractor={(item) => item.id}
+          renderItem={renderDocument}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={textColor}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <ThemedText>No documents found</ThemedText>
+            </View>
+          }
+        />
+      )}
     </ThemedView>
   );
 }

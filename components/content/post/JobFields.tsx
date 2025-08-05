@@ -4,11 +4,10 @@ import { ThemedInput } from '@/components/ThemedInput';
 import JobTypeSelector from './JobTypeSelector';
 import DeadlineSelector from './DeadlineSelector';
 import SalarySelector from './SalarySelector';
-import LocationSelector from './LocationSelector';
 import IndustrySelector from './IndustrySelector';
+import { INDUSTRIES } from '@/dataset/industries';
 
 export interface JobFieldsData {
-  company: string;
   location: string;
   salary: string;
   jobType: string;
@@ -33,15 +32,6 @@ export default function JobFields({ values, onChange, style }: JobFieldsProps) {
 
   return (
     <View style={[styles.container, style]}>
-      <ThemedInput
-        placeholder="Company"
-        value={values.company}
-        onChangeText={(v) => handleChange('company', v)}
-      />
-      <LocationSelector
-        selectedLocation={values.location}
-        onLocationChange={(v) => handleChange('location', v)}
-      />
       <SalarySelector
         selectedSalary={values.salary}
         onSalaryChange={(v) => handleChange('salary', v)}
@@ -52,8 +42,7 @@ export default function JobFields({ values, onChange, style }: JobFieldsProps) {
       />
       <IndustrySelector
         selectedIndustry={values.industry}
-        onIndustryChange={(v) => handleChange('industry', v)}
-      />
+        onIndustryChange={(v) => handleChange('industry', v)} industries={INDUSTRIES}      />
       <ThemedInput
         placeholder="Requirements (comma separated)"
         value={values.requirements}

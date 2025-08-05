@@ -21,7 +21,6 @@ export function usePostForm(onSuccess?: () => void) {
 
   // Job-specific fields
   const [jobFields, setJobFields] = useState<JobFieldsData>({
-    company: '',
     location: '',
     salary: '',
     jobType: '',
@@ -50,7 +49,6 @@ export function usePostForm(onSuccess?: () => void) {
     setImageFile(null);
     setPostType(PostType.News);
     setJobFields({
-      company: '',
       location: '',
       salary: '',
       jobType: '',
@@ -87,7 +85,6 @@ export function usePostForm(onSuccess?: () => void) {
     let criteria = {};
     if (postType === PostType.Job) {
       criteria = {
-        company: jobFields.company,
         location: jobFields.location,
         salary: jobFields.salary,
         jobType: jobFields.jobType,
@@ -142,6 +139,7 @@ export function usePostForm(onSuccess?: () => void) {
     setContent,
     imageUri,
     imageFile,
+    setImageUri,
     handleImageSelected,
     loading: loading || uploading,
     postType,

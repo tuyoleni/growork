@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { ViewStyle } from 'react-native';
 import { DEADLINE_OPTIONS } from '@/dataset/deadlineOptions';
-import FilterSelector from '@/components/ui/FilterSelector';
+import BadgeSelector, { BadgeOption } from '@/components/ui/BadgeSelector';
 
 interface DeadlineSelectorProps {
   selectedDeadline: string;
@@ -14,22 +14,20 @@ export default function DeadlineSelector({
   onDeadlineChange,
   style,
 }: DeadlineSelectorProps) {
-  // No need to map options anymore as FilterSelector handles this internally
+  // If DEADLINE_OPTIONS is a string array, map to BadgeOption
+  const deadlineOptions: BadgeOption[] = DEADLINE_OPTIONS.map(option => ({
+    label: option,
+    value: option,
+    // icon: "calendar", // Optionally add an icon if desired
+  }));
 
   return (
-    <View style={[styles.container, style]}>
-      <FilterSelector
-        options={DEADLINE_OPTIONS}
-        selectedValue={selectedDeadline}
-        onValueChange={onDeadlineChange}
-        title="Application Deadline"
-      />
-    </View>
+    <BadgeSelector
+      options={deadlineOptions}
+      selectedValue={selectedDeadline}
+      onValueChange={onDeadlineChange}
+      style={style}
+      title="Application Deadline"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-});

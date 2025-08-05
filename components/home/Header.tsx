@@ -1,6 +1,6 @@
 import CategorySelector from '@/components/ui/CategorySelector';
 import { Colors } from '@/constants/Colors';
-import { ALL_INDUSTRIES, DEFAULT_INDUSTRIES } from '@/dataset/industries';
+import { INDUSTRIES } from '@/dataset/industries';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
@@ -23,7 +23,7 @@ const Header = ({
   onIndustryChange,
   onAddPost,
 }: HeaderProps) => {
-  const [visibleIndustries, setVisibleIndustries] = useState(DEFAULT_INDUSTRIES);
+  const [visibleIndustries, setVisibleIndustries] = useState(INDUSTRIES);
   const textColor = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
   const colorScheme = useColorScheme() ?? 'light';
@@ -62,7 +62,7 @@ const Header = ({
         visibleOptions={visibleIndustries}
         selectedIndex={selectedIndustry}
         onChange={onIndustryChange}
-        allOptions={ALL_INDUSTRIES}
+        allOptions={INDUSTRIES}
         minVisibleOptions={1}
         maxVisibleOptions={6}
         style={styles.industrySelector}

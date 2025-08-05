@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+'use client';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Modal,
   ActivityIndicator,
   View as RNView,
 } from 'react-native';
@@ -12,7 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import PostApplicationForm from '@/components/content/postApplicationForm';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { usePosts as usePostById } from '@/hooks/usePostById';
 import { usePosts as useFeedPosts } from '@/hooks/usePosts';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -23,14 +23,16 @@ import { Post } from '@/types';
 import PostInteractionBar from '@/components/content/PostInteractionBar';
 import ApplyButton from '@/components/content/post/ApplyButton';
 import PostBadge from '@/components/content/post/PostBadge';
+import { openGlobalSheet } from '@/utils/globalSheet';
+import JobApplicationSheetContent from '@/components/content/JobApplicationSheetContent';
 
 const ICON_SIZE = 20;
 
 const PostDetail = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
-  const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [post, setPost] = useState<Post | null>(null);
 
   const borderColor = useThemeColor({}, 'border');
@@ -53,17 +55,19 @@ const PostDetail = () => {
     fetchData();
   }, [id, getPostById, fetchPosts]);
 
-  let recommendedPosts: Post[] = [];
-  if (post && allPosts) {
-    recommendedPosts = allPosts.filter(
-      (p: Post) => p.type === post.type && p.id !== post.id
-    );
-  }
+  const recommendedPosts: Post[] =
+    post && allPosts
+      ? allPosts.filter(
+          (p: Post) =>
+            p.type === post.type &&
+            p.id !== post.id
+        )
+      : [];
 
   if (isLoading || feedLoading) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={tintColor} />
+        <ActivityIndicator color={tintColor} />
       </ThemedView>
     );
   }
@@ -95,10 +99,10 @@ const PostDetail = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar style="dark" />
-      {/* Header */}
+
       <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
         <TouchableOpacity
-          onPress={() => router.replace('/tabs')}
+          onPress={() => router.replace('/(tabs)')}
           style={styles.iconButton}
           accessibilityLabel="Go to main tabs"
         >
@@ -124,12 +128,8 @@ const PostDetail = () => {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <ThemedView style={styles.contentContainer}>
-          {/* Company Info */}
           <RNView style={styles.companyHeader}>
-            <Image
-              source={{ uri: companyLogo }}
-              style={styles.companyLogo}
-            />
+            <Image source={{ uri: companyLogo }} style={styles.companyLogo} />
             <RNView style={styles.companyNameContainer}>
               <RNView style={styles.companyNameRow}>
                 <ThemedText style={styles.companyName}>{companyName}</ThemedText>
@@ -153,10 +153,8 @@ const PostDetail = () => {
             )}
           </RNView>
 
-          {/* Title */}
           <ThemedText style={styles.jobTitle}>{post.title}</ThemedText>
 
-          {/* Main Image */}
           {mainImage ? (
             <Image
               source={{ uri: mainImage }}
@@ -165,7 +163,6 @@ const PostDetail = () => {
             />
           ) : null}
 
-          {/* Badges and details */}
           <ThemedView style={styles.detailsContainer}>
             <RNView style={styles.badgeContainer}>
               <PostBadge label={location} icon="map-pin" size="medium" />
@@ -176,27 +173,46 @@ const PostDetail = () => {
             </RNView>
             <ThemedText style={styles.description}>{post.content}</ThemedText>
 
-            {/* Requirements */}
             {requirements.length > 0 && (
               <RNView style={styles.requirementsContainer}>
                 <ThemedText style={styles.sectionTitle}>Requirements:</ThemedText>
                 {requirements.map((requirement, index) => (
-                  <ThemedText key={index} style={styles.listItem}>• {requirement}</ThemedText>
+                  <ThemedText key={index} style={styles.listItem}>
+                    • {requirement}
+                  </ThemedText>
                 ))}
               </RNView>
             )}
-            {/* Benefits */}
+
             {benefits.length > 0 && (
               <RNView style={styles.benefitsContainer}>
                 <ThemedText style={styles.sectionTitle}>Benefits:</ThemedText>
                 {benefits.map((benefit, index) => (
-                  <ThemedText key={index} style={styles.listItem}>• {benefit}</ThemedText>
+                  <ThemedText key={index} style={styles.listItem}>
+                    • {benefit}
+                  </ThemedText>
                 ))}
               </RNView>
             )}
+
             <RNView style={[styles.actionsContainer, { borderTopColor: borderColor }]}>
               <PostInteractionBar postId={post.id} size="large" />
-              <ApplyButton onPress={() => setShowApplicationForm(true)} size="medium" />
+              <ApplyButton
+                onPress={() => {
+                  if (post) {
+                    openGlobalSheet({
+                      snapPoints: ['90%'],
+                      children: (
+                        <JobApplicationSheetContent 
+                          post={post} 
+                          onSuccess={() => router.replace('/(tabs)')} 
+                        />
+                      ),
+                    });
+                  }
+                }}
+                size="medium"
+              />
             </RNView>
           </ThemedView>
 
@@ -214,13 +230,13 @@ const PostDetail = () => {
                   return (
                     <TouchableOpacity
                       key={item.id}
-                      style={[styles.recommendedItem, { backgroundColor: backgroundSecondary }]}
+                      style={[
+                        styles.recommendedItem,
+                        { backgroundColor: backgroundSecondary },
+                      ]}
                       onPress={() => router.push(`/post/${item.id}`)}
                     >
-                      <Image
-                        source={{ uri: itemCompanyLogo }}
-                        style={styles.recommendedLogo}
-                      />
+                      <Image source={{ uri: itemCompanyLogo }} style={styles.recommendedLogo} />
                       <RNView style={styles.recommendedInfo}>
                         <ThemedText style={styles.recommendedTitle}>{item.title}</ThemedText>
                         <ThemedText style={styles.recommendedCompany}>{itemCompanyName}</ThemedText>
@@ -236,27 +252,6 @@ const PostDetail = () => {
           )}
         </ThemedView>
       </ScrollView>
-
-      {/* Application Modal */}
-      {post && (
-        <Modal
-          visible={showApplicationForm}
-          animationType="slide"
-          transparent={false}
-          onRequestClose={() => setShowApplicationForm(false)}
-        >
-          <SafeAreaView style={{ flex: 1, backgroundColor: backgroundColor }}>
-            <PostApplicationForm
-              jobPost={post}
-              onSuccess={() => {
-                setShowApplicationForm(false);
-                router.replace('/tabs');
-              }}
-              onCancel={() => setShowApplicationForm(false)}
-            />
-          </SafeAreaView>
-        </Modal>
-      )}
     </SafeAreaView>
   );
 };

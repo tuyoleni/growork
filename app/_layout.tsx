@@ -1,11 +1,10 @@
 import FlashBar from '@/components/ui/Flash';
-import GlobalBottomSheet, { GlobalBottomSheetProps } from '@/components/GlobalBottomSheet';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppProvider } from '@/utils/AppContext';
 import { supabase } from '@/utils/superbase';
 import { setOpenGlobalSheet } from '@/utils/globalSheet';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { BottomSheetModalProvider, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Session } from '@supabase/supabase-js';
 import { useFonts } from 'expo-font';
@@ -13,16 +12,18 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState, createContext, useContext, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import SimpleBottomSheet from '@/components/GlobalBottomSheet';
 
 interface AuthContextType {
   session: Session | null;
   initialLoading: boolean;
 }
 export const AuthContext = createContext<AuthContextType>({ session: null, initialLoading: true });
-export function useAuth() { return useContext(AuthContext); }
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
 // Protect routes: allow public access to "post" (post detail) routes only.
 function useProtectedRoute() {
@@ -32,19 +33,14 @@ function useProtectedRoute() {
 
   useEffect(() => {
     if (initialLoading) return;
-    
     const isAuthRoute = segments.some(segment => segment === 'auth');
     const isPostRoute = segments.some(segment => segment === 'post');
 
-    // Only redirect unauthenticated users from routes that are NOT post or auth
-    // "post" routes are accessible to public, and "auth" routes are for login/sign-up
     if (!session?.user && !isAuthRoute && !isPostRoute) {
       router.replace('/auth/login');
     } else if (session?.user && isAuthRoute) {
-      // Authenticated users shouldn't see login routes
       router.replace('/(tabs)');
     }
-    // Public users can visit /post/[id], but need login for other app routes
   }, [session, initialLoading, router, segments]);
 }
 
@@ -69,9 +65,18 @@ export default function RootLayout() {
   const [initialLoading, setInitialLoading] = useState(true);
 
   const sheetRef = useRef<BottomSheetModal>(null);
-  const [sheetProps, setSheetProps] = useState<Partial<GlobalBottomSheetProps> | null>(null);
+  const [sheetProps, setSheetProps] = useState<{
+    children: React.ReactNode;
+    snapPoints: string[];
+    onDismiss?: () => void;
+  } | null>(null);
 
-  const openGlobalSheet = (props: Partial<GlobalBottomSheetProps>) => {
+  // Expose openGlobalSheet globally
+  const openGlobalSheet = (props: {
+    children: React.ReactNode;
+    snapPoints: string[];
+    onDismiss?: () => void;
+  }) => {
     setSheetProps(props);
     if (props.snapPoints && props.snapPoints.length > 0) {
       setTimeout(() => {
@@ -116,7 +121,10 @@ export default function RootLayout() {
       if (isMounted) setSession(currentSession);
     });
 
-    return () => { isMounted = false; subscription.unsubscribe(); };
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (!loaded || initialLoading) {
@@ -137,14 +145,15 @@ export default function RootLayout() {
                 <AuthGate />
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 <FlashBar />
-                <GlobalBottomSheet
+
+                <SimpleBottomSheet
                   ref={sheetRef}
-                  body={sheetProps?.body || <></>}
                   snapPoints={sheetProps?.snapPoints || ['50%']}
-                  header={sheetProps?.header}
-                  footer={sheetProps?.footer}
                   onDismiss={() => setSheetProps(null)}
-                />
+                >
+                  {sheetProps?.children}
+                </SimpleBottomSheet>
+
               </BottomSheetModalProvider>
             </AppProvider>
           </AuthContext.Provider>

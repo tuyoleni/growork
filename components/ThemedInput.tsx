@@ -32,7 +32,7 @@ export function ThemedInput({ style, lightColor, darkColor, ...rest }: ThemedInp
 const styles = StyleSheet.create({
   input: {
     width: '100%',
-    maxWidth: 400,
+    flex: 1,
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,

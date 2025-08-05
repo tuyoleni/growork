@@ -1,7 +1,6 @@
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import { StyleSheet, ViewStyle, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Platform } from 'react-native';
 import { PostType } from '@/types';
 import CustomOptionStrip from '../../ui/CustomOptionStrip';
 
@@ -14,7 +13,7 @@ interface PostTypeSelectorProps {
 export default function PostTypeSelector({ 
   selectedPostType, 
   onPostTypeChange,
-  style 
+  style,
 }: PostTypeSelectorProps) {
   const postTypeOptions = [
     { icon: 'book-open', label: 'News', value: PostType.News },
@@ -28,7 +27,9 @@ export default function PostTypeSelector({
   const handleTypeChange = (index: number) => {
     if (index < 0 || index >= postTypeOptions.length) return;
     onPostTypeChange(postTypeOptions[index].value);
-    if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   };
 
   return (
