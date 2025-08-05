@@ -1,145 +1,132 @@
 'use client'
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import DocumentList from '@/components/content/DocumentList';
+import { Document, DocumentType } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
-import { usePosts } from '@/hooks/usePosts';
-import { useBookmarks } from '@/hooks/useBookmarks';
-import { useApplications } from '@/hooks/useApplications';
 import { useDocuments } from '@/hooks/useDocuments';
+import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import ScreenContainer from '@/components/ScreenContainer';
-import PostCard from '@/components/content/ContentCard';    // or your PostCard component
-import CompanyCard from '@/components/cards/CompanyCard';   // you must create this, or use ContentCard variant
-import DocumentList from '@/components/content/DocumentList';
+import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { CustomOptionStrip } from '@/components/ui';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 const BOOKMARK_CATEGORIES = [
-  { icon: 'star', label: 'Bookmarked Posts' },
-  { icon: 'briefcase', label: 'Companies I Applied To' },
-  { icon: 'file-text', label: 'CV Downloads' },
+  { icon: 'briefcase', label: 'Jobs' },
+  { icon: 'newspaper', label: 'News' },
+  { icon: 'briefcase', label: 'Companies' },
+  { icon: 'users', label: 'People' },
+  { icon: 'bookmark', label: 'Articles' },
+  { icon: 'video', label: 'Videos' },
+  { icon: 'file-text', label: 'Documents' },
+  { icon: 'link', label: 'Links' },
 ];
 
 export default function Bookmarks() {
-  const [selectedCategory, setSelectedCategory] = useState<number>(0);
+  const [selectedCategory, setSelectedCategory] = useState(6); // Documents category
   const { user } = useAuth();
-  const userId = user?.id;
-  const { posts, loading: postsLoading } = usePosts();
-  const { bookmarks, loading: bookmarksLoading } = useBookmarks();
-  const { applications, loading: applicationsLoading } = useApplications(userId);
-  const { documents, loading: docsLoading } = useDocuments(userId);
+  const { documents, loading, error, fetchDocuments, deleteDocument } = useDocuments(user?.id);
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const textColor = useThemeColor({}, 'text');
-
-  // 1. Bookmarked posts
-  const bookmarkedPosts = useMemo(() => {
-    return posts.filter(post => bookmarks.includes(post.id));
-  }, [posts, bookmarks]);
-
-  // 2. Companies I applied to (distinct, from posts in applications)
-  const appliedCompanyIds = useMemo(() => {
-    const postIds = applications.map(a => a.post_id);
-    const appPosts = posts.filter(p => postIds.includes(p.id));
-    const companyIds = appPosts
-      .map(p => p.criteria?.company)
-      .filter(Boolean) as string[];
-    return Array.from(new Set(companyIds));
-  }, [applications, posts]);
-  // Optionally, retrieve actual company objects if you have them (need companies table/hook).
+  const mutedText = useThemeColor({}, 'mutedText');
+  const backgroundColor = useThemeColor({}, 'background');
   
-  // 3. Companies that downloaded my CV (REQUIRES a doc downloads/analytics table)
-  // Here assumed: `useDocumentDownloads(userId)` returning array of { document_id, downloaded_by, ... }
-  // Only show items where the document is of type CV and has downloads by a company different from the user.
-  // Pseudo code below -- you will need to adapt to your real `document_downloads` implementation!
-  // import { useDocumentDownloads } from '@/hooks/useDocumentDownloads'; // You must implement this or get from Supabase directly
-  // const { downloads, loading: downloadsLoading } = useDocumentDownloads(userId);
-  const downloads = []; // TODO: replace with real useDocumentDownloads(userId)
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    if (diff < 7) return `${diff} days ago`;
+    if (diff < 30) return `${Math.floor(diff / 7)} weeks ago`;
+    if (diff < 365) return `${Math.floor(diff / 30)} months ago`;
+    return `${Math.floor(diff / 365)} years ago`;
+  };
   
-  const myCVs = documents.filter(doc => doc.type === 'cv');
-  const cvDownloads = useMemo(() => {
-    // This assumes "downloads" have document_id, downloaded_by, etc.
-    return downloads
-      .filter(d => myCVs.some(cv => cv.id === d.document_id) && d.downloaded_by !== userId)
-      .map(d => ({
-        ...d,
-        doc: myCVs.find(cv => cv.id === d.document_id),
-      }));
-  }, [downloads, myCVs, userId]);
+  // Effect to filter documents based on selected category
+  useEffect(() => {
+    if (documents.length === 0) {
+      setFilteredDocuments([]);
+      return;
+    }
+    
+    if (selectedCategory === 6) { // Documents category - show all
+      setFilteredDocuments(documents);
+    } else {
+      // Filter based on the document type
+      const filtered = documents.filter(doc => {
+        // Map document types to categories
+        const typeToCategory: Record<DocumentType, number> = {
+          [DocumentType.CV]: 0, // Jobs
+          [DocumentType.CoverLetter]: 0, // Jobs
+          [DocumentType.Certificate]: 4, // Articles
+          [DocumentType.Other]: 6, // Documents
+        };
+        
+        return typeToCategory[doc.type] === selectedCategory;
+      });
+      
+      setFilteredDocuments(filtered);
+    }
+  }, [documents, selectedCategory]);
+  
+  // Refresh documents
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDocuments();
+    setRefreshing(false);
+  };
 
-  // Filtering displayed results
-  let mainSection = null;
-  if (selectedCategory === 0) {
-    // Bookmarked posts
-    mainSection = (
-      <>
-        {bookmarkedPosts.length === 0 ? (
-          <ThemedText style={{textAlign:'center'}}>No bookmarked posts yet.</ThemedText>
-        ) : (
-          bookmarkedPosts.map(post => (
-            <PostCard
-              key={post.id}
-              // Fill out PostCard props as needed for your card
-              id={post.id}
-              title={post.title ?? post.criteria?.company ?? ''}
-              description={post.content ?? ''}
-              variant={post.type}
-              // ...other props
-            />
-          ))
-        )}
-      </>
-    );
-  } else if (selectedCategory === 1) {
-    // Companies I applied to
-    mainSection = (
-      <>
-        {appliedCompanyIds.length === 0 ? (
-          <ThemedText style={{textAlign:'center'}}>You have not applied to any companies.</ThemedText>
-        ) : (
-          appliedCompanyIds.map(companyName => (
-            <CompanyCard
-              key={companyName}
-              name={companyName}
-              // Add more company info if available
-              // avatarImage='...' 
-            />
-          ))
-        )}
-      </>
-    );
-  } else if (selectedCategory === 2) {
-    // Companies that downloaded my CV
-    mainSection = (
-      <>
-        {cvDownloads.length === 0 ? (
-          <ThemedText style={{textAlign:'center'}}>No companies have downloaded your CV yet.</ThemedText>
-        ) : (
-          cvDownloads.map((item, idx) => (
-            <ThemedView key={item.doc?.id + idx} style={{marginBottom:12}}>
-              <ThemedText>
-                {item.downloaded_by} downloaded your CV "{item.doc?.name}" {/* Make prettier */}
-              </ThemedText>
-              <ThemedText style={{opacity:0.7}}>
-                {item.doc?.uploaded_at ? new Date(item.doc.uploaded_at).toLocaleString() : ''}
-              </ThemedText>
-            </ThemedView>
-          ))
-        )}
-      </>
-    );
-  }
+  const handleCategoryChange = (index: number) => {
+    setSelectedCategory(index);
+  };
 
-  const isLoading = postsLoading || bookmarksLoading || applicationsLoading || docsLoading; // || downloadsLoading
+  const handleMoreCategories = () => {
+    console.log('Show more categories');
+  };
+
+  const handleDocumentPress = (document: Document) => {
+    console.log('Bookmarked document pressed:', document.name);
+  };
+
+  const handleDocumentDownload = (document: Document) => {
+    console.log('Download bookmarked document:', document.name);
+  };
+
+  const handleDocumentShare = (document: Document) => {
+    console.log('Share bookmarked document:', document.name);
+  };
+
+  const handleDocumentDelete = async (document: Document) => {
+    await deleteDocument(document.id);
+  };
+
+  const getCategoryTitle = () => {
+    return BOOKMARK_CATEGORIES[selectedCategory]?.label || 'Bookmarks';
+  };
+
+  const getCategorySubtitle = () => {
+    if (selectedCategory === 6) { // Documents
+      return `${filteredDocuments.length} saved document${filteredDocuments.length !== 1 ? 's' : ''}`;
+    }
+    return 'No bookmarks in this category';
+  };
 
   return (
     <ScreenContainer>
       <ThemedView style={styles.container}>
+        {/* Bookmarks Header */}
         <View style={styles.header}>
-          <ThemedText style={styles.title}>Bookmarks & Activity</ThemedText>
-          <ThemedText style={styles.subtitle}>See your saved content and job activity</ThemedText>
+          <ThemedText style={styles.title}>Bookmarks</ThemedText>
+          <ThemedText style={styles.subtitle}>Your saved content and opportunities</ThemedText>
         </View>
+
+        {/* Category Filter */}
         <View style={styles.categorySection}>
-          <ThemedText style={styles.sectionTitle}>Filter</ThemedText>
+          <ThemedText style={styles.sectionTitle}>Filter by Category</ThemedText>
           <CustomOptionStrip
             visibleOptions={BOOKMARK_CATEGORIES}
             selectedIndex={selectedCategory}
@@ -147,12 +134,57 @@ export default function Bookmarks() {
             style={styles.categorySelector}
           />
         </View>
+
+        {/* Bookmarks Content */}
         <View style={styles.contentSection}>
-          {isLoading ? (
-            <ActivityIndicator size="small" color={textColor} />
-          ) : (
-            <View>{mainSection}</View>
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={textColor} />
+            </View>
           )}
+          
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statNumber}>{documents.length}</ThemedText>
+              <ThemedText style={styles.statLabel}>Total Documents</ThemedText>
+            </View>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statNumber}>
+                {new Set(documents.map(doc => doc.type)).size}
+              </ThemedText>
+              <ThemedText style={styles.statLabel}>Categories</ThemedText>
+            </View>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statNumber}>
+                {documents.filter(doc => {
+                  const date = new Date(doc.uploaded_at);
+                  const weekAgo = new Date();
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+                  return date > weekAgo;
+                }).length}
+              </ThemedText>
+              <ThemedText style={styles.statLabel}>This Week</ThemedText>
+            </View>
+          </View>
+
+          {/* Documents List */}
+          <DocumentList
+            documents={filteredDocuments.map(doc => ({
+              ...doc,
+              // For compatibility with DocumentList component
+              updated: formatDate(doc.uploaded_at),
+              category: doc.type
+            }))}
+            title={getCategoryTitle()}
+            subtitle={getCategorySubtitle()}
+            variant="compact"
+            showCategory={true}
+            onDocumentPress={handleDocumentPress}
+            onDocumentDownload={handleDocumentDownload}
+            onDocumentShare={handleDocumentShare}
+            onDocumentDelete={handleDocumentDelete}
+            emptyText={`No ${getCategoryTitle().toLowerCase()} bookmarks yet`}
+          />
         </View>
       </ThemedView>
     </ScreenContainer>
@@ -160,12 +192,62 @@ export default function Bookmarks() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { marginBottom: 24 },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 4 },
-  subtitle: { fontSize: 16, opacity: 0.7 },
-  categorySection: { marginBottom: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  categorySelector: { paddingHorizontal: 0 },
-  contentSection: { flex: 1 },
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  contentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  categorySection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  categorySelector: {
+    paddingHorizontal: 0,
+  },
+  contentSection: {
+    flex: 1,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    opacity: 0.7,
+    textAlign: 'center',
+  },
 });
