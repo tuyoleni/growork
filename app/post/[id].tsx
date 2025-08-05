@@ -24,6 +24,8 @@ import PostInteractionBar from '@/components/content/PostInteractionBar';
 import ApplyButton from '@/components/content/post/ApplyButton';
 import PostBadge from '@/components/content/post/PostBadge';
 
+const ICON_SIZE = 20;
+
 const PostDetail = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -38,7 +40,6 @@ const PostDetail = () => {
   const tintColor = useThemeColor({}, 'tint');
 
   const { loading: isLoading, getPostById } = usePostById();
-  // Fetch all posts for recommendations
   const { posts: allPosts, loading: feedLoading, fetchPosts } = useFeedPosts();
 
   useEffect(() => {
@@ -52,7 +53,6 @@ const PostDetail = () => {
     fetchData();
   }, [id, getPostById, fetchPosts]);
 
-  // Get similar posts (same type, not current post)
   let recommendedPosts: Post[] = [];
   if (post && allPosts) {
     recommendedPosts = allPosts.filter(
@@ -76,21 +76,17 @@ const PostDetail = () => {
     );
   }
 
-  // Only use what's provided in 'criteria' and Post
   const companyName = post.criteria?.company || 'Company';
   const companyLogo =
     post.criteria?.companyLogo ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&size=128`;
   const verified = post.criteria?.isVerified;
   const mainImage = post.image_url || '';
-
   const location = post.criteria?.location || 'Remote';
   const jobType = post.criteria?.jobType || post.type || 'Full-time';
   const isRemote = location.toLowerCase().includes('remote');
   const requirements = post.criteria?.requirements || [];
   const benefits = post.criteria?.benefits || [];
-
-  // "Similar" section label is always by type, capitalized
   const similarSectionLabel =
     post.type && typeof post.type === 'string'
       ? `Similar ${post.type.charAt(0).toUpperCase() + post.type.slice(1)}s`
@@ -101,15 +97,27 @@ const PostDetail = () => {
       <StatusBar style="dark" />
       {/* Header */}
       <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-          <Feather name="arrow-left" size={24} color={textColor} />
+        <TouchableOpacity
+          onPress={() => router.replace('/tabs')}
+          style={styles.iconButton}
+          accessibilityLabel="Go to main tabs"
+        >
+          <Feather name="arrow-left" size={ICON_SIZE} color={textColor} />
         </TouchableOpacity>
         <RNView style={styles.headerRightButtons}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Feather name="share-2" size={24} color={textColor} />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => console.log('Share pressed')}
+            accessibilityLabel="Share"
+          >
+            <Feather name="share-2" size={ICON_SIZE} color={textColor} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
-            <Feather name="more-horizontal" size={24} color={textColor} />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => console.log('More options pressed')}
+            accessibilityLabel="More options"
+          >
+            <Feather name="more-horizontal" size={ICON_SIZE} color={textColor} />
           </TouchableOpacity>
         </RNView>
       </ThemedView>
@@ -126,7 +134,12 @@ const PostDetail = () => {
               <RNView style={styles.companyNameRow}>
                 <ThemedText style={styles.companyName}>{companyName}</ThemedText>
                 {verified && (
-                  <Feather name="check-circle" size={16} color={tintColor} />
+                  <TouchableOpacity
+                    onPress={() => console.log('Company is verified')}
+                    accessibilityLabel="Verified company"
+                  >
+                    <Feather name="check-circle" size={ICON_SIZE} color={tintColor} />
+                  </TouchableOpacity>
                 )}
               </RNView>
             </RNView>
@@ -194,7 +207,6 @@ const PostDetail = () => {
               </ThemedText>
               <RNView style={styles.recommendedListContainer}>
                 {recommendedPosts.map((item) => {
-                  // All fields from 'criteria' only, fallback to "Company" and default avatar if missing
                   const itemCompanyName = item.criteria?.company || 'Company';
                   const itemCompanyLogo =
                     item.criteria?.companyLogo ||
@@ -238,7 +250,7 @@ const PostDetail = () => {
               jobPost={post}
               onSuccess={() => {
                 setShowApplicationForm(false);
-                router.back();
+                router.replace('/tabs');
               }}
               onCancel={() => setShowApplicationForm(false)}
             />

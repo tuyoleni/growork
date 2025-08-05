@@ -1,8 +1,7 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { StyleSheet, TouchableOpacity, Platform, Text, useColorScheme } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Colors } from '@/constants/Colors';
 
 interface ApplyButtonProps {
   onPress: () => void;
@@ -12,75 +11,87 @@ interface ApplyButtonProps {
   style?: any;
 }
 
-export default function ApplyButton({ 
+export default function ApplyButton({
   onPress,
   label = 'Apply Now',
   variant = 'primary',
   size = 'medium',
-  style
+  style,
 }: ApplyButtonProps) {
-  const backgroundColor = useThemeColor({}, variant === 'primary' ? 'tint' : 'background');
-  const textColor = useThemeColor({}, variant === 'primary' ? 'background' : 'text');
-  const borderColor = useThemeColor({}, 'border');
-  
-  // Determine padding based on size
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const palette = Colors[scheme];
+
+  // Button background
+  const backgroundColor = variant === 'primary' ? palette.tint : palette.background;
+  // Text color logic: white for all variants in dark, standard palette otherwise
+  const textColor =
+    scheme === 'dark'
+      ? '#fff'
+      : variant === 'primary'
+      ? palette.background
+      : palette.text;
+  const borderColor = palette.border;
+
+  // Compact size options
   const buttonSizes = {
-    small: { paddingVertical: 8, paddingHorizontal: 16 },
-    medium: { paddingVertical: 12, paddingHorizontal: 20 },
-    large: { paddingVertical: 14, paddingHorizontal: 24 }
+    small: { paddingVertical: 6, paddingHorizontal: 12 },
+    medium: { paddingVertical: 8, paddingHorizontal: 16 },
+    large: { paddingVertical: 10, paddingHorizontal: 18 },
   };
-  
-  // Determine font size based on size
+
   const fontSizes = {
-    small: 14,
-    medium: 16,
-    large: 18
+    small: 13,
+    medium: 15,
+    large: 16,
   };
-  
+
   const handlePress = () => {
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     onPress();
   };
-  
+
   return (
     <TouchableOpacity
       style={[
         styles.button,
-        { 
+        {
           backgroundColor,
           paddingVertical: buttonSizes[size].paddingVertical,
           paddingHorizontal: buttonSizes[size].paddingHorizontal,
           borderWidth: variant === 'secondary' ? 1 : 0,
-          borderColor: variant === 'secondary' ? borderColor : undefined
+          borderColor: variant === 'secondary' ? borderColor : undefined,
         },
-        style
+        style,
       ]}
       onPress={handlePress}
+      activeOpacity={0.85}
     >
-      <ThemedText 
+      <Text
         style={[
           styles.buttonText,
-          { 
+          {
             color: textColor,
-            fontSize: fontSizes[size]
-          }
+            fontSize: fontSizes[size],
+          },
         ]}
       >
         {label}
-      </ThemedText>
+      </Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 8,
+    borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 80,
   },
   buttonText: {
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });

@@ -9,18 +9,16 @@ import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 
 interface PostInteractionBarProps {
   postId: string;
-  onPressShare?: () => void;
   variant?: 'horizontal' | 'vertical';
   size?: 'small' | 'medium' | 'large';
   containerStyle?: any;
 }
 
-export default function PostInteractionBar({ 
-  postId, 
-  onPressShare, 
+export default function PostInteractionBar({
+  postId,
   variant = 'horizontal',
-  size = 'medium',
-  containerStyle
+  size = 'medium', // ignored for icon size, always 20
+  containerStyle,
 }: PostInteractionBarProps) {
   const { isLiked, toggleLike } = useLikes();
   const { isBookmarked, toggleBookmark } = useAppContext();
@@ -33,15 +31,9 @@ export default function PostInteractionBar({
   // Theme
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
-  
-  // Icon sizes based on the size prop
-  const iconSizes = {
-    small: 18,
-    medium: 20,
-    large: 24
-  };
-  
-  const iconSize = iconSizes[size];
+
+  // Force size 20 for all icons
+  const iconSize = 20;
 
   // On mount or post change, sync state with hooks
   useEffect(() => {
@@ -58,17 +50,15 @@ export default function PostInteractionBar({
       if (!cancelled) setBookmarked(isBookmarked(postId));
     }
     syncState();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [postId, isLiked, isBookmarked]);
 
   // Handle like action
   const handleLike = async () => {
     if (!postId) return;
-    
-    // haptic feedback
     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    // Optimistic UI update
     setLiked((curr) => !curr);
     await toggleLike(postId);
   };
@@ -76,10 +66,7 @@ export default function PostInteractionBar({
   // Handle bookmark action
   const handleBookmark = async () => {
     if (!postId) return;
-    
     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    // Optimistic UI update
     setBookmarked((curr) => !curr);
     await toggleBookmark(postId);
   };
@@ -92,63 +79,35 @@ export default function PostInteractionBar({
     }
   };
 
-  // Handle share action
-  const handleShare = () => {
-    if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onPressShare) onPressShare();
-  };
-
   return (
-    <View style={[
-      variant === 'horizontal' ? styles.horizontalContainer : styles.verticalContainer,
-      containerStyle
-    ]}>
-      <TouchableOpacity 
-        style={styles.iconButton} 
+    <View
+      style={[
+        variant === 'horizontal' ? styles.horizontalContainer : styles.verticalContainer,
+        containerStyle,
+      ]}
+    >
+      <TouchableOpacity
+        style={styles.iconButton}
         onPress={handleLike}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Feather 
-          name="heart" 
-          size={iconSize} 
-          color={liked ? "#f43f5e" : iconColor} 
-        />
+        <Feather name="heart" size={iconSize} color={liked ? '#f43f5e' : iconColor} />
       </TouchableOpacity>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.iconButton}
         onPress={handleComment}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Feather 
-          name="message-circle" 
-          size={iconSize} 
-          color={iconColor} 
-        />
+        <Feather name="message-circle" size={iconSize} color={iconColor} />
       </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.iconButton}
-        onPress={handleShare}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Feather 
-          name="share-2" 
-          size={iconSize} 
-          color={iconColor} 
-        />
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.iconButton}
         onPress={handleBookmark}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Feather 
-          name="bookmark" 
-          size={iconSize} 
-          color={bookmarked ? tintColor : iconColor} 
-        />
+        <Feather name="bookmark" size={iconSize} color={bookmarked ? tintColor : iconColor} />
       </TouchableOpacity>
     </View>
   );
