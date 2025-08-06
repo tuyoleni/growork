@@ -24,6 +24,7 @@ export enum DocumentType {
 }
 
 export enum UserType {
-  Business = 'business',
   User = 'user',
+  Professional = 'professional',
+  Company = 'company',
 } 

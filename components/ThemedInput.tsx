@@ -7,7 +7,7 @@ export type ThemedInputProps = TextInputProps & {
 };
 
 export function ThemedInput({ style, lightColor, darkColor, ...rest }: ThemedInputProps) {
-  const backgroundColor = useThemeColor({ light: '#f9f9f9', dark: '#181818' }, 'backgroundSecondary');
+  const backgroundColor = useThemeColor({ light: '#ffffff', dark: '#2a2a2a' }, 'background');
   const textColor = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
   const borderColor = useThemeColor({}, 'border');
   const placeholderColor = useThemeColor({}, 'mutedText');
@@ -32,12 +32,10 @@ export function ThemedInput({ style, lightColor, darkColor, ...rest }: ThemedInp
 const styles = StyleSheet.create({
   input: {
     width: '100%',
-    flex: 1,
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 10,
-    backgroundColor: 'red',
   },
 });

@@ -1,4 +1,3 @@
-import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AuthNavRow } from '@/components/ui/AuthNavRow';
@@ -7,12 +6,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
+import ScreenContainer from '@/components/ScreenContainer';
 
 export default function LoginScreen() {
   const { signIn, loading } = useAuth();
@@ -42,54 +40,52 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={24}
-      >
-        <ThemedView style={styles.container}>
-          <ThemedText type="title" style={styles.heading}>
-            Welcome back
-          </ThemedText>
-          <ThemedText type="subtitle" style={styles.paragraph}>
-            Enter your email and password to log in.
-          </ThemedText>
+    <ScreenContainer>
+      <ThemedView style={styles.container}>
+        <ThemedText type="title" style={styles.heading}>
+          Welcome back
+        </ThemedText>
+        <ThemedText type="subtitle" style={styles.paragraph}>
+          Enter your email and password to log in.
+        </ThemedText>
 
-          <ThemedView>
-            <ThemedInput
-              placeholder="Email"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <ThemedInput
-              placeholder="Password"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-
-            <TouchableOpacity
-              style={styles.loginButton}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <ThemedText style={styles.loginButtonText}>
-                {loading ? 'Logging in...' : 'Login'}
-              </ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
-
-          <AuthNavRow
-            onNext={() => router.replace('/auth/email')}
-            nextLabel="Register instead"
+        <ThemedView>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#666"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
           />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#666"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={handleLogin}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <ThemedText style={styles.loginButtonText}>
+              {loading ? 'Logging in...' : 'Login'}
+            </ThemedText>
+          </TouchableOpacity>
         </ThemedView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+        <AuthNavRow
+          onNext={() => router.replace('/auth/email')}
+          nextLabel="Register instead"
+        />
+      </ThemedView>
+    </ScreenContainer>
   );
 }
 
@@ -109,6 +105,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     maxWidth: 340,
     textAlign: 'left',
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 10,
+    backgroundColor: '#fff',
+    borderColor: '#ddd',
+    color: '#000',
   },
   loginButton: {
     marginTop: 12,

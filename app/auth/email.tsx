@@ -1,17 +1,12 @@
-import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AuthNavRow } from '@/components/ui/AuthNavRow';
-import { useFlashToast } from '@/components/ui/Flash'; // ✅ useFlashToast
+import { useFlashToast } from '@/components/ui/Flash';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-} from 'react-native';
+import { StyleSheet, TextInput } from 'react-native';
+import ScreenContainer from '@/components/ScreenContainer';
 
 export default function EmailStep() {
   const [email, setEmail] = useState('');
@@ -38,52 +33,48 @@ export default function EmailStep() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={24}
-      >
-        <ThemedView style={styles.container}>
-          <ThemedView style={styles.topTextContainer}>
-            <ThemedText type="title" style={styles.heading}>
-              Sign up with your email
-            </ThemedText>
-            <ThemedText type="subtitle" style={styles.paragraph}>
-              Enter your email and password to get started.
-            </ThemedText>
-          </ThemedView>
+    <ScreenContainer>
+      <ThemedView style={styles.container}>
+        <ThemedView style={styles.topTextContainer}>
+          <ThemedText type="title" style={styles.heading}>
+            Sign up with your email
+          </ThemedText>
+          <ThemedText type="subtitle" style={styles.paragraph}>
+            Enter your email and password to get started.
+          </ThemedText>
+        </ThemedView>
 
-          <ThemedView style={styles.formGroup}>
-            <ThemedInput
-              style={styles.input}
-              placeholder="Email"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <ThemedInput
-              style={styles.input}
-              placeholder="Password"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-          </ThemedView>
-
-          <AuthNavRow
-            onBack={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.replace('/auth/login');
-            }}
-            backLabel="Login instead"
-            onNext={handleNext}
-            nextLabel="Next"
+        <ThemedView style={styles.formGroup}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#666"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#666"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
           />
         </ThemedView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+        <AuthNavRow
+          onBack={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.replace('/auth/login');
+          }}
+          backLabel="Login instead"
+          onNext={handleNext}
+          nextLabel="Next"
+        />
+      </ThemedView>
+    </ScreenContainer>
   );
 }
 
@@ -119,6 +110,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
     fontSize: 16,
+    backgroundColor: '#fff',
+    borderColor: '#ddd',
+    color: '#000',
   },
   formGroup: {
     width: '100%',

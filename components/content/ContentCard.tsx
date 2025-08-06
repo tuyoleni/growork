@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, Image, Pressable, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
+import { Platform, Image, Pressable, StyleSheet, useColorScheme, View, ViewStyle, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -28,7 +28,7 @@ export interface ContentCardProps {
   isVerified?: boolean;
   industry?: string;
   onPressHeart?: () => void;
-  onCommentPress?: () => void; 
+  onCommentPress?: () => void;
   onPressMessage?: () => void;
   onPressShare?: () => void;
   onPressBookmark?: () => void;
@@ -40,29 +40,20 @@ export interface ContentCardProps {
   jobId?: string;
 }
 
-const badgeColors = (theme: any) => ({
-  error: { background: theme.mutedText, text: theme.background },
-  info: { background: theme.tint, text: theme.background },
-  success: { background: theme.icon, text: theme.background },
-});
-
 export default function ContentCard(props: ContentCardProps) {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
   const borderColor = useThemeColor({}, 'border');
   const iconColor = useThemeColor({}, 'icon');
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
   const mutedTextColor = useThemeColor({}, 'mutedText');
-
-  const { user } = useAuth();
   const { isLiked, toggleLike } = useLikes();
   const { isBookmarked, toggleBookmark } = useAppContext();
 
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,27 +107,6 @@ export default function ContentCard(props: ContentCardProps) {
     }
   };
 
-  const renderBadge = () => {
-    if (props.variant === 'news' && props.badgeText) {
-      const badgeStyle = badgeColors(theme)[props.badgeVariant || 'error'];
-      return (
-        <View style={[styles.badge, { backgroundColor: badgeStyle.background, opacity: 0.7 }]}>
-          <ThemedText style={[styles.badgeText, { color: badgeStyle.text }]}>
-            {props.badgeText}
-          </ThemedText>
-        </View>
-      );
-    }
-    if (props.variant === 'sponsored') {
-      return (
-        <ThemedText style={[styles.sponsoredLabel, { color: mutedTextColor }]}>
-          Sponsored
-        </ThemedText>
-      );
-    }
-    return null;
-  };
-
   const IconButton = ({
     name,
     filled,
@@ -149,37 +119,36 @@ export default function ContentCard(props: ContentCardProps) {
     onPress?: () => void;
   }) => (
     <Pressable style={styles.iconButton} hitSlop={8} onPress={onPress}>
-      <Feather name={name} size={20} color={color || iconColor} />
+      <Feather name={name} size={18} color={color || iconColor} />
     </Pressable>
   );
 
   const renderIconActions = () => (
-    <>
+    <View style={styles.iconActions}>
       <IconButton
         name="heart"
         filled={liked}
-        color={liked ? 'red' : iconColor}
+        color={liked ? '#ef4444' : iconColor}
         onPress={handleLike}
       />
       <IconButton name="message-circle" onPress={handleComment} />
-      <IconButton name="share" onPress={props.onPressShare} />
       <IconButton
-        name="bookmark"
-        filled={bookmarked}
+        name={bookmarked ? "bookmark" : "bookmark"}
         color={bookmarked ? tintColor : iconColor}
         onPress={handleBookmark}
       />
-    </>
+      <IconButton name="share" onPress={props.onPressShare} />
+    </View>
   );
 
-  const renderCTAButton = () => {
+  const renderSubtleCTA = () => {
     if (props.variant === 'job') {
       return (
         <Pressable
-          style={[styles.applyButton, { backgroundColor: textColor }]}
+          style={styles.subtleCTA}
           onPress={handleJobPress}>
-          <ThemedText style={[styles.applyButtonText, { color: backgroundColor }]}>
-            View Details
+          <ThemedText style={[styles.subtleCTAText, { color: tintColor }]}>
+            View Job
           </ThemedText>
         </Pressable>
       );
@@ -187,12 +156,12 @@ export default function ContentCard(props: ContentCardProps) {
     if (props.variant === 'sponsored') {
       return (
         <Pressable
-          style={[styles.learnMoreButton, { backgroundColor: textColor }]}
+          style={styles.subtleCTA}
           onPress={() => {
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             props.onPressLearnMore?.();
           }}>
-          <ThemedText style={[styles.learnMoreButtonText, { color: backgroundColor }]}>
+          <ThemedText style={[styles.subtleCTAText, { color: tintColor }]}>
             Learn More
           </ThemedText>
         </Pressable>
@@ -201,9 +170,46 @@ export default function ContentCard(props: ContentCardProps) {
     return null;
   };
 
+  const renderMainImage = () => {
+    if (!props.mainImage) return null;
+
+    return (
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: props.mainImage }}
+          style={styles.mainImage}
+          resizeMode="cover"
+          onLoadStart={() => {
+            setImageLoading(true);
+            setImageError(false);
+          }}
+          onLoadEnd={() => setImageLoading(false)}
+          onError={() => {
+            setImageLoading(false);
+            setImageError(true);
+          }}
+          accessibilityLabel={`Image for ${props.postTitle || 'post'}`}
+        />
+        {imageLoading && (
+          <View style={styles.imageLoadingContainer}>
+            <ActivityIndicator size="small" color={tintColor} />
+          </View>
+        )}
+        {imageError && (
+          <View style={styles.imageErrorContainer}>
+            <Feather name="image" size={24} color={mutedTextColor} />
+            <ThemedText style={[styles.imageErrorText, { color: mutedTextColor }]}>
+              Image unavailable
+            </ThemedText>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <ThemedView style={[styles.card, { borderBottomColor: borderColor }, props.style]}>
-      <Pressable 
+      <Pressable
         style={[{ flex: 1 }, props.variant === 'job' && styles.cardPressable]}
         onPress={props.variant === 'job' ? handleJobPress : undefined}
         android_ripple={props.variant === 'job' ? { color: borderColor, borderless: false } : undefined}
@@ -212,49 +218,48 @@ export default function ContentCard(props: ContentCardProps) {
         {/* Header */}
         <View style={styles.headerRow}>
           <Image source={{ uri: props.avatarImage }} style={styles.avatar} />
-          <View style={styles.headerTextCol}>
-            {/* Username and Name */}
-            <View style={styles.userLine}>
-              <ThemedText style={styles.username}>@{props.username}</ThemedText>
-              <ThemedText style={styles.name}> {props.name}</ThemedText>
-            </View>
-            {/* Post Title */}
-            <ThemedText style={styles.postTitle}>{props.postTitle}</ThemedText>
-            {/* Company Info row */}
+          <View style={styles.headerContent}>
             <View style={styles.companyRow}>
               <ThemedText style={styles.companyName} type="defaultSemiBold">
-                {props.title}
+                {props.name}
               </ThemedText>
-              {renderBadge()}
-              {props.variant === 'job' && props.isVerified && (
-                <Feather name="shield" size={16} color={tintColor} style={{ marginLeft: 4 }} />
-              )}
-              {props.variant === 'job' && props.industry && (
-                <ThemedText style={[styles.sponsoredLabel, { color: mutedTextColor }]}>
-                  {props.industry}
-                </ThemedText>
+              {props.isVerified && (
+                <Feather name="check-circle" size={14} color={tintColor} style={styles.verifiedIcon} />
               )}
             </View>
+            <ThemedText style={[styles.username, { color: mutedTextColor }]}>
+              @{props.username}
+            </ThemedText>
           </View>
-          <IconButton name="more-horizontal" onPress={props.onPressMore} />
+          {/* Subtle indicator for post type - only show for sponsored */}
+          {props.variant === 'sponsored' && (
+            <View style={styles.sponsoredIndicator}>
+              <ThemedText style={[styles.sponsoredText, { color: mutedTextColor }]}>
+                Sponsored
+              </ThemedText>
+            </View>
+          )}
         </View>
 
-        {/* Main Image, if present */}
-        {props.mainImage && (
-          <Image
-            source={{ uri: props.mainImage }}
-            style={styles.mainImage}
-            resizeMode="cover"
-          />
+        {/* Post Title */}
+        {props.postTitle && (
+          <ThemedText style={styles.postTitle}>
+            {props.postTitle}
+          </ThemedText>
         )}
 
-        {/* Description and actions row */}
-        <View style={styles.body}>
-          <ThemedText style={styles.description}>{props.description}</ThemedText>
-          <View style={styles.actionsRow}>
-            <View style={styles.iconActions}>{renderIconActions()}</View>
-            {renderCTAButton()}
-          </View>
+        {/* Main Image, if present */}
+        {renderMainImage()}
+
+        {/* Description */}
+        <ThemedText style={styles.description}>
+          {props.description}
+        </ThemedText>
+
+        {/* Actions */}
+        <View style={styles.actionsRow}>
+          {renderIconActions()}
+          {renderSubtleCTA()}
         </View>
       </Pressable>
     </ThemedView>
@@ -268,89 +273,65 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     borderBottomWidth: 1,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   headerRow: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    paddingBottom: 8,
+    gap: 12,
+    paddingBottom: 12,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    marginRight: 6,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
-  headerTextCol: {
+  headerContent: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 2,
   },
-  userLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginBottom: 2,
-  },
-  username: {
-    fontSize: 12,
-    color: '#737373',
-    fontWeight: '500',
-  },
-  name: {
-    fontSize: 12,
-    color: '#222',
-    fontWeight: '400',
-  },
-  postTitle: {
-    fontWeight: '700',
-    fontSize: 14,
-    marginBottom: 1,
-  },
   companyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   companyName: {
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  verifiedIcon: {
+    marginLeft: 2,
+  },
+  username: {
     fontSize: 13,
+    fontWeight: '400',
   },
-  badge: {
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    marginLeft: 3,
+  sponsoredIndicator: {
+    alignSelf: 'flex-start',
   },
-  badgeText: {
-    fontWeight: 'bold',
-    fontSize: 10,
+  sponsoredText: {
+    fontSize: 11,
+    fontWeight: '400',
   },
-  iconButton: {
-    padding: 6,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+  postTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    lineHeight: 20,
   },
   mainImage: {
     width: '100%',
-    height: 300,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  body: {
-    width: '100%',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingTop: 8,
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   description: {
     fontSize: 15,
-    marginBottom: 8,
+    lineHeight: 20,
+    paddingBottom: 12,
   },
   actionsRow: {
     width: '100%',
@@ -361,32 +342,51 @@ const styles = StyleSheet.create({
   iconActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 16,
   },
-  applyButton: {
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+  iconButton: {
+    padding: 4,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  applyButtonText: {
-    fontWeight: 'bold',
-    fontSize: 12,
+  subtleCTA: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  learnMoreButton: {
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-  },
-  learnMoreButtonText: {
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  sponsoredLabel: {
-    fontSize: 10,
-    marginLeft: 3,
-    fontWeight: '400',
+  subtleCTAText: {
+    fontWeight: '500',
+    fontSize: 13,
   },
   cardPressable: {
-    borderRadius: 6,
+    borderRadius: 8,
+  },
+  imageContainer: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  imageLoadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  imageErrorContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  imageErrorText: {
+    marginTop: 8,
+    fontSize: 13,
   },
 });

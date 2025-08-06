@@ -1,66 +1,107 @@
 import React from 'react';
-import { Alert, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { useImageUpload } from './useImageUpload';
 import { ThemedText } from '@/components/ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { ThemedView } from '@/components/ThemedView';
 
-export interface ImagePickerFieldProps {
-  imageUri: string | null;
-  onImageSelected: (uri: string | null, file: any | null) => void;
-  style?: ViewStyle;
-  buttonText?: string;
+interface ImagePickerFieldProps {
+  selectedImage: string | null;
+  onImageSelected: (imageUrl: string | null) => void;
+  label?: string;
 }
 
-export default function ImagePickerField({ 
-  imageUri, 
-  onImageSelected, 
-  style, 
-  buttonText 
-}: ImagePickerFieldProps) {
-  const tintColor = useThemeColor({}, 'tint');
+export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
+  selectedImage,
+  onImageSelected,
+  label = 'Add Image'
+}) => {
+  const { pickImage, uploading, error } = useImageUpload();
 
-  const pickImage = async () => {
+  const handleImagePick = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        aspect: [4, 3],
-        quality: 0.82,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        onImageSelected(asset.uri, asset);
+      const imageUrl = await pickImage();
+      if (imageUrl) {
+        onImageSelected(imageUrl);
       }
-    } catch {
-      Alert.alert("Image Error", "Couldn't pick image");
+    } catch (err) {
+      Alert.alert('Error', 'Failed to pick image');
     }
   };
 
-  return (
-    <View style={style}>
-      <TouchableOpacity
-        style={styles.attachImageButton}
-        onPress={pickImage}
-        accessibilityLabel={imageUri ? "Change image" : "Add image"}
-      >
-        <Feather name="image" size={22} color={tintColor} />
-        <ThemedText style={{ marginLeft: 8 }}>
-          {buttonText || (imageUri ? "Change Image" : "Add Image")}
-        </ThemedText>
-      </TouchableOpacity>
-    </View>
-  );
-}
+  const removeImage = () => {
+    onImageSelected(null);
+  };
 
-const styles = StyleSheet.create({
-  attachImageButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 0,
-    margin: 0,
-    backgroundColor: 'transparent',
-    minHeight: 36,
-    minWidth: 48,
-    borderRadius: 8,
-  }
-});
+  return (
+    <ThemedView style={{ marginVertical: 10 }}>
+      {label && (
+        <ThemedText style={{ marginBottom: 8, fontWeight: '500' }}>
+          {label}
+        </ThemedText>
+      )}
+      
+      {selectedImage ? (
+        <View style={{ position: 'relative' }}>
+          <Image
+            source={{ uri: selectedImage }}
+            style={{
+              width: '100%',
+              height: 200,
+              borderRadius: 8,
+              marginBottom: 8
+            }}
+            resizeMode="cover"
+          />
+          <TouchableOpacity
+            onPress={removeImage}
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              borderRadius: 15,
+              width: 30,
+              height: 30,
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}
+          >
+            <Text style={{ color: 'white', fontSize: 16 }}>×</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={handleImagePick}
+          disabled={uploading}
+          style={{
+            borderWidth: 2,
+            borderColor: '#ddd',
+            borderStyle: 'dashed',
+            borderRadius: 8,
+            padding: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#f9f9f9'
+          }}
+        >
+          {uploading ? (
+            <ActivityIndicator size="large" color="#2563eb" />
+          ) : (
+            <>
+              <Text style={{ fontSize: 48, color: '#999' }}>📷</Text>
+              <ThemedText style={{ marginTop: 8, color: '#666' }}>
+                Tap to add image
+              </ThemedText>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
+      
+      {error && (
+        <Text style={{ color: 'red', marginTop: 8, fontSize: 12 }}>
+          {error}
+        </Text>
+      )}
+    </ThemedView>
+  );
+};

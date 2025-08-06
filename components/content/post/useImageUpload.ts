@@ -1,26 +1,55 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
-import { supabase, uploadImage as supabaseUploadImage, STORAGE_BUCKETS } from '@/utils/superbase';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadImage as uploadImageUtil } from '@/utils/uploadUtils';
+import { STORAGE_BUCKETS } from '@/utils/superbase';
+import { useAuth } from '@/hooks/useAuth';
 
-export function useImageUpload() {
+export const useImageUpload = () => {
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const uploadImage = async (imageFile: any, userId: string) => {
-    if (!imageFile || !userId) return null;
+  const pickImage = async (): Promise<string | null> => {
+    setError(null);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      return await uploadPostImage(asset.uri);
+    }
+    return null;
+  };
+
+  const uploadPostImage = async (uri: string): Promise<string | null> => {
+    if (!user) {
+      setError('User not authenticated');
+      return null;
+    }
+
+    setUploading(true);
+    setError(null);
     
     try {
-      setUploading(true);
-      
-      // Use the shared uploadImage function from superbase.ts
-      return await supabaseUploadImage({
-        bucket: STORAGE_BUCKETS.POSTS,
-        userId,
-        uri: imageFile.uri,
+      // Use the same uploadImage utility as profile
+      const publicUrl: string | null = await uploadImageUtil({
+        bucket: STORAGE_BUCKETS.POSTS, // Use posts bucket instead of avatars
+        userId: user.id,
+        uri,
         fileNamePrefix: 'post'
       });
-    } catch (error) {
-      console.error('Upload Error:', error);
-      Alert.alert('Upload Error', 'Failed to upload image');
+      
+      if (!publicUrl) {
+        throw new Error('Failed to upload image');
+      }
+      
+      return publicUrl;
+    } catch (e: any) {
+      setError(e.message || 'Failed to upload image');
       return null;
     } finally {
       setUploading(false);
@@ -28,7 +57,10 @@ export function useImageUpload() {
   };
 
   return {
-    uploadImage,
-    uploading
+    pickImage,
+    uploadImage: uploadPostImage,
+    uploading,
+    error,
+    setError
   };
-}
+};

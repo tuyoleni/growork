@@ -100,6 +100,46 @@ export function useAuth() {
     }
   };
 
+  // Update user profile
+  const updateProfile = useCallback(async (profileData: Partial<Profile>) => {
+    if (!user) {
+      setError('No user logged in');
+      return { error: 'No user logged in' };
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data: updatedProfile, error: updateError } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        setError(updateError.message);
+        return { error: updateError };
+      }
+
+      // Update local state
+      setProfile(updatedProfile);
+      profileLoaded.current = true;
+
+      // Update cache
+      saveProfileToCache(user.id, updatedProfile);
+
+      return { profile: updatedProfile };
+    } catch (err: any) {
+      console.error('Error updating profile:', err.message);
+      setError(err.message);
+      return { error: err };
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   // Fetch user and profile on mount
   useEffect(() => {
     const getUserAndSession = async () => {
@@ -200,7 +240,7 @@ export function useAuth() {
       setLoading(false);
       return { error: 'No user returned from signUp' };
     }
-    // Create profile as UserType.User
+    // Create profile as UserType.User with all new fields
     const { error: profileError } = await supabase.from('profiles').insert([
       {
         id: user.id,
@@ -210,6 +250,13 @@ export function useAuth() {
         avatar_url,
         bio: '',
         user_type: UserType.User,
+        website: null,
+        phone: null,
+        location: null,
+        profession: null,
+        experience_years: null,
+        education: null,
+        skills: null,
       },
     ]);
     if (profileError) {
@@ -277,6 +324,7 @@ export function useAuth() {
     signUp,
     signIn,
     signOut,
+    updateProfile,
     refresh: async () => {
       try {
         setLoading(true);

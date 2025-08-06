@@ -1,7 +1,7 @@
 import React from 'react';
 import { ViewStyle } from 'react-native';
-import { DEADLINE_OPTIONS } from '@/dataset/deadlineOptions';
 import BadgeSelector, { BadgeOption } from '@/components/ui/BadgeSelector';
+import { DEADLINE_OPTIONS } from '@/dataset/deadlineOptions';
 
 interface DeadlineSelectorProps {
   selectedDeadline: string;
@@ -14,11 +14,9 @@ export default function DeadlineSelector({
   onDeadlineChange,
   style,
 }: DeadlineSelectorProps) {
-  // If DEADLINE_OPTIONS is a string array, map to BadgeOption
   const deadlineOptions: BadgeOption[] = DEADLINE_OPTIONS.map(option => ({
     label: option,
     value: option,
-    // icon: "calendar", // Optionally add an icon if desired
   }));
 
   return (

@@ -3,7 +3,7 @@ CREATE TYPE post_type AS ENUM ('news', 'job');
 CREATE TYPE ad_status AS ENUM ('active', 'paused', 'completed');
 CREATE TYPE application_status AS ENUM ('pending', 'reviewed', 'accepted', 'rejected');
 CREATE TYPE document_type AS ENUM ('cv', 'cover_letter', 'certificate', 'other');
-CREATE TYPE user_type AS ENUM ('business', 'user');
+CREATE TYPE user_type AS ENUM ('user', 'professional', 'company');
 
 -- Create a function to update the updated_at timestamp automatically
 CREATE OR REPLACE FUNCTION update_modified_column()
@@ -20,6 +20,36 @@ BEFORE UPDATE ON public.posts
 FOR EACH ROW
 EXECUTE FUNCTION update_modified_column();
 
+-- Create companies table
+CREATE TABLE public.companies (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text,
+  logo_url text,
+  website text,
+  industry text,
+  size text,
+  founded_year integer,
+  location text,
+  user_id uuid NOT NULL,
+  status text DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT companies_pkey PRIMARY KEY (id),
+  CONSTRAINT companies_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- Create trigger for companies updated_at
+CREATE TRIGGER set_companies_updated_at
+BEFORE UPDATE ON public.companies
+FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+-- Create trigger for profiles updated_at
+CREATE TRIGGER set_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
 
 CREATE TABLE public.ad_impressions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -112,9 +142,17 @@ CREATE TABLE public.profiles (
   avatar_url text,
   bio text,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
   user_type user_type NOT NULL DEFAULT 'user',
   name text NOT NULL DEFAULT ''::text,
   surname text NOT NULL DEFAULT ''::text,
+  website text,
+  phone text,
+  location text,
+  profession text,
+  experience_years integer,
+  education text,
+  skills text[],
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );

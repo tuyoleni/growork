@@ -1,36 +1,34 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AuthNavRow } from '@/components/ui/AuthNavRow';
-import { Colors } from '@/constants/Colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, useColorScheme } from 'react-native';
+import { StyleSheet } from 'react-native';
+import ScreenContainer from '@/components/ScreenContainer';
 
 export default function VerifyScreen() {
   const { email, username } = useLocalSearchParams<{ email: string; userId: string; username?: string }>();
   const [error] = useState<string | null>(null);
-  const scheme = useColorScheme() ?? 'light';
-  const color = Colors[scheme];
   const router = useRouter();
 
   // Personalized welcome message
   const displayName = username || email;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: color.background }}>
-      <ThemedView style={[styles.container, { backgroundColor: color.background }]}> 
+    <ScreenContainer>
+      <ThemedView style={styles.container}>
         <ThemedView style={styles.formGroup}>
-          <ThemedText style={[styles.title, { color: color.text }]}>Welcome, {displayName}!</ThemedText>
-          <ThemedText style={[styles.subtitle, { color: color.mutedText }]}>Your account has been created successfully.</ThemedText>
-          <ThemedText style={[styles.verifyingText, { color: color.tint }]}>Continue to grow with us.</ThemedText>
-          {error && <ThemedText style={[styles.error, { color: '#e53935' }]}>{error}</ThemedText>}
+          <ThemedText style={styles.title}>Welcome, {displayName}!</ThemedText>
+          <ThemedText style={styles.subtitle}>Your account has been created successfully.</ThemedText>
+          <ThemedText style={styles.verifyingText}>Continue to grow with us.</ThemedText>
+          {error && <ThemedText style={styles.error}>{error}</ThemedText>}
         </ThemedView>
         <AuthNavRow
           onNext={() => router.replace('/(tabs)')}
           nextLabel="Continue to grow with us"
         />
       </ThemedView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
@@ -63,22 +61,6 @@ const styles = StyleSheet.create({
   },
   error: {
     marginTop: 16,
-  },
-  bottomRow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 400,
-    marginHorizontal: 'auto',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingHorizontal: 16,
-    zIndex: 10,
+    color: '#e53935',
   },
 }); 

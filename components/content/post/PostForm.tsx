@@ -8,6 +8,7 @@ import { usePostForm } from './usePostForm';
 import PostTypeSelector from './PostTypeSelector';
 import JobFields from './JobFields';
 import ArticleFields from './ArticleFields';
+import { ImagePickerField } from './ImagePickerField';
 import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
 import { useFlashToast } from '@/components/ui/Flash';
@@ -33,6 +34,8 @@ export default function PostForm({ onSuccess }: PostFormProps) {
     setTitle,
     content,
     setContent,
+    imageUrl,
+    handleImageSelected,
     loading,
     postType,
     handlePostTypeChange,
@@ -106,6 +109,11 @@ export default function PostForm({ onSuccess }: PostFormProps) {
               multiline
               textAlignVertical="top"
             />
+            <ImagePickerField
+              selectedImage={imageUrl}
+              onImageSelected={handleImageSelected}
+              label="Add Image"
+            />
           </>
         );
       case WizardStep.DetailsInfo:
@@ -121,7 +129,45 @@ export default function PostForm({ onSuccess }: PostFormProps) {
           />
         );
       case WizardStep.Review:
-        return null; // Add review UI if needed
+        return (
+          <View style={{ padding: 16 }}>
+            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>Review Your Post</ThemedText>
+            
+            <View style={{ marginBottom: 12 }}>
+              <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Title:</ThemedText>
+              <ThemedText>{title}</ThemedText>
+            </View>
+            
+            <View style={{ marginBottom: 12 }}>
+              <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Content:</ThemedText>
+              <ThemedText>{content}</ThemedText>
+            </View>
+            
+            {imageUrl && (
+              <View style={{ marginBottom: 12 }}>
+                <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Image:</ThemedText>
+                <ThemedText style={{ color: '#666' }}>Image attached</ThemedText>
+              </View>
+            )}
+            
+            {postType === PostType.Job && (
+              <View style={{ marginBottom: 12 }}>
+                <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Job Details:</ThemedText>
+                <ThemedText>Location: {jobFields.location || 'Not specified'}</ThemedText>
+                <ThemedText>Salary: {jobFields.salary || 'Not specified'}</ThemedText>
+                <ThemedText>Industry: {jobFields.industry || 'Not specified'}</ThemedText>
+              </View>
+            )}
+            
+            {postType === PostType.News && (
+              <View style={{ marginBottom: 12 }}>
+                <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Article Details:</ThemedText>
+                <ThemedText>Source: {articleFields.source || 'Not specified'}</ThemedText>
+                <ThemedText>Summary: {articleFields.summary || 'Not specified'}</ThemedText>
+              </View>
+            )}
+          </View>
+        );
       default:
         return null;
     }
@@ -133,21 +179,24 @@ export default function PostForm({ onSuccess }: PostFormProps) {
   return (
     <>
       {renderStepContent()}
-      <View style={{ flexDirection: 'row' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 }}>
         <TouchableOpacity
           onPress={atFirstStep ? undefined : handlePrevStep}
           disabled={atFirstStep}
+          style={{ opacity: atFirstStep ? 0.5 : 1 }}
         >
-          <ThemedText>Previous</ThemedText>
+          <ThemedText style={{ color: atFirstStep ? '#999' : '#007AFF' }}>
+            {atFirstStep ? 'Previous' : '← Previous'}
+          </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleNextStep}
           disabled={loading || !isFormValid()}
+          style={{ opacity: (loading || !isFormValid()) ? 0.5 : 1 }}
         >
-          <ThemedText>
-            {atLastStep ? 'Post' : 'Next'}
+          <ThemedText style={{ color: (loading || !isFormValid()) ? '#999' : '#007AFF' }}>
+            {atLastStep ? 'Post' : 'Next →'}
           </ThemedText>
-          {!atLastStep && <Feather name="arrow-right" size={18} color="#007AFF" />}
         </TouchableOpacity>
       </View>
     </>

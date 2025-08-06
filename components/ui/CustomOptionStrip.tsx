@@ -1,9 +1,10 @@
 import { ThemedText } from '@/components/ThemedText';
+import { ThemedInput } from '@/components/ThemedInput';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { openGlobalSheet } from '@/utils/globalSheet';
 
 interface OptionItem {
@@ -36,7 +37,7 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
   minVisibleOptions = 1,
   maxVisibleOptions = 8,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light';
+
   const badgeBg = useThemeColor({}, 'backgroundSecondary');
   const badgeSelectedBg = useThemeColor({}, 'icon');
   const badgeText = useThemeColor({}, 'text');
@@ -90,15 +91,16 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
             borderColor: borderColor,
           }}>
             <Feather name="search" size={16} color={badgeText} style={{ marginRight: 8 }} />
-            <TextInput
+            <ThemedInput
               style={{
                 flex: 1,
                 paddingVertical: 12,
                 fontSize: 16,
-                color: badgeText,
+                backgroundColor: 'transparent',
+                borderWidth: 0,
+                marginBottom: 0,
               }}
               placeholder="Search options..."
-              placeholderTextColor={subtitleColor}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -112,7 +114,7 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
           {filteredOptions.length === 0 && (
             <View style={{ paddingVertical: 20, alignItems: 'center' }}>
               <ThemedText style={{ fontSize: 14, color: subtitleColor, fontStyle: 'italic' }}>
-                No options found for "{searchQuery}"
+                No options found for &quot;{searchQuery}&quot;
               </ThemedText>
             </View>
           )}

@@ -1,125 +1,11 @@
-
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { createClient } from '@supabase/supabase-js'
-import 'react-native-url-polyfill/auto'
-import * as FileSystem from 'expo-file-system'
-
-// Storage constants
-export const STORAGE_BUCKETS = {
-  POSTS: 'posts',
-  AVATARS: 'avatars',
-  DOCUMENTS: 'documents'
-};
+import * as FileSystem from 'expo-file-system';
+import { supabase, STORAGE_BUCKETS } from './superbase';
 
 // File size limits (in bytes)
 export const FILE_LIMITS = {
   IMAGE: 10 * 1024 * 1024, // 10MB
   DOCUMENT: 50 * 1024 * 1024, // 50MB
   AVATAR: 5 * 1024 * 1024, // 5MB
-};
-
-// Supported file types
-export const SUPPORTED_TYPES = {
-  IMAGE: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-  DOCUMENT: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-};
-
-// Cache TTL constants (in milliseconds)
-export const CACHE_TTL = {
-  SESSION: 1000 * 60 * 60, // 1 hour
-  PROFILE: 1000 * 60 * 10, // 10 minutes
-  POSTS: 1000 * 60 * 5,    // 5 minutes
-  COMMENTS: 1000 * 60 * 2  // 2 minutes
-};
-
-// Simple in-memory cache
-const memoryCache = new Map();
-
-// Enhanced AsyncStorage implementation with caching to reduce requests
-const cachedAsyncStorage = {
-  getItem: async (key: string) => {
-    try {
-      // Check memory cache first
-      if (memoryCache.has(key)) {
-        const { value, expiry } = memoryCache.get(key);
-        // If cache is still valid, return it
-        if (expiry > Date.now()) {
-          return value;
-        }
-        // Cache expired, remove it
-        memoryCache.delete(key);
-      }
-      
-      // Not in memory cache, get from AsyncStorage
-      const value = await AsyncStorage.getItem(key);
-      
-      // If it's an auth token, cache it in memory for quick access
-      if (key.includes('auth-token') && value) {
-        memoryCache.set(key, {
-          value,
-          expiry: Date.now() + CACHE_TTL.SESSION
-        });
-      }
-      
-      return value;
-    } catch (error) {
-      console.error(`Error retrieving ${key}:`, error);
-      return null;
-    }
-  },
-  setItem: async (key: string, value: string) => {
-    try {
-      await AsyncStorage.setItem(key, value);
-      
-      // Also update memory cache for auth tokens
-      if (key.includes('auth-token')) {
-        memoryCache.set(key, {
-          value,
-          expiry: Date.now() + CACHE_TTL.SESSION
-        });
-      }
-    } catch (error) {
-      console.error(`Error storing ${key}:`, error);
-    }
-  },
-  removeItem: async (key: string) => {
-    try {
-      await AsyncStorage.removeItem(key);
-      
-      // Also remove from memory cache
-      if (memoryCache.has(key)) {
-        memoryCache.delete(key);
-      }
-    } catch (error) {
-      console.error(`Error removing ${key}:`, error);
-    }
-  },
-};
-
-// Create Supabase client with optimized configuration for React Native
-export const supabase = createClient(
-  process.env.EXPO_PUBLIC_SUPABASE_URL!,
-  process.env.EXPO_PUBLIC_SUPABASE_KEY!,
-  {
-    auth: {
-      storage: cachedAsyncStorage,
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
-    // Optimize network settings
-    global: {
-      fetch: (...args) => fetch(...args),
-    },
-    // Increase timeout for slow networks
-    realtime: {
-      timeout: 60000 // 60 seconds
-    }
-  })
-
-// Helper to get public URL for a file
-export const getPublicUrl = (bucket: string, filePath: string) => {
-  return supabase.storage.from(bucket).getPublicUrl(filePath).data.publicUrl;
 };
 
 // Validate file before upload
@@ -177,6 +63,7 @@ export const uploadImage = async ({
       encoding: FileSystem.EncodingType.Base64,
     });
     
+    // For React Native, we'll use the base64 string directly
     // Convert base64 to Uint8Array for React Native compatibility
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
@@ -200,7 +87,7 @@ export const uploadImage = async ({
     }
     
     // Return public URL
-    const publicUrl = getPublicUrl(bucket, filePath);
+    const publicUrl = supabase.storage.from(bucket).getPublicUrl(filePath).data.publicUrl;
     console.log('Image uploaded successfully:', publicUrl);
     return publicUrl;
     
@@ -263,7 +150,7 @@ export const uploadDocument = async ({
     
     // Return upload result
     const result = {
-      url: getPublicUrl(bucket, filePath),
+      url: supabase.storage.from(bucket).getPublicUrl(filePath).data.publicUrl,
       path: filePath,
       size: fileInfo.size,
       type: documentType,
@@ -297,24 +184,4 @@ export const deleteFile = async (bucket: string, filePath: string) => {
     console.error('Delete file error:', error);
     throw error;
   }
-};
-
-// Helper function to completely clear all Supabase session data
-export const clearAllSupabaseData = async () => {
-  try {
-    const keys = await AsyncStorage.getAllKeys();
-    const supabaseKeys = keys.filter((key) => 
-      key.includes('supabase') || 
-      key.includes('sb-') ||
-      key.startsWith('supabase.')
-    );
-    
-    if (supabaseKeys.length > 0) {
-      await AsyncStorage.multiRemove(supabaseKeys);
-      console.log('Cleared Supabase session data');
-    }
-  } catch (error) {
-    console.error('Error clearing Supabase data:', error);
-  }
-};
-        
+}; 

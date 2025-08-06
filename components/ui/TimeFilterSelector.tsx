@@ -1,6 +1,5 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
 import React from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import { ThemedText } from '../ThemedText';
 
 export interface TimeFilterOption {
@@ -8,116 +7,82 @@ export interface TimeFilterOption {
   value: string;
 }
 
-export interface TimeFilterSelectorProps {
+interface TimeFilterSelectorProps {
   options: TimeFilterOption[];
   selectedFilter: string;
-  onFilterChange: (filter: string) => void;
-  style?: any;
+  onFilterChange: (value: string) => void;
   title?: string;
-  subtitle?: string;
+  style?: ViewStyle;
 }
 
 export default function TimeFilterSelector({
   options,
   selectedFilter,
   onFilterChange,
-  style,
   title,
-  subtitle,
+  style,
 }: TimeFilterSelectorProps) {
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
-  const tintColor = useThemeColor({}, 'tint');
-  const titleColor = useThemeColor({}, 'text');
-  const subtitleColor = useThemeColor({}, 'mutedText');
-
   return (
     <View style={[styles.container, style]}>
-      {/* Optional Title and Subtitle */}
-      {(title || subtitle) && (
-        <View style={styles.header}>
-          {title && (
-            <ThemedText style={[styles.title, { color: titleColor }]}>
-              {title}
-            </ThemedText>
-          )}
-          {subtitle && (
-            <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>
-              {subtitle}
-            </ThemedText>
-          )}
-        </View>
+      {title && (
+        <ThemedText style={styles.title}>{title}</ThemedText>
       )}
-
-      {/* Time Filter Options */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {options.map((option) => {
-          const selected = selectedFilter === option.value;
-          return (
-            <TouchableOpacity
-              key={option.value}
-              onPress={() => onFilterChange(option.value)}
+      <View style={styles.optionsContainer}>
+        {options.map((option) => (
+          <TouchableOpacity
+            key={option.value}
+            style={[
+              styles.option,
+              selectedFilter === option.value && styles.selectedOption,
+            ]}
+            onPress={() => onFilterChange(option.value)}
+          >
+            <ThemedText
               style={[
-                styles.filterButton,
-                {
-                  backgroundColor: selected ? tintColor : backgroundSecondary,
-                  borderColor: selected ? tintColor : borderColor,
-                }
+                styles.optionText,
+                selectedFilter === option.value && styles.selectedOptionText,
               ]}
             >
-              <ThemedText style={[
-                styles.filterText,
-                { 
-                  color: selected ? backgroundColor : textColor, 
-                  fontWeight: selected ? 'bold' : '600',
-                }
-              ]}>
-                {option.label}
-              </ThemedText>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+              {option.label}
+            </ThemedText>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
-  },
-  header: {
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    width: '100%',
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 14,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
+  optionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
-  filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+  option: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1,
-    minWidth: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: '#e0e0e0',
+    backgroundColor: 'transparent',
   },
-  filterText: {
+  selectedOption: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  optionText: {
     fontSize: 14,
+    color: '#333',
+  },
+  selectedOptionText: {
+    color: '#fff',
   },
 }); 

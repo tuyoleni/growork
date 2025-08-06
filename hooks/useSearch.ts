@@ -15,8 +15,8 @@ export function useSearch() {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const search = useCallback(async (
-    searchTerm: string, 
-    type?: PostType, 
+    searchTerm: string,
+    type?: PostType,
     industryFilter?: string,
     includeDocuments: boolean = true
   ) => {

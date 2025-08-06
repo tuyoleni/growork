@@ -110,11 +110,11 @@ export default function Home() {
 
   // --- SHEET OPENERS ---
   const { openCreatePostSheet, openCommentSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });
-  
+
   function handleShowCreatePost() {
     openCreatePostSheet();
   }
-  
+
   function handleShowComments(postId: string) {
     openCommentSheet(postId);
   }

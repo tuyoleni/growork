@@ -3,19 +3,18 @@ import { Alert, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { PostType } from '@/types';
 import { useAppContext } from '@/utils/AppContext';
-import { useImageUpload } from './useImageUpload';
+import { uploadImage } from '@/utils/uploadUtils';
+import { STORAGE_BUCKETS } from '@/utils/superbase';
 import { ArticleFieldsData } from './ArticleFields';
 import { JobFieldsData } from './JobFields';
 
 export function usePostForm(onSuccess?: () => void) {
   const { user, addPost } = useAppContext();
-  const { uploadImage, uploading } = useImageUpload();
   
   // Form state
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<any>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [postType, setPostType] = useState<PostType>(PostType.News);
 
@@ -37,16 +36,14 @@ export function usePostForm(onSuccess?: () => void) {
     tags: '',
   });
 
-  const handleImageSelected = (uri: string | null, file: any | null) => {
-    setImageUri(uri);
-    setImageFile(file);
+  const handleImageSelected = (imageUrl: string | null) => {
+    setImageUrl(imageUrl);
   };
 
   const clearForm = () => {
     setTitle('');
     setContent('');
-    setImageUri(null);
-    setImageFile(null);
+    setImageUrl(null);
     setPostType(PostType.News);
     setJobFields({
       location: '',
@@ -70,8 +67,7 @@ export function usePostForm(onSuccess?: () => void) {
     // Clear form when changing post type
     setTitle('');
     setContent('');
-    setImageUri(null);
-    setImageFile(null);
+    setImageUrl(null);
   };
 
   const isFormValid = () => {
@@ -101,19 +97,13 @@ export function usePostForm(onSuccess?: () => void) {
     }
 
     setLoading(true);
-    let finalImageUrl = null;
     try {
-      if (imageUri && imageFile) {
-        finalImageUrl = await uploadImage(imageFile, user.id);
-        if (!finalImageUrl) Alert.alert('Info', 'Image upload failed, post will be created without image.');
-      }
-      
       const { error } = await addPost({
         user_id: user.id,
         type: postType,
         title: title.trim(),
         content: content.trim(),
-        image_url: finalImageUrl,
+        image_url: imageUrl,
         industry: postType === PostType.Job ? jobFields.industry : null,
         is_sponsored: false,
         criteria,
@@ -137,11 +127,10 @@ export function usePostForm(onSuccess?: () => void) {
     setTitle,
     content,
     setContent,
-    imageUri,
-    imageFile,
-    setImageUri,
+    imageUrl,
+    setImageUrl,
     handleImageSelected,
-    loading: loading || uploading,
+    loading,
     postType,
     handlePostTypeChange,
     jobFields,
