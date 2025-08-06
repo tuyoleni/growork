@@ -62,7 +62,7 @@ function ProfileHeader({
             onEdit && onEdit();
           }}
         >
-          <Feather name="edit-2" size={16} color={iconColor} />
+          <Feather name="settings" size={16} color={iconColor} />
         </Pressable>
       </ThemedView>
       

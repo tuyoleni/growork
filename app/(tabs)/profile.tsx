@@ -20,12 +20,6 @@ const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 
 export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [selectedProfileType, setSelectedProfileType] = useState<'user' | 'company'>('user');
-  const textColor = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
-  const borderColor = useThemeColor({}, 'border');
-  const backgroundColor = useThemeColor({}, 'background');
-  const cardBg = useThemeColor({}, 'backgroundSecondary');
   const router = useRouter();
   const { profile, loading, user } = useAuth();
 
@@ -59,13 +53,10 @@ export default function Profile() {
       { label: 'Following', value: 0 }, // TODO: Replace with real data
       { label: 'Channels', value: 0 },  // TODO: Replace with real data
     ],
-    onEdit: () => router.push('/profile/edit-profile'),
+    onEdit: () => router.push('/settings'),
   };
 
-  const handleProfileTypeChange = (type: 'user' | 'company') => {
-    setSelectedProfileType(type);
-    setSelectedIndex(0); // Reset to first tab when switching
-  };
+
 
   return (
     <ScreenContainer>
@@ -75,80 +66,6 @@ export default function Profile() {
       >
         <ThemedView style={styles.container}>
           <ProfileHeader {...headerProps} />
-
-          {/* Profile Type Switcher */}
-          <ThemedView style={styles.profileTypeContainer}>
-            <ThemedView style={styles.profileTypeSwitcher}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.profileTypeButton,
-                  selectedProfileType === 'user' && { backgroundColor: cardBg },
-                  { borderColor }
-                ]}
-                onPress={() => handleProfileTypeChange('user')}
-              >
-                <Feather
-                  name="user"
-                  size={16}
-                  color={selectedProfileType === 'user' ? textColor : mutedText}
-                />
-                <ThemedText
-                  style={[
-                    styles.profileTypeText,
-                    { color: selectedProfileType === 'user' ? textColor : mutedText }
-                  ]}
-                >
-                  Personal
-                </ThemedText>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.profileTypeButton,
-                  selectedProfileType === 'company' && { backgroundColor: cardBg },
-                  { borderColor }
-                ]}
-                onPress={() => handleProfileTypeChange('company')}
-              >
-                <Feather
-                  name="briefcase"
-                  size={16}
-                  color={selectedProfileType === 'company' ? textColor : mutedText}
-                />
-                <ThemedText
-                  style={[
-                    styles.profileTypeText,
-                    { color: selectedProfileType === 'company' ? textColor : mutedText }
-                  ]}
-                >
-                  Company
-                </ThemedText>
-              </Pressable>
-            </ThemedView>
-          </ThemedView>
-
-          {/* Action Buttons */}
-          <ThemedView style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => router.push('/profile/edit-profile')}
-            >
-              <ThemedText style={[styles.editButtonText, { color: textColor }]}>
-                Edit Profile
-              </ThemedText>
-              <Feather name="chevron-right" size={16} color={mutedText} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.settingsButton}
-              onPress={() => router.push('settings' as any)}
-            >
-              <ThemedText style={[styles.settingsButtonText, { color: textColor }]}>
-                Settings
-              </ThemedText>
-              <Feather name="settings" size={16} color={mutedText} />
-            </TouchableOpacity>
-          </ThemedView>
 
           <ThemedView style={styles.categorySection}>
             <CategorySelector
@@ -172,66 +89,6 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  profileTypeContainer: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-  },
-  profileTypeSwitcher: {
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  profileTypeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  profileTypeText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-    marginHorizontal: 16,
-  },
-  editButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  settingsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    minWidth: 100,
-  },
-  settingsButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   categorySection: {
     marginTop: 24,

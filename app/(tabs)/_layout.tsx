@@ -47,19 +47,7 @@ export default function TabLayout() {
           tabBarButton: (props) => <HapticTab {...props} />,
         }}
       />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <Feather name="settings" size={20} color={color} />,
-          tabBarButton: (props) => <HapticTab {...props} />,
-          headerShown: true,
-          headerStyle: {
-            backgroundColor: tabBarBackground,
-          },
-          headerTintColor: Colors[colorScheme].text,
-        }}
-      />
+
     </Tabs>
   );
 }

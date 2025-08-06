@@ -170,7 +170,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   sectionHeader: {
-    paddingHorizontal: 16,
     paddingVertical: 8,
     paddingTop: 16,
     paddingBottom: 6,
@@ -185,31 +184,13 @@ const styles = StyleSheet.create({
   },
   itemContainer: {
     backgroundColor: 'transparent',
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginHorizontal: 16,
     marginBottom: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 0.5,
-      },
-    }),
   },
   firstItem: {
     marginTop: 10,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
   },
   lastItem: {
     marginBottom: 10,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
   },
   middleItem: {
     marginBottom: 1,
@@ -218,8 +199,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
     paddingVertical: 12,
+    paddingHorizontal: 16,
     minHeight: 44,
   },
   settingsItemLeft: {
@@ -252,6 +233,5 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    marginHorizontal: 16,
   },
 }); 

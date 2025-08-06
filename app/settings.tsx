@@ -4,9 +4,11 @@ import {
   StyleSheet,
   Alert,
   StatusBar,
-  useColorScheme
+  useColorScheme,
+  TouchableOpacity
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -175,7 +177,41 @@ export default function Settings() {
     <ScreenContainer>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
+      {/* Custom Header */}
+      <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Feather name="arrow-left" size={24} color={textColor} />
+        </TouchableOpacity>
+        <ThemedText style={styles.headerTitle}>
+          Settings
+        </ThemedText>
+        <View style={styles.headerSpacer} />
+      </ThemedView>
+
       <SettingsList sections={settingsData} />
     </ScreenContainer>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+});
