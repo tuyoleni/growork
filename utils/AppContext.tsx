@@ -18,7 +18,7 @@ interface AppContextType {
   signUp: (email: string, password: string, username: string, name: string, surname: string) => Promise<any>;
   signOut: () => Promise<any>;
   refreshAuth: () => Promise<void>;
-  
+
   // Posts
   posts: Post[];
   postsLoading: boolean;
@@ -27,14 +27,14 @@ interface AppContextType {
   addPost: (postData: Partial<Post>) => Promise<any>;
   likePost: (postId: string, userId: string) => Promise<any>;
   unlikePost: (postId: string, userId: string) => Promise<any>;
-  
+
   // Applications
   applications: Application[];
   applicationsLoading: boolean;
   applicationsError: string | null;
   fetchApplications: () => Promise<void>;
   addApplication: (applicationData: Partial<Application>) => Promise<any>;
-  
+
   // Ads
   ads: Ad[];
   adsLoading: boolean;
@@ -42,7 +42,7 @@ interface AppContextType {
   fetchAds: (status?: any) => Promise<void>;
   addAd: (adData: Partial<Ad>) => Promise<any>;
   recordAdImpression: (adId: string, userId: string) => Promise<any>;
-  
+
   // Bookmarks
   bookmarks: string[];
   bookmarksLoading: boolean;
@@ -52,7 +52,7 @@ interface AppContextType {
   removeBookmark: (postId: string) => Promise<any>;
   toggleBookmark: (postId: string) => Promise<any>;
   fetchBookmarks: () => Promise<void>;
-  
+
   // Comment Likes
   commentLikesLoading: boolean;
   commentLikesError: string | null;
@@ -80,7 +80,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       postsHook.fetchPosts();
       applicationsHook.fetchApplications();
       adsHook.fetchAds();
-      bookmarksHook.fetchBookmarks();
+      bookmarksHook.fetchBookmarkedContent();
     }
   }, [auth.user]);
 
@@ -95,7 +95,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     signUp: auth.signUp,
     signOut: auth.signOut,
     refreshAuth: auth.refresh,
-    
+
     // Posts state and methods
     posts: postsHook.posts,
     postsLoading: postsHook.loading,
@@ -104,14 +104,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addPost: postsHook.addPost,
     likePost: postsHook.likePost,
     unlikePost: postsHook.unlikePost,
-    
+
     // Applications state and methods
     applications: applicationsHook.applications,
     applicationsLoading: applicationsHook.loading,
     applicationsError: applicationsHook.error,
     fetchApplications: applicationsHook.fetchApplications,
     addApplication: applicationsHook.addApplication,
-    
+
     // Ads state and methods
     ads: adsHook.ads,
     adsLoading: adsHook.loading,
@@ -119,7 +119,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     fetchAds: adsHook.fetchAds,
     addAd: adsHook.addAd,
     recordAdImpression: adsHook.recordAdImpression,
-    
+
     // Bookmarks state and methods
     bookmarks: bookmarksHook.bookmarks,
     bookmarksLoading: bookmarksHook.loading,
@@ -128,8 +128,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addBookmark: bookmarksHook.addBookmark,
     removeBookmark: bookmarksHook.removeBookmark,
     toggleBookmark: bookmarksHook.toggleBookmark,
-    fetchBookmarks: bookmarksHook.fetchBookmarks,
-    
+    fetchBookmarks: bookmarksHook.fetchBookmarkedContent,
+
     // Comment Likes state and methods
     commentLikesLoading: commentLikesHook.loading,
     commentLikesError: commentLikesHook.error,

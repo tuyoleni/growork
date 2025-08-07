@@ -1,13 +1,12 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { Document } from '@/types';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import React from 'react';
-import { ActionSheetIOS, Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Document } from '@/types/documents';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
-export interface DocumentCardProps {
+interface DocumentCardProps {
   document: Document;
   onPress?: () => void;
   onDownload?: () => void;
@@ -20,14 +19,16 @@ export interface DocumentCardProps {
   selectable?: boolean;
 }
 
-function IconWithBackground({ icon }: { icon: React.ReactElement }) {
-  const borderColor = useThemeColor({}, 'border');
+const IconWithBackground = ({ icon }: { icon: React.ReactNode }) => {
+  const backgroundColor = useThemeColor({}, 'backgroundSecondary');
+  const iconColor = useThemeColor({}, 'iconSecondary');
+  
   return (
-    <ThemedView style={[styles.iconBg, { backgroundColor: borderColor + '22' }]}> 
-      {React.isValidElement(icon) ? icon : null}
-    </ThemedView>
+    <View style={[styles.iconContainer, { backgroundColor }]}>
+      {icon}
+    </View>
   );
-}
+};
 
 export default function DocumentCard({
   document,
@@ -41,98 +42,69 @@ export default function DocumentCard({
   onPressMenu,
   selectable = false,
 }: DocumentCardProps) {
-  const { name, type, uploaded_at } = document;
-  const formattedDate = new Date(uploaded_at).toLocaleDateString();
-  const borderColor = useThemeColor({}, 'border');
   const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'border');
   const textColor = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
-  const iconColor = useThemeColor({}, 'icon');
+  const iconColor = useThemeColor({}, 'iconSecondary');
+
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const handleMenuPress = () => {
-    if (process.env.EXPO_OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    setMenuVisible(!menuVisible);
+    onPressMenu?.();
+  };
 
-    // Create action sheet options
-    const options = ['Cancel'];
-    const actions: (() => void)[] = [() => {}];
+  const handleDownload = () => {
+    onDownload?.();
+    setMenuVisible(false);
+  };
 
-    if (onDownload) {
-      options.push('Download');
-      actions.push(() => {
-        if (process.env.EXPO_OS === 'ios') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-        onDownload();
-      });
-    }
+  const handleShare = () => {
+    onShare?.();
+    setMenuVisible(false);
+  };
 
-    if (onShare) {
-      options.push('Share');
-      actions.push(() => {
-        if (process.env.EXPO_OS === 'ios') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-        onShare();
-      });
-    }
+  const handleDelete = () => {
+    onDelete?.();
+    setMenuVisible(false);
+  };
 
-    if (onDelete) {
-      options.push('Delete');
-      actions.push(() => {
-        if (process.env.EXPO_OS === 'ios') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-        // Show confirmation dialog for delete
-        Alert.alert(
-          'Delete Document',
-          `Are you sure you want to delete "${document.name}"?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Delete', 
-              style: 'destructive',
-              onPress: () => {
-                if (process.env.EXPO_OS === 'ios') {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                }
-                onDelete();
-              }
-            }
-          ]
-        );
-      });
-    }
-
-    // Show action sheet on iOS
-    if (process.env.EXPO_OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options,
-          cancelButtonIndex: 0,
-          destructiveButtonIndex: onDelete ? options.length - 1 : undefined,
-        },
-        (buttonIndex) => {
-          if (buttonIndex !== 0) { // Not cancel
-            actions[buttonIndex]();
-          }
-        }
-      );
+  // Format the upload date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) {
+      return 'Today';
+    } else if (diffInDays === 1) {
+      return 'Yesterday';
+    } else if (diffInDays < 7) {
+      return `${diffInDays} days ago`;
+    } else if (diffInDays < 30) {
+      const weeks = Math.floor(diffInDays / 7);
+      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
     } else {
-      // For Android/web, show a simple alert with options
-      const actionOptions = options.slice(1); // Remove Cancel
-      const actionText = actionOptions.join('\n');
-      Alert.alert(
-        'Document Actions',
-        `Choose an action for "${document.name}":\n\n${actionText}`,
-        actionOptions.map((option, index) => ({
-          text: option,
-          onPress: () => actions[index + 1](),
-          style: option === 'Delete' ? 'destructive' : 'default'
-        }))
-      );
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
     }
+  };
+
+  const formattedDate = formatDate(document.uploaded_at);
+
+  // Get document type display name
+  const getDocumentTypeDisplay = (type: string) => {
+    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Get file extension from name
+  const getFileExtension = (name: string) => {
+    const parts = name.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : 'FILE';
   };
 
   const renderMenuButton = () => {
@@ -157,8 +129,29 @@ export default function DocumentCard({
     return (
       <View style={styles.categoryContainer}>
         <ThemedText style={[styles.categoryText, { color: mutedText }]}>
-          {document.type.replace('_', ' ')}
+          {getDocumentTypeDisplay(document.type)}
         </ThemedText>
+      </View>
+    );
+  };
+
+  const renderMetadata = () => {
+    if (variant !== 'detailed') return null;
+
+    return (
+      <View style={styles.metadataContainer}>
+        <View style={styles.metadataRow}>
+          <Feather name="calendar" size={12} color={mutedText} />
+          <ThemedText style={[styles.metadataText, { color: mutedText }]}>
+            {formattedDate}
+          </ThemedText>
+        </View>
+        <View style={styles.metadataRow}>
+          <Feather name="file" size={12} color={mutedText} />
+          <ThemedText style={[styles.metadataText, { color: mutedText }]}>
+            {getFileExtension(document.name || '')}
+          </ThemedText>
+        </View>
       </View>
     );
   };
@@ -181,15 +174,23 @@ export default function DocumentCard({
       <IconWithBackground icon={<Feather name="file-text" size={24} color={textColor} />} />
       
       <ThemedView style={styles.cardTextWrap}>
-        <ThemedText style={styles.cardTitle} numberOfLines={1}>{document.name}</ThemedText>
+        <ThemedText style={styles.cardTitle} numberOfLines={variant === 'compact' ? 1 : 2}>
+          {document.name}
+        </ThemedText>
         
         <View style={styles.metaRow}>
           <ThemedText style={[styles.cardSubtitle, { color: mutedText }]}>
             {formattedDate}
           </ThemedText>
+          {variant === 'detailed' && (
+            <ThemedText style={[styles.fileType, { color: mutedText }]}>
+              {getFileExtension(document.name || '')}
+            </ThemedText>
+          )}
         </View>
         
         {renderCategory()}
+        {renderMetadata()}
       </ThemedView>
       
       {renderMenuButton()}
@@ -199,81 +200,85 @@ export default function DocumentCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 0,
-    borderWidth: 0,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    padding: 16,
+    borderBottomWidth: 1,
     gap: 12,
   },
   cardCompact: {
-    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    padding: 12,
+    borderBottomWidth: 1,
     gap: 10,
-    marginBottom: 8,
   },
   cardDetailed: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    gap: 14,
-    marginBottom: 12,
+    flexDirection: 'column',
+    padding: 16,
+    borderBottomWidth: 1,
+    gap: 12,
   },
-  iconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     justifyContent: 'center',
-    marginRight: 2,
+    alignItems: 'center',
   },
   cardTextWrap: {
     flex: 1,
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: 2,
+    gap: 4,
   },
   cardTitle: {
-    fontWeight: 'bold',
-    fontSize: 15,
-    marginBottom: 2,
-  },
-  cardNote: {
-    fontSize: 13,
-    marginBottom: 2,
-  },
-  cardSubtitle: {
-    fontSize: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  sizeText: {
+  cardSubtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  fileType: {
     fontSize: 11,
+    fontWeight: '500',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   categoryContainer: {
-    marginTop: 4,
+    alignSelf: 'flex-start',
   },
   categoryText: {
     fontSize: 11,
     fontWeight: '500',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  metadataContainer: {
+    marginTop: 4,
+    gap: 4,
+  },
+  metadataRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metadataText: {
+    fontSize: 12,
+    fontWeight: '400',
   },
   menuButton: {
-    padding: 6,
-    borderRadius: 16,
+    padding: 8,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -1,82 +1,64 @@
 'use client'
-import DocumentList from '@/components/content/DocumentList';
-import { Document, DocumentType } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
-import { useDocuments } from '@/hooks/useDocuments';
+import { useBookmarks } from '@/hooks/useBookmarks';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, ScrollView } from 'react-native';
+import BookmarkedContentList from '@/components/content/BookmarkedContentList';
+import { PostType } from '@/types/enums';
+import { useRouter } from 'expo-router';
 
 const BOOKMARK_CATEGORIES = [
   { icon: 'briefcase', label: 'Jobs' },
-  { icon: 'newspaper', label: 'News' },
-  { icon: 'briefcase', label: 'Companies' },
-  { icon: 'users', label: 'People' },
-  { icon: 'bookmark', label: 'Articles' },
-  { icon: 'video', label: 'Videos' },
-  { icon: 'file-text', label: 'Documents' },
-  { icon: 'link', label: 'Links' },
+  { icon: 'book-open', label: 'News' },
+  { icon: 'coffee', label: 'Applications' },
 ];
 
 export default function Bookmarks() {
-  const [selectedCategory, setSelectedCategory] = useState(6); // Documents category
+  const [selectedCategory, setSelectedCategory] = useState(3); // All category
   const { user } = useAuth();
-  const { documents, loading, error, fetchDocuments, deleteDocument } = useDocuments(user?.id);
-  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const {
+    bookmarkedItems,
+    loading,
+    error,
+    fetchBookmarkedContent,
+    removeBookmark
+  } = useBookmarks();
   const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
+
   const textColor = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
   const backgroundColor = useThemeColor({}, 'background');
-  
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Yesterday';
-    if (diff < 7) return `${diff} days ago`;
-    if (diff < 30) return `${Math.floor(diff / 7)} weeks ago`;
-    if (diff < 365) return `${Math.floor(diff / 30)} months ago`;
-    return `${Math.floor(diff / 365)} years ago`;
+
+  // Filter items based on selected category
+  const getFilteredItems = () => {
+    if (selectedCategory === 3) { // All
+      return bookmarkedItems;
+    } else if (selectedCategory === 0) { // Jobs
+      return bookmarkedItems.filter(item =>
+        item.type === 'post' && (item.data as any).type === PostType.Job
+      );
+    } else if (selectedCategory === 1) { // News
+      return bookmarkedItems.filter(item =>
+        item.type === 'post' && (item.data as any).type === PostType.News
+      );
+    } else if (selectedCategory === 2) { // Applications
+      return bookmarkedItems.filter(item => item.type === 'application');
+    }
+    return bookmarkedItems;
   };
-  
-  // Effect to filter documents based on selected category
-  useEffect(() => {
-    if (documents.length === 0) {
-      setFilteredDocuments([]);
-      return;
-    }
-    
-    if (selectedCategory === 6) { // Documents category - show all
-      setFilteredDocuments(documents);
-    } else {
-      // Filter based on the document type
-      const filtered = documents.filter(doc => {
-        // Map document types to categories
-        const typeToCategory: Record<DocumentType, number> = {
-          [DocumentType.CV]: 0, // Jobs
-          [DocumentType.CoverLetter]: 0, // Jobs
-          [DocumentType.Certificate]: 4, // Articles
-          [DocumentType.Other]: 6, // Documents
-        };
-        
-        return typeToCategory[doc.type] === selectedCategory;
-      });
-      
-      setFilteredDocuments(filtered);
-    }
-  }, [documents, selectedCategory]);
-  
-  // Refresh documents
+
+  const filteredItems = getFilteredItems();
+
+  // Refresh bookmarks
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchDocuments();
+    await fetchBookmarkedContent();
     setRefreshing(false);
   };
 
@@ -84,24 +66,23 @@ export default function Bookmarks() {
     setSelectedCategory(index);
   };
 
-  const handleMoreCategories = () => {
-    console.log('Show more categories');
+  const handleItemPress = (item: any) => {
+    if (item.type === 'post') {
+      // Navigate to post detail
+      router.push(`/post/${item.id}`);
+    } else if (item.type === 'application') {
+      // Navigate to application detail or show application info
+      console.log('Application pressed:', item.id);
+    }
   };
 
-  const handleDocumentPress = (document: Document) => {
-    console.log('Bookmarked document pressed:', document.name);
-  };
-
-  const handleDocumentDownload = (document: Document) => {
-    console.log('Download bookmarked document:', document.name);
-  };
-
-  const handleDocumentShare = (document: Document) => {
-    console.log('Share bookmarked document:', document.name);
-  };
-
-  const handleDocumentDelete = async (document: Document) => {
-    await deleteDocument(document.id);
+  const handleRemoveBookmark = async (item: any) => {
+    if (item.type === 'post') {
+      await removeBookmark(item.id);
+    } else if (item.type === 'application') {
+      // Applications can't be "unbookmarked" - they're automatically tracked
+      console.log('Cannot remove application bookmark');
+    }
   };
 
   const getCategoryTitle = () => {
@@ -109,23 +90,57 @@ export default function Bookmarks() {
   };
 
   const getCategorySubtitle = () => {
-    if (selectedCategory === 6) { // Documents
-      return `${filteredDocuments.length} saved document${filteredDocuments.length !== 1 ? 's' : ''}`;
+    const count = filteredItems.length;
+    if (selectedCategory === 0) { // Jobs
+      return `${count} saved job${count !== 1 ? 's' : ''}`;
+    } else if (selectedCategory === 1) { // News
+      return `${count} saved news item${count !== 1 ? 's' : ''}`;
+    } else if (selectedCategory === 2) { // Applications
+      return `${count} job application${count !== 1 ? 's' : ''}`;
+    } else { // All
+      return `${count} total bookmark${count !== 1 ? 's' : ''}`;
     }
-    return 'No bookmarks in this category';
+  };
+
+  const getEmptyText = () => {
+    if (selectedCategory === 0) { // Jobs
+      return 'No saved jobs yet';
+    } else if (selectedCategory === 1) { // News
+      return 'No saved news yet';
+    } else if (selectedCategory === 2) { // Applications
+      return 'No job applications yet';
+    } else { // All
+      return 'No bookmarks yet';
+    }
+  };
+
+  // Calculate stats
+  const stats = {
+    total: bookmarkedItems.length,
+    jobs: bookmarkedItems.filter(item =>
+      item.type === 'post' && (item.data as any).type === PostType.Job
+    ).length,
+    applications: bookmarkedItems.filter(item => item.type === 'application').length,
+    news: bookmarkedItems.filter(item =>
+      item.type === 'post' && (item.data as any).type === PostType.News
+    ).length,
   };
 
   return (
     <ScreenContainer>
-      <ThemedView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Bookmarks Header */}
-        <View style={styles.header}>
+        <ThemedView style={styles.header}>
           <ThemedText style={styles.title}>Bookmarks</ThemedText>
-          <ThemedText style={styles.subtitle}>Your saved content and opportunities</ThemedText>
-        </View>
+          <ThemedText style={styles.subtitle}>Your saved content and job applications</ThemedText>
+        </ThemedView>
 
         {/* Category Filter */}
-        <View style={styles.categorySection}>
+        <ThemedView style={styles.categorySection}>
           <ThemedText style={styles.sectionTitle}>Filter by Category</ThemedText>
           <CustomOptionStrip
             visibleOptions={BOOKMARK_CATEGORIES}
@@ -133,60 +148,57 @@ export default function Bookmarks() {
             onChange={setSelectedCategory}
             style={styles.categorySelector}
           />
-        </View>
+        </ThemedView>
 
-        {/* Bookmarks Content */}
-        <View style={styles.contentSection}>
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={textColor} />
-            </View>
-          )}
-          
+        {/* Stats Row */}
+        <ThemedView style={styles.statsSection}>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <ThemedText style={styles.statNumber}>{documents.length}</ThemedText>
-              <ThemedText style={styles.statLabel}>Total Documents</ThemedText>
+              <ThemedText style={styles.statNumber}>{stats.total}</ThemedText>
+              <ThemedText style={styles.statLabel}>Total</ThemedText>
             </View>
             <View style={styles.statItem}>
-              <ThemedText style={styles.statNumber}>
-                {new Set(documents.map(doc => doc.type)).size}
-              </ThemedText>
-              <ThemedText style={styles.statLabel}>Categories</ThemedText>
+              <ThemedText style={styles.statNumber}>{stats.jobs}</ThemedText>
+              <ThemedText style={styles.statLabel}>Jobs</ThemedText>
             </View>
             <View style={styles.statItem}>
-              <ThemedText style={styles.statNumber}>
-                {documents.filter(doc => {
-                  const date = new Date(doc.uploaded_at);
-                  const weekAgo = new Date();
-                  weekAgo.setDate(weekAgo.getDate() - 7);
-                  return date > weekAgo;
-                }).length}
-              </ThemedText>
-              <ThemedText style={styles.statLabel}>This Week</ThemedText>
+              <ThemedText style={styles.statNumber}>{stats.applications}</ThemedText>
+              <ThemedText style={styles.statLabel}>Applications</ThemedText>
+            </View>
+            <View style={styles.statItem}>
+              <ThemedText style={styles.statNumber}>{stats.news}</ThemedText>
+              <ThemedText style={styles.statLabel}>News</ThemedText>
             </View>
           </View>
+        </ThemedView>
 
-          {/* Documents List */}
-          <DocumentList
-            documents={filteredDocuments.map(doc => ({
-              ...doc,
-              // For compatibility with DocumentList component
-              updated: formatDate(doc.uploaded_at),
-              category: doc.type
-            }))}
+        {/* Bookmarks Content */}
+        <ThemedView style={styles.contentSection}>
+          {loading && !refreshing && (
+            <ThemedView style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={textColor} />
+              <ThemedText style={[styles.loadingText, { color: mutedText }]}>
+                Loading bookmarks...
+              </ThemedText>
+            </ThemedView>
+          )}
+
+          {error && (
+            <ThemedView style={styles.errorContainer}>
+              <ThemedText style={styles.errorText}>Error: {error}</ThemedText>
+            </ThemedView>
+          )}
+
+          <BookmarkedContentList
+            items={filteredItems}
             title={getCategoryTitle()}
             subtitle={getCategorySubtitle()}
-            variant="compact"
-            showCategory={true}
-            onDocumentPress={handleDocumentPress}
-            onDocumentDownload={handleDocumentDownload}
-            onDocumentShare={handleDocumentShare}
-            onDocumentDelete={handleDocumentDelete}
-            emptyText={`No ${getCategoryTitle().toLowerCase()} bookmarks yet`}
+            onItemPress={handleItemPress}
+            onRemoveBookmark={handleRemoveBookmark}
+            emptyText={getEmptyText()}
           />
-        </View>
-      </ThemedView>
+        </ThemedView>
+      </ScrollView>
     </ScreenContainer>
   );
 }
@@ -195,17 +207,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+  scrollContent: {
+    flexGrow: 1,
   },
   header: {
     marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   title: {
     fontSize: 28,
@@ -218,6 +226,7 @@ const styles = StyleSheet.create({
   },
   categorySection: {
     marginBottom: 24,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -227,13 +236,13 @@ const styles = StyleSheet.create({
   categorySelector: {
     paddingHorizontal: 0,
   },
-  contentSection: {
-    flex: 1,
+  statsSection: {
+    marginBottom: 24,
+    paddingHorizontal: 16,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
     paddingHorizontal: 8,
   },
   statItem: {
@@ -241,7 +250,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 4,
   },
@@ -249,5 +258,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.7,
     textAlign: 'center',
+  },
+  contentSection: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  loadingContainer: {
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    marginTop: 8,
+  },
+  errorContainer: {
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#dc2626',
   },
 });

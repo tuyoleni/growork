@@ -2,7 +2,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, useColorScheme, Alert } from 'react-native';
+import { Image, Pressable, StyleSheet, useColorScheme, Alert, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 import { ThemedInput } from '../ThemedInput';
@@ -24,6 +24,7 @@ export default function CompaniesList() {
   const textColor = useThemeColor({}, 'text');
   const mutedTextColor = useThemeColor({}, 'mutedText');
   const cardBg = useThemeColor({}, 'backgroundSecondary');
+  const tintColor = useThemeColor({}, 'tint');
 
   useEffect(() => {
     if (user) {
@@ -56,26 +57,31 @@ export default function CompaniesList() {
     router.push('/profile/CompanyManagement');
   };
 
-  if (loading) {
-    return (
-      <ThemedView style={styles.container}>
-        <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
-          Loading companies...
-        </ThemedText>
-      </ThemedView>
-    );
-  }
+
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText style={[styles.title, { color: textColor }]}>
-          My Companies
-        </ThemedText>
+      <View style={styles.headerRow}>
+        <ThemedText style={styles.headerTitle}>Companies</ThemedText>
+        <Pressable
+          onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            handleCreateCompany();
+          }}
+        >
+          <ThemedText style={[styles.addButtonText, { color: tintColor }]}>
+            Add New
+          </ThemedText>
+        </Pressable>
+      </View>
+
+      {companies.length === 0 ? (
         <Pressable
           style={({ pressed }) => [
-            styles.addButton,
-            { backgroundColor: pressed ? cardBg : backgroundColor, borderColor }
+            styles.emptyState,
+            { opacity: pressed ? 0.7 : 1 }
           ]}
           onPress={() => {
             if (process.env.EXPO_OS === 'ios') {
@@ -84,42 +90,22 @@ export default function CompaniesList() {
             handleCreateCompany();
           }}
         >
-          <Feather name="plus" size={16} color={textColor} />
-          <ThemedText style={[styles.addButtonText, { color: textColor }]}>
-            Add Company
-          </ThemedText>
-        </Pressable>
-      </ThemedView>
-
-      {companies.length === 0 ? (
-        <ThemedView style={styles.emptyState}>
           <Feather name="briefcase" size={48} color={mutedTextColor} />
           <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
             No Companies Yet
           </ThemedText>
           <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }]}>
-            Create your first company profile to start posting jobs and content.
+            Tap to create your first company profile
           </ThemedText>
-          <Pressable
-            style={({ pressed }) => [
-              styles.createButton,
-              { backgroundColor: pressed ? cardBg : backgroundColor, borderColor }
-            ]}
-            onPress={handleCreateCompany}
-          >
-            <ThemedText style={[styles.createButtonText, { color: textColor }]}>
-              Create Company
-            </ThemedText>
-          </Pressable>
-        </ThemedView>
+        </Pressable>
       ) : (
         <ThemedView style={styles.companiesList}>
-          {companies.map((company) => (
+          {companies.map((company: Company) => (
             <Pressable
               key={company.id}
               style={({ pressed }) => [
                 styles.companyCard,
-                { 
+                {
                   backgroundColor: pressed ? cardBg : backgroundColor,
                   borderColor,
                   shadowColor: colorScheme === 'dark' ? '#000' : '#000',
@@ -128,7 +114,7 @@ export default function CompaniesList() {
               onPress={() => router.push(`/profile/CompanyManagement?id=${company.id}`)}
             >
               <Image
-                source={{ 
+                source={{
                   uri: company.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&size=64`
                 }}
                 style={styles.companyLogo}
@@ -166,73 +152,61 @@ export default function CompaniesList() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: PADDING,
+    width: '100%',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 16,
+    paddingTop: 8,
   },
-  header: {
+  headerRow: {
+    width: '100%',
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
+    paddingHorizontal: 16,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 6,
-  },
+
   addButtonText: {
-    fontSize: 14,
     fontWeight: '500',
+    fontSize: 14,
   },
+
   emptyState: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingVertical: 32,
+    paddingHorizontal: 16,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyDescription: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 24,
-  },
-  createButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  createButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    lineHeight: 20,
+    marginBottom: 16,
   },
   companiesList: {
+    width: '100%',
+    flexDirection: 'column',
     gap: 12,
   },
   companyCard: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 0,
+    borderWidth: 0,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    gap: 12,
   },
   companyLogo: {
     width: 48,
@@ -244,14 +218,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   companyName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginBottom: 2,
   },
   companyDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 8,
+    fontSize: 12,
   },
   companyMeta: {
     flexDirection: 'row',
@@ -260,8 +232,5 @@ const styles = StyleSheet.create({
   companyMetaText: {
     fontSize: 12,
   },
-  loadingText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
+
 }); 

@@ -38,13 +38,13 @@ export function useSearch() {
 
         const allResults: SearchResult[] = [];
 
-        // Fast posts search - only essential fields
+        // Step 1: Fetch posts with basic search
         let postsQuery = supabase
           .from('posts')
-          .select('id, title, content, type, industry, created_at, user_id')
+          .select('*')
           .or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`)
           .order('created_at', { ascending: false })
-          .limit(15); // Reduced limit for speed
+          .limit(20);
 
         if (type) {
           postsQuery = postsQuery.eq('type', type);
@@ -59,32 +59,107 @@ export function useSearch() {
           throw postsError;
         }
 
-        // Add posts to results
+        // Step 2: Process posts and fetch related data
         if (postsData && postsData.length > 0) {
-          const postsWithType = postsData.map((post: any) => ({
-            ...post,
-            _type: 'post' as const
-          }));
-          allResults.push(...postsWithType);
+          // Extract unique user IDs
+          const userIds = [...new Set(postsData.map(post => post.user_id))].filter(Boolean);
+
+          // Step 3: Fetch profiles separately
+          let profilesMap: Record<string, any> = {};
+          if (userIds.length > 0) {
+            try {
+              const { data: profilesData, error: profilesError } = await supabase
+                .from('profiles')
+                .select('*')
+                .in('id', userIds);
+
+              if (profilesError) {
+                console.warn('Error fetching profiles:', profilesError);
+              } else if (profilesData) {
+                profilesMap = profilesData.reduce((map, profile) => {
+                  map[profile.id] = profile;
+                  return map;
+                }, {} as Record<string, any>);
+              }
+            } catch (profileErr) {
+              console.warn('Error in profile fetch:', profileErr);
+            }
+          }
+
+          // Step 4: Process each post with its related data
+          const postsWithData = await Promise.all(
+            postsData.map(async (post) => {
+              let likesData: any[] = [];
+              let commentsData: any[] = [];
+
+              // Fetch likes for this post
+              try {
+                const { data: likes, error: likesError } = await supabase
+                  .from('likes')
+                  .select('id, user_id')
+                  .eq('post_id', post.id);
+
+                if (likesError) {
+                  console.warn(`Error fetching likes for post ${post.id}:`, likesError);
+                } else {
+                  likesData = likes || [];
+                }
+              } catch (likesErr) {
+                console.warn(`Error in likes fetch for post ${post.id}:`, likesErr);
+              }
+
+              // Fetch comments for this post
+              try {
+                const { data: comments, error: commentsError } = await supabase
+                  .from('comments')
+                  .select('id, user_id, content, created_at')
+                  .eq('post_id', post.id)
+                  .order('created_at', { ascending: false });
+
+                if (commentsError) {
+                  console.warn(`Error fetching comments for post ${post.id}:`, commentsError);
+                } else {
+                  commentsData = comments || [];
+                }
+              } catch (commentsErr) {
+                console.warn(`Error in comments fetch for post ${post.id}:`, commentsErr);
+              }
+
+              // Return combined post data
+              return {
+                ...post,
+                profiles: profilesMap[post.user_id] || null,
+                likes: likesData,
+                comments: commentsData,
+                _type: 'post' as const
+              };
+            })
+          );
+
+          allResults.push(...postsWithData);
         }
 
-        // Fast documents search - only name field
+        // Step 5: Fetch documents if requested
         if (includeDocuments) {
-          const { data: documentsData, error: documentsError } = await supabase
-            .from('documents')
-            .select('id, name, type, file_url, uploaded_at, user_id')
-            .ilike('name', `%${searchTerm}%`)
-            .order('uploaded_at', { ascending: false })
-            .limit(5); // Reduced limit for speed
+          try {
+            const { data: documentsData, error: documentsError } = await supabase
+              .from('documents')
+              .select('*')
+              .ilike('name', `%${searchTerm}%`)
+              .order('uploaded_at', { ascending: false })
+              .limit(10);
 
-          if (documentsError) {
-            console.warn('Error fetching documents:', documentsError);
-          } else if (documentsData) {
-            const documentsWithType = documentsData.map((doc: any) => ({
-              ...doc,
-              _type: 'document' as const
-            }));
-            allResults.push(...documentsWithType);
+            if (documentsError) {
+              console.warn('Error fetching documents:', documentsError);
+            } else if (documentsData) {
+              const documentsWithType = documentsData.map((doc: any) => ({
+                ...doc,
+                _type: 'document' as const
+              }));
+              allResults.push(...documentsWithType);
+            }
+          } catch (documentsErr) {
+            console.warn('Error in documents fetch:', documentsErr);
           }
         }
 

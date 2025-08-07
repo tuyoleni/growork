@@ -105,6 +105,29 @@ export default function Settings() {
       ]
     },
     {
+      title: 'Documents & Media',
+      data: [
+        {
+          title: 'Manage Documents',
+          subtitle: 'CV, certificates, portfolio',
+          icon: 'folder',
+          onPress: () => router.push('/profile/documents'),
+        },
+        {
+          title: 'Companies',
+          subtitle: 'Manage followed companies',
+          icon: 'briefcase',
+          onPress: () => router.push('/profile/companies'),
+        },
+        {
+          title: 'Media Outlets',
+          subtitle: 'Podcasts, news, voice content',
+          icon: 'radio',
+          onPress: () => router.push('/profile/media'),
+        },
+      ]
+    },
+    {
       title: 'Preferences',
       data: [
         {

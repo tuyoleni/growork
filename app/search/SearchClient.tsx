@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
 import { Document } from '@/types/documents';
-import ContentCard from '@/components/content/ContentCard';
 import DocumentCard from '@/components/content/DocumentCard';
 import { Feather } from '@expo/vector-icons';
 import { PostWithProfile } from '@/hooks/usePosts';
@@ -14,14 +13,14 @@ import { PostType } from '@/types/enums';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-import { Colors } from '@/constants/Colors';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import ContentCard from '@/components/content/ContentCard';
 
 export default function SearchClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterKey>('all');
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
-  
+
   const { results, loading, error, search } = useSearch();
 
   const handleSearch = (term: string) => {
@@ -71,38 +70,48 @@ export default function SearchClient() {
 
   return (
     <ScreenContainer>
-      <SearchBar 
-        value={searchTerm}
-        onChange={handleSearch}
-        onClear={() => {
-          setSearchTerm('');
-          search('');
-        }}  
-      />
-      
-      {searchTerm && (
-        <>
-          <FilterTabs
-            options={filterOptions}
-            selectedFilter={selectedFilter}
-            setSelectedFilter={setSelectedFilter}
-            counts={counts}
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <ThemedView style={styles.header}>
+          <SearchBar
+            value={searchTerm}
+            onChange={handleSearch}
+            onClear={() => {
+              setSearchTerm('');
+              search('');
+            }}
           />
-          
-          <IndustryFilter
-            selectedIndustry={selectedIndustry}
-            setSelectedIndustry={handleIndustryChange}
-          />
-        </>
-      )}
-
-      <SearchResults results={filteredResults} loading={loading} />
-      
-      {error && (
-        <ThemedView style={styles.errorContainer}>
-          <ThemedText style={styles.errorText}>Error: {error}</ThemedText>
         </ThemedView>
-      )}
+
+        {searchTerm && (
+          <ThemedView style={styles.filtersSection}>
+            <FilterTabs
+              options={filterOptions}
+              selectedFilter={selectedFilter}
+              setSelectedFilter={setSelectedFilter}
+              counts={counts}
+            />
+
+            <IndustryFilter
+              selectedIndustry={selectedIndustry}
+              setSelectedIndustry={handleIndustryChange}
+            />
+          </ThemedView>
+        )}
+
+        <ThemedView style={styles.resultsSection}>
+          <SearchResults results={filteredResults} loading={loading} />
+        </ThemedView>
+
+        {error && (
+          <ThemedView style={styles.errorContainer}>
+            <ThemedText style={styles.errorText}>Error: {error}</ThemedText>
+          </ThemedView>
+        )}
+      </ScrollView>
     </ScreenContainer>
   );
 }
@@ -115,7 +124,6 @@ interface SearchResultsProps {
 function SearchResults({ results, loading }: SearchResultsProps) {
   const tintColor = useThemeColor({}, 'tint');
   const iconColor = useThemeColor({}, 'iconSecondary');
-  const borderColor = useThemeColor({}, 'border');
   const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
   const mutedTextColor = useThemeColor({}, 'mutedText');
 
@@ -123,6 +131,9 @@ function SearchResults({ results, loading }: SearchResultsProps) {
     return (
       <ThemedView style={styles.centered}>
         <ActivityIndicator size="large" color={tintColor} />
+        <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
+          Searching...
+        </ThemedText>
       </ThemedView>
     );
   }
@@ -133,15 +144,15 @@ function SearchResults({ results, loading }: SearchResultsProps) {
         <ThemedView style={[styles.iconCircle, { backgroundColor: backgroundSecondary }]}>
           <Feather name="search" size={32} color={iconColor} />
         </ThemedView>
-        <ThemedText type="subtitle" style={styles.noResultsTitle}>No results found</ThemedText>
+        <ThemedText style={styles.noResultsTitle}>No results found</ThemedText>
         <ThemedText style={[styles.noResultsSub, { color: mutedTextColor }]}>
-          Try adjusting your search terms or filters to find what you're looking for
+          Try adjusting your search terms or filters to find what you are looking for
         </ThemedText>
       </ThemedView>
     );
   }
 
-  // Split results into posts and documents for display groups if you want group headers
+  // Split results into posts and documents for display groups
   const postResults = results.filter(
     item => item._type === 'post'
   ) as (PostWithProfile & { _type: 'post' })[];
@@ -150,35 +161,33 @@ function SearchResults({ results, loading }: SearchResultsProps) {
   ) as (Document & { _type: 'document' })[];
 
   return (
-    <ThemedView>
+    <ThemedView style={styles.resultsContainer}>
       {postResults.length > 0 && (
-        <FlatList
-          data={postResults}
-          keyExtractor={(item, index) => `post-${item.id || index}`}
-          renderItem={({ item }) => (
-            <ThemedView style={[styles.itemContainer, { borderBottomColor: borderColor }]}>
+        <ThemedView style={styles.postsSection}>
+          {postResults.map((item, index) => (
+            <ThemedView key={`post-${item.id || index}`} style={styles.resultItem}>
               <PostResultItem post={item} />
             </ThemedView>
-          )}
-        />
+          ))}
+        </ThemedView>
       )}
 
       {documentResults.length > 0 && postResults.length > 0 && (
-        <ThemedView style={[styles.sectionHeader, { backgroundColor: backgroundSecondary, borderColor }]}>
-          <ThemedText style={[styles.sectionHeaderText, { color: mutedTextColor }]}>Your Documents</ThemedText>
+        <ThemedView style={[styles.sectionHeader, { backgroundColor: backgroundSecondary }]}>
+          <ThemedText style={[styles.sectionHeaderText, { color: mutedTextColor }]}>
+            Your Documents
+          </ThemedText>
         </ThemedView>
       )}
 
       {documentResults.length > 0 && (
-        <FlatList
-          data={documentResults}
-          keyExtractor={(item, index) => `document-${item.id || index}`}
-          renderItem={({ item }) => (
-            <ThemedView style={[styles.itemContainer, { borderBottomColor: borderColor }]}>
+        <ThemedView style={styles.documentsSection}>
+          {documentResults.map((item, index) => (
+            <ThemedView key={`document-${item.id || index}`} style={styles.resultItem}>
               <DocumentResultItem document={item} />
             </ThemedView>
-          )}
-        />
+          ))}
+        </ThemedView>
       )}
     </ThemedView>
   );
@@ -191,26 +200,64 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
 
   // Profile fields (may be undefined/null)
   const profile = post.profiles;
-  const username = profile?.username || '';
-  const name = [profile?.name, profile?.surname].filter(Boolean).join(' ') || '';
-  const avatarImage =
-    profile?.avatar_url ||
-    (post.criteria?.company
-      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.criteria.company)}&background=random`
-      : 'https://via.placeholder.com/32');
+  const username = profile?.username || 'user';
+  const name = [profile?.name, profile?.surname].filter(Boolean).join(' ') || 'User';
+
+  // Generate avatar image with better fallbacks
+  const getAvatarImage = () => {
+    if (profile?.avatar_url) {
+      return profile.avatar_url;
+    }
+
+    // Generate avatar based on company name for jobs
+    if (cardVariant === 'job' && post.criteria?.company) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(post.criteria.company)}&background=random&size=40`;
+    }
+
+    // Generate avatar based on user name
+    if (name && name !== 'User') {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=40`;
+    }
+
+    // Fallback to generic avatar
+    return 'https://ui-avatars.com/api/?name=U&background=random&size=40';
+  };
+
+  const avatarImage = getAvatarImage();
 
   // Title for the company/user/author/publisher
   const displayTitle =
     cardVariant === 'job'
-      ? post.criteria?.company || post.title || ''
+      ? post.criteria?.company || post.title || 'Company'
       : profile?.name ||
-        post.criteria?.author ||
-        post.criteria?.source ||
-        'Publisher';
+      post.criteria?.author ||
+      post.criteria?.source ||
+      'Publisher';
 
   // Main post title/headline
   const postTitle = post.title || '';
   const description = post.content || '';
+
+  // Enhanced data
+  const likesCount = post.likes?.length || 0;
+  const commentsCount = post.comments?.length || 0;
+
+  // Validate and get main image
+  const getMainImage = () => {
+    if (!post.image_url || post.image_url.trim() === '') {
+      return undefined;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(post.image_url);
+      return post.image_url;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const mainImage = getMainImage();
 
   return (
     <ContentCard
@@ -221,38 +268,82 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
       username={username}
       name={name}
       avatarImage={avatarImage}
-      mainImage={post.image_url ?? undefined}
+      mainImage={mainImage}
       description={description}
       badgeText={
         cardVariant === 'job'
           ? post.criteria?.location || 'Remote'
           : cardVariant === 'news'
-          ? post.criteria?.source || 'News'
-          : undefined
+            ? post.criteria?.source || 'News'
+            : undefined
       }
       badgeVariant={cardVariant === 'news' ? 'error' : undefined}
-      isVerified={false} // profile.verified is not present; if you add it, use profile?.verified
+      isVerified={false}
       industry={post.industry || undefined}
-      onPressHeart={() => {}}
-      onPressBookmark={() => {}}
-      onPressShare={() => {}}
-      onPressApply={() => {}}
+      onPressApply={() => { }}
+      user_id={post.user_id}
       jobId={post.id}
+      // Enhanced data fields
+      likesCount={likesCount}
+      commentsCount={commentsCount}
+      createdAt={post.created_at}
+      criteria={post.criteria}
+      isSponsored={post.is_sponsored}
     />
   );
 }
-  
+
 function DocumentResultItem({ document }: { document: Document & { _type: 'document' } }) {
-  return <DocumentCard document={document} />;
+  return <DocumentCard document={document} variant="detailed" showCategory={true} />;
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  filtersSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  resultsSection: {
+    flex: 1,
+  },
+  resultsContainer: {
+    paddingHorizontal: 16,
+  },
+  postsSection: {
+    gap: 12,
+  },
+  documentsSection: {
+    gap: 12,
+  },
+  resultItem: {
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: -16,
+    marginVertical: 16,
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    textAlign: 'center',
+    minHeight: 300,
   },
   iconCircle: {
     padding: 16,
@@ -260,35 +351,32 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   noResultsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 8,
+    textAlign: 'center',
   },
   noResultsSub: {
     fontSize: 14,
     marginTop: 8,
     maxWidth: 300,
     textAlign: 'center',
+    lineHeight: 20,
   },
-  itemContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  sectionHeader: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-  },
-  sectionHeaderText: {
+  loadingText: {
     fontSize: 14,
-    fontWeight: '500',
+    marginTop: 12,
   },
   errorContainer: {
     padding: 16,
-    borderWidth: 1,
-    borderRadius: 8,
     margin: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
   },
   errorText: {
     fontSize: 14,
+    color: '#dc2626',
   },
 });

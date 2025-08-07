@@ -4,7 +4,7 @@ import { TouchableOpacity } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
-import { ActionSheetIOS, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ActionSheetIOS, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import DocumentCard from '../content/DocumentCard';
 import DocumentList from '../content/DocumentList';
@@ -20,31 +20,12 @@ const DOCUMENT_FILTERS = [
   { icon: 'briefcase', label: 'CV' },
   { icon: 'mail', label: 'Cover Letter' },
   { icon: 'award', label: 'Certificate' },
-  { icon: 'folder', label: 'Portfolio' },
-  { icon: 'clipboard', label: 'Other' },
 ];
 
 const ALL_DOCUMENT_OPTIONS = [
   { icon: 'briefcase', label: 'CV' },
   { icon: 'mail', label: 'Cover Letter' },
   { icon: 'award', label: 'Certificate' },
-  { icon: 'folder', label: 'Portfolio' },
-  { icon: 'clipboard', label: 'Other' },
-  { icon: 'file-text', label: 'Resume' },
-  { icon: 'book', label: 'Reference' },
-  { icon: 'certificate', label: 'Diploma' },
-  { icon: 'award', label: 'Achievement' },
-  { icon: 'folder-open', label: 'Project' },
-  { icon: 'file', label: 'Contract' },
-  { icon: 'shield', label: 'License' },
-  { icon: 'star', label: 'Award' },
-  { icon: 'calendar', label: 'Schedule' },
-  { icon: 'map', label: 'Blueprint' },
-  { icon: 'code', label: 'Code Sample' },
-  { icon: 'image', label: 'Design' },
-  { icon: 'video', label: 'Presentation' },
-  { icon: 'music', label: 'Audio' },
-  { icon: 'database', label: 'Data' },
 ];
 
 interface DocumentsListProps {
@@ -53,20 +34,18 @@ interface DocumentsListProps {
 
 function filterDocumentsByCategory(documents: any[], categoryFilter: string) {
   if (!categoryFilter || categoryFilter === 'All') return documents;
-  
+
   return documents.filter(doc => {
     const docCategory = doc.category?.toLowerCase() || '';
     const filterCategory = categoryFilter.toLowerCase();
-    
+
     // Map filter labels to document categories
     const categoryMapping: Record<string, string[]> = {
       'cv': ['cv', 'resume'],
       'cover letter': ['cover letter', 'coverletter'],
-      'certificate': ['certificate', 'cert'],
-      'portfolio': ['portfolio'],
-      'other': ['other', 'misc', 'document']
+      'certificate': ['certificate', 'cert', 'diploma', 'achievement']
     };
-    
+
     const mappedCategories = categoryMapping[filterCategory] || [filterCategory];
     return mappedCategories.some(cat => docCategory.includes(cat));
   });
@@ -94,15 +73,15 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   const handlePickPdf = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
+        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         copyToCacheDirectory: false,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        if (asset.mimeType === 'application/pdf') {
+        if (asset.mimeType === 'application/pdf' || asset.mimeType?.includes('word')) {
           setFile({ name: asset.name, uri: asset.uri, mimeType: asset.mimeType });
         } else {
-          alert('Please select a PDF file.');
+          alert('Please select a PDF or Word document.');
         }
       }
     } catch (e) {
@@ -157,12 +136,12 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   const handlePickPdfForType = async (docType: string) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
+        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         copyToCacheDirectory: false,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        if (asset.mimeType === 'application/pdf') {
+        if (asset.mimeType === 'application/pdf' || asset.mimeType?.includes('word')) {
           setPendingDocs(prev => [
             ...prev,
             {
@@ -174,7 +153,7 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
             },
           ]);
         } else {
-          alert('Please select a PDF file.');
+          alert('Please select a PDF or Word document.');
         }
       }
     } catch (e) {
@@ -185,25 +164,25 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   const handleReplaceDocument = async (docType: string, currentDoc: any) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
+        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         copyToCacheDirectory: false,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        if (asset.mimeType === 'application/pdf') {
-          setPendingDocs(prev => prev.map(doc => 
+        if (asset.mimeType === 'application/pdf' || asset.mimeType?.includes('word')) {
+          setPendingDocs(prev => prev.map(doc =>
             doc.name === currentDoc.name && doc.category === currentDoc.category
               ? {
-                  name: asset.name,
-                  uri: asset.uri,
-                  mimeType: asset.mimeType,
-                  category: docType,
-                  updated: 'Just now',
-                }
+                name: asset.name,
+                uri: asset.uri,
+                mimeType: asset.mimeType,
+                category: docType,
+                updated: 'Just now',
+              }
               : doc
           ));
         } else {
-          alert('Please select a PDF file.');
+          alert('Please select a PDF or Word document.');
         }
       }
     } catch (e) {
@@ -212,7 +191,7 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   };
 
   const handleRemoveDocument = (doc: any) => {
-    setPendingDocs(prev => prev.filter(d => 
+    setPendingDocs(prev => prev.filter(d =>
       !(d.name === doc.name && d.category === doc.category)
     ));
   };
@@ -220,7 +199,7 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   const handlePendingDocMenu = (docType: string, doc: any) => {
     const options = ['Cancel', 'Replace', 'Remove'];
     const actions = [
-      () => {},
+      () => { },
       () => handleReplaceDocument(docType, doc),
       () => handleRemoveDocument(doc),
     ];
@@ -275,7 +254,7 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
 
   // Filter documents by category
   const categoryFilteredDocuments = filterDocumentsByCategory(documents, getSelectedDocumentFilterLabel());
-  
+
   // Create properly typed document objects that are compatible with DocumentList component
   const documentsForList = categoryFilteredDocuments.map(doc => {
     // Create a valid Document object with required fields
@@ -287,7 +266,7 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
       file_url: doc.uri || '',
       uploaded_at: new Date().toISOString()
     };
-    
+
     // Add display properties used by DocumentList
     return {
       ...document,
@@ -326,8 +305,20 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   return (
     <>
       {/* Document Heading */}
-      <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
-        <ThemedText style={{ fontSize: 18, fontWeight: 'bold' }}>Documents</ThemedText>
+      <View style={styles.headerRow}>
+        <ThemedText style={styles.headerTitle}>Documents</ThemedText>
+        <Pressable
+          onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            openModal();
+          }}
+        >
+          <ThemedText style={[styles.uploadText, { color: tintColor }]}>
+            Upload
+          </ThemedText>
+        </Pressable>
       </View>
 
       {/* Document Filter */}
@@ -343,15 +334,38 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
       </View>
 
       {/* Documents List */}
-      <DocumentList
-        documents={documentsForList}
-        groupedByCategory={true}
-        onDocumentPress={handleDocumentPress}
-        onDocumentDownload={handleDocumentDownload}
-        onDocumentShare={handleDocumentShare}
-        onDocumentDelete={handleDocumentDelete}
-        emptyText={`No ${getSelectedDocumentFilterLabel().toLowerCase()} documents found`}
-      />
+      {documentsForList.length === 0 ? (
+        <Pressable
+          style={({ pressed }) => [
+            styles.emptyState,
+            { opacity: pressed ? 0.7 : 1 }
+          ]}
+          onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            openModal();
+          }}
+        >
+          <Feather name="folder" size={48} color={mutedText} />
+          <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
+            No Documents Yet
+          </ThemedText>
+          <ThemedText style={[styles.emptyDescription, { color: mutedText }]}>
+            Tap to upload your CV, cover letter, and certificates
+          </ThemedText>
+        </Pressable>
+      ) : (
+        <DocumentList
+          documents={documentsForList}
+          groupedByCategory={true}
+          onDocumentPress={handleDocumentPress}
+          onDocumentDownload={handleDocumentDownload}
+          onDocumentShare={handleDocumentShare}
+          onDocumentDelete={handleDocumentDelete}
+          emptyText={`No ${getSelectedDocumentFilterLabel().toLowerCase()} documents found`}
+        />
+      )}
 
       {/* We're now using the centralized BottomSheetManager via openDocumentsSheet */}
     </>
@@ -375,11 +389,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 16,
     paddingHorizontal: 16,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   headerRightRow: {
@@ -395,13 +409,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 8,
+    borderWidth: 1,
     paddingVertical: 6,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
+    paddingHorizontal: 12,
+    gap: 6,
   },
   uploadText: {
-    fontWeight: 'bold',
-    fontSize: 12,
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
   },
   list: {
     width: '100%',

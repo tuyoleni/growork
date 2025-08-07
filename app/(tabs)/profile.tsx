@@ -9,12 +9,15 @@ import CategorySelector from '@/components/ui/CategorySelector';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { Animated, StyleSheet, TouchableOpacity, Pressable, View } from 'react-native';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 import { DocumentType } from '@/types';
 import { UserType } from '@/types/enums';
 import { Feather } from '@expo/vector-icons';
+import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
+import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
+import { calculateProfileStrength, formatUserDetails } from '@/lib/utils';
 
 const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 
@@ -22,6 +25,15 @@ export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
   const { profile, loading, user } = useAuth();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const iconColor = useThemeColor({}, 'icon');
+  const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'border');
+  const textColor = useThemeColor({}, 'text');
+  const mutedTextColor = useThemeColor({}, 'mutedText');
+
+  // If loading, you can show a loader or return null
+  if (loading) return null;
 
   // Debug: log profile and user data
   console.log('Profile:', profile);
@@ -38,17 +50,20 @@ export default function Profile() {
   const placeholderAvatar =
     `https://ui-avatars.com/api/?name=${avatarName}&background=cccccc&color=222222&size=256`;
 
-  // If loading, you can show a loader or return null
-  if (loading) return null;
+  // Calculate profile strength and format user details
+  const profileStrength = calculateProfileStrength(profile);
+  const userDetails = formatUserDetails(profile);
 
   // Compose header props from profile or fallback
   const headerProps = {
     name: profile ? `${profile.name} ${profile.surname}` : 'User',
     avatarUrl: profile && profile.avatar_url ? profile.avatar_url : placeholderAvatar,
     status: 'Available',
-    subtitle: profile && profile.username ? `@${profile.username}` : 'No username',
-    profileStrength: 'Profile Strength: Excellent',
-    profileStrengthDescription: 'Your profile is optimized for job searching',
+    subtitle: userDetails.subtitle,
+    bio: profile?.bio || undefined,
+    profileStrength: `Profile Strength: ${profileStrength.level} (${profileStrength.percentage}%)`,
+    profileStrengthDescription: profileStrength.description,
+    details: userDetails.details,
     stats: [
       { label: 'Following', value: 0 }, // TODO: Replace with real data
       { label: 'Channels', value: 0 },  // TODO: Replace with real data
@@ -56,16 +71,90 @@ export default function Profile() {
     onEdit: () => router.push('/settings'),
   };
 
+  // Animated values for header collapse
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, 60],
+    extrapolate: 'clamp',
+  });
+
+  const mainHeaderOpacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const mainHeaderTranslateY = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, -50],
+    extrapolate: 'clamp',
+  });
 
   return (
     <ScreenContainer>
+      {/* Compact Header */}
+      <Animated.View
+        style={[
+          styles.compactHeader,
+          {
+            opacity: headerOpacity,
+            height: headerHeight,
+            backgroundColor: `${backgroundColor}E6`, // 90% opacity
+            borderBottomColor: borderColor,
+          }
+        ]}
+      >
+        <View style={styles.compactHeaderContent}>
+          <View style={styles.compactHeaderLeft}>
+            <ThemedAvatar
+              size={32}
+              image={headerProps.avatarUrl}
+            />
+            <View style={styles.compactUserInfo}>
+              <ThemedText style={[styles.compactUsername, { color: textColor }]}>
+                {profile && profile.username ? `@${profile.username}` : 'User'}
+              </ThemedText>
+              {profile && profile.profession && (
+                <ThemedText style={[styles.compactProfession, { color: mutedTextColor }]}>
+                  {profile.profession}
+                </ThemedText>
+              )}
+            </View>
+          </View>
+          <ThemedIconButton
+            icon={<Feather name="settings" size={20} color={iconColor} />}
+            onPress={() => router.push('/settings')}
+          />
+        </View>
+      </Animated.View>
+
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
       >
         <ThemedView style={styles.container}>
-          <ProfileHeader {...headerProps} />
+          <Animated.View
+            style={[
+              styles.mainHeaderContainer,
+              {
+                opacity: mainHeaderOpacity,
+                transform: [{ translateY: mainHeaderTranslateY }],
+              }
+            ]}
+          >
+            <ProfileHeader {...headerProps} />
+          </Animated.View>
 
           <ThemedView style={styles.categorySection}>
             <CategorySelector
@@ -89,6 +178,48 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  compactHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    borderBottomWidth: 1,
+    justifyContent: 'center',
+  },
+  compactHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  compactHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  compactAvatar: {
+    borderRadius: 16,
+  },
+  compactUsername: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  compactUserInfo: {
+    flexDirection: 'column',
+    gap: 2,
+  },
+  compactProfession: {
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  compactSettingsButton: {
+    padding: 8,
+  },
+  mainHeaderContainer: {
+    width: '100%',
   },
   categorySection: {
     marginTop: 24,

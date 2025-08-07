@@ -89,14 +89,31 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
   // User profile if available
   const profile = post.profiles;
 
-  // Compose avatar, username, name
-  const avatarImage =
-    profile?.avatar_url ||
-    (post.criteria?.company
-      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.criteria.company)}&background=random`
-      : 'https://via.placeholder.com/32');
+  // Compose avatar, username, name with better fallbacks
   const username = profile?.username || 'user';
-  const name = (profile?.name || '') + (profile?.surname ? ` ${profile.surname}` : '');
+  const name = (profile?.name || '') + (profile?.surname ? ` ${profile.surname}` : '') || 'User';
+  
+  // Generate avatar image with better fallbacks
+  const getAvatarImage = () => {
+    if (profile?.avatar_url) {
+      return profile.avatar_url;
+    }
+    
+    // Generate avatar based on company name for jobs
+    if (cardVariant === 'job' && post.criteria?.company) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(post.criteria.company)}&background=random&size=40`;
+    }
+    
+    // Generate avatar based on user name
+    if (name && name !== 'User') {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=40`;
+    }
+    
+    // Fallback to generic avatar
+    return 'https://ui-avatars.com/api/?name=U&background=random&size=40';
+  };
+
+  const avatarImage = getAvatarImage();
 
   // Title is usually company (job) or publisher/source (news)
   const displayTitle =
@@ -107,6 +124,27 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
         post.criteria?.source ||
         'Publisher';
 
+  // Enhanced data
+  const likesCount = post.likes?.length || 0;
+  const commentsCount = post.comments?.length || 0;
+
+  // Validate and get main image
+  const getMainImage = () => {
+    if (!post.image_url || post.image_url.trim() === '') {
+      return undefined;
+    }
+    
+    // Basic URL validation
+    try {
+      new URL(post.image_url);
+      return post.image_url;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const mainImage = getMainImage();
+
   return (
     <ContentCard
       variant={cardVariant}
@@ -116,29 +154,35 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
       username={username}
       name={name}
       avatarImage={avatarImage}
-      mainImage={post.image_url ?? undefined}
+      mainImage={mainImage}
       description={description}
       badgeText={
         cardVariant === 'job'
           ? post.criteria?.location || 'Remote'
           : cardVariant === 'news'
-          ? post.criteria?.source || 'News'
-          : undefined
+            ? post.criteria?.source || 'News'
+            : undefined
       }
       badgeVariant={cardVariant === 'news' ? 'error' : undefined}
       // isVerified={!!profile?.verified}
       industry={post.industry || undefined}
-      onPressHeart={() => {}}
-      onPressBookmark={() => {}}
-      onPressShare={() => {}}
-      onPressApply={() => {}}
+      onPressHeart={() => { }}
+      onPressBookmark={() => { }}
+      onPressShare={() => { }}
+      onPressApply={() => { }}
       jobId={post.id}
+      // Enhanced data fields
+      likesCount={likesCount}
+      commentsCount={commentsCount}
+      createdAt={post.created_at}
+      criteria={post.criteria}
+      isSponsored={post.is_sponsored}
     />
   );
 }
 
 function DocumentResultItem({ document }: { document: Document }) {
-  return <DocumentCard document={document} />;
+  return <DocumentCard document={document} variant="detailed" showCategory={true} />;
 }
 
 const styles = StyleSheet.create({

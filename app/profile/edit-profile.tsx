@@ -18,6 +18,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedInput } from '@/components/ThemedInput';
+import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import SettingsList from '@/components/ui/SettingsList';
 import ScreenContainer from '@/components/ScreenContainer';
 import { UserType } from '@/types/enums';
@@ -138,7 +139,8 @@ export default function EditProfileNative() {
           showArrow: false,
         },
       ]
-    }
+    },
+
   ];
 
   if (editedProfile.user_type === UserType.Professional) {
@@ -297,201 +299,28 @@ export default function EditProfileNative() {
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
-      <ScrollView>
+      <View style={{ flex: 1 }}>
         {/* Avatar */}
         <Pressable onPress={pickAvatar} style={styles.avatarPreview}>
-          <Image
-            source={{
-              uri:
-                (profile?.avatar_url as string) ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  editedProfile.name || 'User'
-                )}&size=60`,
-            }}
-            style={styles.avatarImage}
-          />
-          <View style={[styles.avatarOverlay, { backgroundColor: tintColor }]}>
-            <Feather name="camera" size={16} color={backgroundColor} />
-          </View>
+          <ThemedAvatar
+            image={
+              (profile?.avatar_url as string) ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                editedProfile.name || 'User'
+              )}&size=80`
+            }
+            size={80}
+          >
+            <View style={[styles.avatarOverlay, { backgroundColor: tintColor }]}>
+              <Feather name="camera" size={16} color={backgroundColor} />
+            </View>
+          </ThemedAvatar>
         </Pressable>
 
-        <ThemedView style={styles.formContainer}>
-          <ThemedView style={styles.inputContainer}>
-            <ThemedText style={styles.inputLabel}>First Name</ThemedText>
-            <ThemedInput
-              value={editedProfile.name}
-              onChangeText={(v: string) => setEditedProfile(p => ({ ...p, name: v }))}
-              style={styles.input}
-              placeholder="Enter your first name"
-            />
-          </ThemedView>
-          <ThemedView style={[styles.separator, { backgroundColor: borderColor }]} />
-
-          <ThemedView style={styles.inputContainer}>
-            <ThemedText style={styles.inputLabel}>Last Name</ThemedText>
-            <ThemedInput
-              value={editedProfile.surname}
-              onChangeText={(v: string) => setEditedProfile(p => ({ ...p, surname: v }))}
-              style={styles.input}
-              placeholder="Enter your last name"
-            />
-          </ThemedView>
-          <ThemedView style={[styles.separator, { backgroundColor: borderColor }]} />
-
-          <ThemedView style={styles.inputContainer}>
-            <ThemedText style={styles.inputLabel}>Username</ThemedText>
-            <ThemedInput
-              value={editedProfile.username}
-              onChangeText={(v: string) => setEditedProfile(p => ({ ...p, username: v }))}
-              style={styles.input}
-              placeholder="Enter your username"
-            />
-          </ThemedView>
-          <ThemedView style={[styles.separator, { backgroundColor: borderColor }]} />
-
-          <ThemedView style={styles.inputContainer}>
-            <ThemedText style={styles.inputLabel}>Bio</ThemedText>
-            <ThemedInput
-              value={editedProfile.bio}
-              onChangeText={(v: string) => setEditedProfile(p => ({ ...p, bio: v }))}
-              multiline
-              style={styles.multilineInput}
-              placeholder="Tell us about yourself"
-            />
-          </ThemedView>
-        </ThemedView>
-
-        {/* User Type selection */}
-        <ThemedView style={styles.formContainer}>
-          <ThemedView style={styles.inputContainer}>
-            <ThemedText style={styles.inputLabel}>Account Type</ThemedText>
-            <View style={styles.userTypeContainer}>
-              {Object.values(UserType).map((type) => (
-                <Pressable
-                  key={type}
-                  style={[
-                    styles.userTypeButton,
-                    { borderColor: borderColor },
-                    editedProfile.user_type === type && {
-                      backgroundColor: tintColor,
-                      borderColor: tintColor
-                    }
-                  ]}
-                  onPress={() => setEditedProfile(p => ({ ...p, user_type: type }))}
-                >
-                  <ThemedText style={[
-                    styles.userTypeText,
-                    { color: mutedTextColor },
-                    editedProfile.user_type === type && { color: backgroundColor }
-                  ]}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-          </ThemedView>
-        </ThemedView>
-
-        {editedProfile.user_type === UserType.Professional && (
-          <ThemedView style={styles.formContainer}>
-            <ThemedView style={styles.inputContainer}>
-              <ThemedText style={styles.inputLabel}>Profession</ThemedText>
-              <ThemedInput
-                value={editedProfile.profession}
-                onChangeText={(v: string) => setEditedProfile(p => ({ ...p, profession: v }))}
-                style={styles.input}
-                placeholder="Enter your profession"
-              />
-            </ThemedView>
-            <ThemedView style={[styles.separator, { backgroundColor: borderColor }]} />
-
-            <ThemedView style={styles.inputContainer}>
-              <ThemedText style={styles.inputLabel}>Experience Years</ThemedText>
-              <ThemedInput
-                value={editedProfile.experience_years}
-                keyboardType="numeric"
-                onChangeText={(v: string) => setEditedProfile(p => ({ ...p, experience_years: v }))}
-                style={styles.input}
-                placeholder="Enter years of experience"
-              />
-            </ThemedView>
-            <ThemedView style={[styles.separator, { backgroundColor: borderColor }]} />
-
-            <ThemedView style={styles.inputContainer}>
-              <ThemedText style={styles.inputLabel}>Education</ThemedText>
-              <ThemedInput
-                value={editedProfile.education}
-                onChangeText={(v: string) => setEditedProfile(p => ({ ...p, education: v }))}
-                style={styles.input}
-                placeholder="Enter your education"
-              />
-            </ThemedView>
-            <ThemedView style={[styles.separator, { backgroundColor: borderColor }]} />
-
-            <ThemedView style={styles.inputContainer}>
-              <ThemedText style={styles.inputLabel}>Skills</ThemedText>
-              <ThemedInput
-                value={editedProfile.skills}
-                onChangeText={(v: string) => setEditedProfile(p => ({ ...p, skills: v }))}
-                style={styles.input}
-                placeholder="Enter your skills"
-              />
-            </ThemedView>
-          </ThemedView>
-        )}
-
-        {editedProfile.user_type === UserType.Company && (
-          <ThemedView style={styles.formContainer}>
-            <ThemedView style={styles.inputContainer}>
-              <ThemedText style={styles.inputLabel}>Company Name</ThemedText>
-              <ThemedInput
-                value={editedProfile.profession}
-                onChangeText={(v: string) => setEditedProfile(p => ({ ...p, profession: v }))}
-                style={styles.input}
-                placeholder="Enter company name"
-              />
-            </ThemedView>
-          </ThemedView>
-        )}
-
-        <ThemedView style={styles.formContainer}>
-          <ThemedView style={styles.inputContainer}>
-            <ThemedText style={styles.inputLabel}>Website</ThemedText>
-            <ThemedInput
-              value={editedProfile.website}
-              onChangeText={(v: string) => setEditedProfile(p => ({ ...p, website: v }))}
-              keyboardType="url"
-              style={styles.input}
-              placeholder="Enter your website"
-            />
-          </ThemedView>
-          <ThemedView style={[styles.separator, { backgroundColor: borderColor }]} />
-
-          <ThemedView style={styles.inputContainer}>
-            <ThemedText style={styles.inputLabel}>Phone</ThemedText>
-            <ThemedInput
-              value={editedProfile.phone}
-              onChangeText={(v: string) => setEditedProfile(p => ({ ...p, phone: v }))}
-              keyboardType="phone-pad"
-              style={styles.input}
-              placeholder="Enter your phone number"
-            />
-          </ThemedView>
-          <ThemedView style={[styles.separator, { backgroundColor: borderColor }]} />
-
-          <ThemedView style={styles.inputContainer}>
-            <ThemedText style={styles.inputLabel}>Location</ThemedText>
-            <ThemedInput
-              value={editedProfile.location}
-              onChangeText={(v: string) => setEditedProfile(p => ({ ...p, location: v }))}
-              style={styles.input}
-              placeholder="Enter your location"
-            />
-          </ThemedView>
-        </ThemedView>
+        <SettingsList sections={settingsData} />
 
         {error && <ThemedText style={{ color: '#ef4444', margin: 8 }}>{error}</ThemedText>}
-      </ScrollView>
+      </View>
     </ScreenContainer>
   );
 }
@@ -521,76 +350,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
   },
-  formContainer: {
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  inputContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  inputLabel: {
-    fontWeight: '600',
-    marginBottom: 8,
-    fontSize: 15,
-  },
-  input: {
-    borderWidth: 0,
-    paddingHorizontal: 0,
-    marginBottom: 0,
-    backgroundColor: 'transparent',
-    fontSize: 16,
-  },
-  multilineInput: {
-    borderWidth: 0,
-    paddingHorizontal: 0,
-    marginBottom: 0,
-    backgroundColor: 'transparent',
-    height: 80,
-    textAlignVertical: 'top',
-    fontSize: 16,
-  },
-  separator: {
-    height: 0.5,
-  },
+
   avatarPreview: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    overflow: 'hidden',
     alignSelf: 'center',
     marginVertical: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
   },
   avatarOverlay: {
     position: 'absolute', bottom: 0, right: 0,
     borderRadius: 16, padding: 6,
   },
-  userTypeContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  userTypeButton: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  userTypeButtonSelected: {
-    borderWidth: 1,
-  },
-  userTypeText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  userTypeTextSelected: {
-    fontWeight: '500',
-  },
+
 });
