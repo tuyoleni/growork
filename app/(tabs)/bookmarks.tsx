@@ -110,7 +110,6 @@ export default function Bookmarks() {
   return (
     <ScreenContainer>
       <ScrollView
-        style={styles.container}
         showsVerticalScrollIndicator={false}
       >
         {/* Bookmarks Header */}
@@ -166,7 +165,6 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 16,
     paddingHorizontal: 16,
-    paddingTop: 16,
   },
   title: {
     fontSize: 28,
@@ -186,7 +184,6 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   loadingContainer: {
     padding: 16,

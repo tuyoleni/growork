@@ -40,7 +40,7 @@ export function useHomePosts() {
 
       // Step 2: Get user profiles for these posts
       const userIds = [...new Set(postsData.map(post => post.user_id))].filter(Boolean);
-      
+
       // Only fetch profiles if we have valid user IDs
       let profilesData = [];
       if (userIds.length > 0) {
@@ -58,12 +58,12 @@ export function useHomePosts() {
 
       const formattedPosts = postsData.map(post => {
         const profile = profilesMap[post.user_id];
-        const avatarUrl = profile?.avatar_url || 
+        const avatarUrl = profile?.avatar_url ||
           `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.name || 'User')}&size=128`;
-        
+
         let variant: 'job' | 'news' | 'sponsored';
         let industry = 'Technology'; // Default industry
-        
+
         if (post.is_sponsored) {
           variant = 'sponsored';
         } else if (post.type === 'job') {

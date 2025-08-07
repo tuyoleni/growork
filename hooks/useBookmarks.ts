@@ -30,7 +30,7 @@ export function useBookmarks() {
       setLoading(true);
       setError(null);
 
-      // Fetch bookmarked posts with full post data and user profiles
+      // Fetch bookmarked posts
       const { data: bookmarkedPosts, error: postsError } = await supabase
         .from('bookmarks')
         .select(`
@@ -47,14 +47,7 @@ export function useBookmarks() {
             criteria,
             created_at,
             updated_at,
-            is_sponsored,
-            profiles (
-              id,
-              username,
-              name,
-              surname,
-              avatar_url
-            )
+            is_sponsored
           )
         `)
         .eq('user_id', user.id)
@@ -63,6 +56,27 @@ export function useBookmarks() {
       if (postsError) {
         throw postsError;
       }
+
+      // Get user IDs from bookmarked posts
+      const userIds = bookmarkedPosts
+        ?.map((item: any) => item.posts?.user_id)
+        .filter(Boolean) || [];
+
+      // Fetch profiles for these users
+      let profilesData = [];
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+        profilesData = profiles || [];
+      }
+
+      // Create a map of user profiles
+      const profilesMap = profilesData.reduce((acc: any, profile: any) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {});
 
       // Fetch user's applications
       const { data: applications, error: applicationsError } = await supabase
@@ -78,14 +92,19 @@ export function useBookmarks() {
       // Combine and format the data
       const bookmarkedItems: BookmarkedItem[] = [];
 
-      // Add bookmarked posts
+      // Add bookmarked posts with profile data
       if (bookmarkedPosts) {
-        bookmarkedPosts.forEach(item => {
+        bookmarkedPosts.forEach((item: any) => {
           if (item.posts) {
+            const profile = profilesMap[item.posts.user_id];
+            const postWithProfile = {
+              ...item.posts,
+              profiles: profile
+            };
             bookmarkedItems.push({
               id: item.post_id,
               type: 'post',
-              data: item.posts as Post,
+              data: postWithProfile as any,
               bookmarked_at: item.created_at
             });
           }
