@@ -37,6 +37,7 @@ export default function TabLayout() {
           title: 'Bookmarks',
           tabBarIcon: ({ color }) => <Feather name="bookmark" size={20} color={color} />,
           tabBarButton: (props) => <HapticTab {...props} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen

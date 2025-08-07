@@ -1,6 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Easing,
   NativeScrollEvent,
@@ -9,9 +8,7 @@ import {
   View,
   Share,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 
-import ContentCard from '@/components/content/ContentCard';
 import Header, { HEADER_HEIGHT } from '@/components/home/Header';
 import ScreenContainer from '@/components/ScreenContainer';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -21,6 +18,9 @@ import {
 } from '@/hooks/useFeedPosts';
 import { ThemedText } from '@/components/ThemedText';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+import ContentCard from '@/components/content/ContentCard';
+import { PostType } from '@/types/enums';
+import { ContentCardSkeleton } from '@/components/ui/Skeleton';
 
 const INDUSTRIES = [
   'Technology', 'Finance', 'Healthcare', 'Retail', 'Logistics',
@@ -40,7 +40,6 @@ export default function Home() {
     posts: dbPosts,
     loading,
     error,
-    refreshing,
     fetchPosts,
     convertDbPostToContentCard,
   } = useFeedPosts();
@@ -105,11 +104,10 @@ export default function Home() {
     lastScrollY.current = y;
   };
 
-  const textColor = useThemeColor({}, 'text');
   const handlePostSuccess = () => fetchPosts();
 
   // --- SHEET OPENERS ---
-  const { openCreatePostSheet, openCommentSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });
+  const { openCreatePostSheet, openCommentSheet, openJobApplicationSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });
 
   function handleShowCreatePost() {
     openCreatePostSheet();
@@ -127,12 +125,60 @@ export default function Home() {
     });
   }
 
+  function handleApplyToJob(post: ExtendedContentCardProps) {
+    if (post.variant === 'job' && post.id) {
+      // We need to fetch the full post data to pass to the application form
+      const jobPost = {
+        id: post.id,
+        title: post.postTitle || post.title,
+        content: post.description,
+        type: PostType.Job,
+        user_id: post.user_id || '',
+        created_at: post.createdAt || new Date().toISOString(),
+        updated_at: null,
+        image_url: post.mainImage || null,
+        industry: post.industry || null,
+        criteria: post.criteria,
+        is_sponsored: post.isSponsored || false,
+      };
+
+      openJobApplicationSheet(jobPost, {
+        onSuccess: () => {
+          console.log('Application submitted successfully');
+        }
+      });
+    }
+  }
+
   if (loading && !dbPosts.length) {
     return (
       <ScreenContainer>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={textColor} />
-        </View>
+        {/* Sticky/animated header */}
+        <Animated.View style={{
+          transform: [{ translateY: headerAnim }],
+          zIndex: 10,
+          position: 'absolute',
+          top: 0, left: 0, right: 0,
+        }}>
+          <Header
+            selectedContentType={selectedContentType}
+            onContentTypeChange={setSelectedContentType}
+            selectedIndustry={selectedIndustry}
+            onIndustryChange={setSelectedIndustry}
+            onAddPost={handleShowCreatePost}
+          />
+        </Animated.View>
+
+        <Animated.ScrollView
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={handleScroll}
+          contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
+        >
+          {[1, 2, 3, 4, 5].map((index) => (
+            <ContentCardSkeleton key={index} />
+          ))}
+        </Animated.ScrollView>
       </ScreenContainer>
     );
   }
@@ -167,8 +213,7 @@ export default function Home() {
               key={`${post.title}-${post.variant}-${index}-${post.id ?? 'unknown'}`}
               {...post}
               jobId={post.variant === 'job' ? post.id : undefined}
-              onCommentPress={() => handleShowComments(post.id!)}
-              onPressShare={() => handleShare(post)}
+              onPressApply={() => handleApplyToJob(post)}
               style={index === 0 ? { marginTop: HEADER_HEIGHT - 48 } : undefined}
             />
           ))

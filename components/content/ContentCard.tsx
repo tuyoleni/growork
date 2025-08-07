@@ -5,6 +5,7 @@ import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
+import { BadgeCheck } from 'lucide-react-native';
 import { ThemedAvatar } from '../ui/ThemedAvatar';
 import { ThemedIconButton } from '../ui/ThemedIconButton';
 import PostInteractionBar from './PostInteractionBar';
@@ -38,6 +39,9 @@ export interface ContentCardProps {
     isLiked?: boolean;
     isBookmarked?: boolean;
     user_id?: string;
+    // Application status
+    hasApplied?: boolean;
+    applicationStatus?: string;
 }
 
 export default function ContentCard({
@@ -56,6 +60,8 @@ export default function ContentCard({
     createdAt,
     criteria,
     user_id,
+    hasApplied = false,
+    applicationStatus,
 }: ContentCardProps) {
     const router = useRouter();
     const { user } = useAuth();
@@ -159,7 +165,7 @@ export default function ContentCard({
                             {name}
                         </ThemedText>
                         {isVerified && (
-                            <Feather name="check-circle" size={16} color="#3b82f6" style={styles.verifiedIcon} />
+                            <BadgeCheck size={16} color="#3b82f6" style={styles.verifiedIcon} />
                         )}
                     </View>
                     <ThemedText style={[styles.username, { color: mutedTextColor }]} numberOfLines={1}>
@@ -269,8 +275,20 @@ export default function ContentCard({
                     size="medium"
                 />
                 {variant === 'job' && (
-                    <Pressable style={styles.actionButton} onPress={onPressApply}>
-                        <ThemedText style={styles.actionButtonText}>Apply Now</ThemedText>
+                    <Pressable
+                        style={[
+                            styles.actionButton,
+                            hasApplied && styles.appliedButton
+                        ]}
+                        onPress={onPressApply}
+                        disabled={hasApplied}
+                    >
+                        <ThemedText style={[
+                            styles.actionButtonText,
+                            hasApplied && styles.appliedButtonText
+                        ]}>
+                            {hasApplied ? 'Applied' : 'Apply Now'}
+                        </ThemedText>
                     </Pressable>
                 )}
                 {variant === 'news' && (
@@ -290,7 +308,8 @@ const styles = StyleSheet.create({
     container: {
         borderBottomWidth: 0.5,
         paddingHorizontal: 16,
-        paddingVertical: 16,
+        paddingTop: 16,
+        paddingBottom: 12,
     },
     header: {
         flexDirection: 'row',
@@ -325,7 +344,7 @@ const styles = StyleSheet.create({
 
 
     content: {
-        marginBottom: 12,
+        marginBottom: 8,
     },
     postTitle: {
         fontSize: 17,
@@ -384,7 +403,7 @@ const styles = StyleSheet.create({
     timestamp: {
         fontSize: 12,
         opacity: 0.6,
-        marginBottom: 12,
+        marginBottom: 8,
     },
     actionRow: {
         flexDirection: 'row',
@@ -402,6 +421,13 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 14,
         fontWeight: '600',
+    },
+    appliedButton: {
+        backgroundColor: '#10b981',
+        opacity: 0.8,
+    },
+    appliedButtonText: {
+        color: 'white',
     },
     promotedText: {
         fontSize: 12,

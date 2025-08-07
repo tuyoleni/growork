@@ -15,6 +15,8 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import ContentCard from '@/components/content/ContentCard';
+import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+import { SearchResultsSkeleton } from '@/components/ui/Skeleton';
 
 export default function SearchClient() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,14 +130,7 @@ function SearchResults({ results, loading }: SearchResultsProps) {
   const mutedTextColor = useThemeColor({}, 'mutedText');
 
   if (loading) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator size="large" color={tintColor} />
-        <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
-          Searching...
-        </ThemedText>
-      </ThemedView>
-    );
+    return <SearchResultsSkeleton />;
   }
 
   if (results.length === 0) {
@@ -194,6 +189,7 @@ function SearchResults({ results, loading }: SearchResultsProps) {
 }
 
 function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } }) {
+  const { openJobApplicationSheet } = useBottomSheetManager();
   // Card variant: job or news
   const cardVariant =
     post.type === PostType.Job ? 'job' : 'news';
@@ -259,6 +255,16 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
 
   const mainImage = getMainImage();
 
+  const handleApplyToJob = () => {
+    if (post.type === PostType.Job) {
+      openJobApplicationSheet(post, {
+        onSuccess: () => {
+          console.log('Application submitted successfully');
+        }
+      });
+    }
+  };
+
   return (
     <ContentCard
       variant={cardVariant}
@@ -280,7 +286,7 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
       badgeVariant={cardVariant === 'news' ? 'error' : undefined}
       isVerified={false}
       industry={post.industry || undefined}
-      onPressApply={() => { }}
+      onPressApply={handleApplyToJob}
       user_id={post.user_id}
       jobId={post.id}
       // Enhanced data fields

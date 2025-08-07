@@ -132,24 +132,24 @@ export default function PostForm({ onSuccess }: PostFormProps) {
         return (
           <View style={{ padding: 16 }}>
             <ThemedText type="subtitle" style={{ marginBottom: 16 }}>Review Your Post</ThemedText>
-            
+
             <View style={{ marginBottom: 12 }}>
               <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Title:</ThemedText>
               <ThemedText>{title}</ThemedText>
             </View>
-            
+
             <View style={{ marginBottom: 12 }}>
               <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Content:</ThemedText>
               <ThemedText>{content}</ThemedText>
             </View>
-            
+
             {imageUrl && (
               <View style={{ marginBottom: 12 }}>
                 <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Image:</ThemedText>
                 <ThemedText style={{ color: '#666' }}>Image attached</ThemedText>
               </View>
             )}
-            
+
             {postType === PostType.Job && (
               <View style={{ marginBottom: 12 }}>
                 <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Job Details:</ThemedText>
@@ -160,7 +160,7 @@ export default function PostForm({ onSuccess }: PostFormProps) {
                 <ThemedText>Industry: {jobFields.industry || 'Not specified'}</ThemedText>
               </View>
             )}
-            
+
             {postType === PostType.News && (
               <View style={{ marginBottom: 12 }}>
                 <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Article Details:</ThemedText>

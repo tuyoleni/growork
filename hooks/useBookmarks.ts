@@ -78,10 +78,18 @@ export function useBookmarks() {
         return acc;
       }, {});
 
-      // Fetch user's applications
+      // Fetch user's applications with post data
       const { data: applications, error: applicationsError } = await supabase
         .from('applications')
-        .select('*')
+        .select(`
+          *,
+          posts (
+            id,
+            title,
+            content,
+            criteria
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 

@@ -146,23 +146,31 @@ export default function BookmarkedContentList({
                 <View style={styles.itemContent}>
                     <View style={styles.itemText}>
                         <ThemedText style={[styles.itemTitle, { color: textColor }]} numberOfLines={2}>
-                            Job Application
+                            {application.post?.title || 'Job Application'}
                         </ThemedText>
-                        <ThemedText style={[styles.itemSubtitle, { color: mutedTextColor }]} numberOfLines={2}>
-                            Application ID: {application.id.slice(0, 8)}...
+                        <ThemedText style={[styles.itemSubtitle, { color: mutedTextColor }]} numberOfLines={1}>
+                            {application.post?.criteria?.company || 'Company'}
                         </ThemedText>
-                        {application.resume_url && (
-                            <ThemedText style={[styles.itemCompany, { color: mutedTextColor }]}>
-                                Resume attached
-                            </ThemedText>
-                        )}
+                        <ThemedText style={[styles.itemDate, { color: mutedTextColor, marginTop: 4 }]}>
+                            Applied on {formatDate(application.created_at)}
+                        </ThemedText>
+                        <View style={styles.applicationDetails}>
+                            <View style={styles.detailItem}>
+                                <Feather name="file-text" size={12} color={mutedTextColor} />
+                                <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                                    Resume attached
+                                </ThemedText>
+                            </View>
+                            {(application.cover_letter || application.cover_letter_id) && (
+                                <View style={styles.detailItem}>
+                                    <Feather name="message-square" size={12} color={mutedTextColor} />
+                                    <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                                        Cover letter {application.cover_letter_id ? 'document' : 'included'}
+                                    </ThemedText>
+                                </View>
+                            )}
+                        </View>
                     </View>
-                </View>
-
-                <View style={styles.itemFooter}>
-                    <ThemedText style={[styles.itemDate, { color: mutedTextColor }]}>
-                        {formatDate(item.bookmarked_at)}
-                    </ThemedText>
                 </View>
             </Pressable>
         );
@@ -290,5 +298,20 @@ const styles = StyleSheet.create({
     },
     itemDate: {
         fontSize: 12,
+    },
+    applicationDetails: {
+        marginTop: 6,
+        gap: 3,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    detailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    detailText: {
+        fontSize: 11,
+        fontWeight: '500',
     },
 }); 

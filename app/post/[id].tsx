@@ -8,29 +8,35 @@ import {
   ActivityIndicator,
   View as RNView,
   Linking,
+  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { usePosts as usePostById } from '@/hooks/usePostById';
 import { usePosts as useFeedPosts } from '@/hooks/usePosts';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useApplicationStatus } from '@/hooks/useApplicationStatus';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
 import { Post } from '@/types';
 import { PostType } from '@/types/enums';
+import { useFlashToast } from '@/components/ui/Flash';
 
 import PostInteractionBar from '@/components/content/PostInteractionBar';
 import ApplyButton from '@/components/content/post/ApplyButton';
 import PostBadge from '@/components/content/post/PostBadge';
 import { openGlobalSheet } from '@/utils/globalSheet';
-import JobApplicationSheetContent from '@/components/content/JobApplicationSheetContent';
+import JobApplicationForm from '@/components/content/JobApplicationForm';
+import { PostDetailSkeleton } from '@/components/ui/Skeleton';
 
 const ICON_SIZE = 20;
+const { width: screenWidth } = Dimensions.get('window');
 
 const PostDetail = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const toast = useFlashToast();
 
   const [post, setPost] = useState<Post | null>(null);
 
@@ -42,6 +48,7 @@ const PostDetail = () => {
 
   const { loading: isLoading, getPostById } = usePostById();
   const { posts: allPosts, loading: feedLoading, fetchPosts } = useFeedPosts();
+  const { application, hasApplied, loading: applicationLoading, checkApplicationStatus } = useApplicationStatus(id as string);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,9 +91,34 @@ const PostDetail = () => {
 
   if (isLoading || feedLoading) {
     return (
-      <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator color={tintColor} />
-      </ThemedView>
+      <ScreenContainer>
+        <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.iconButton}
+            accessibilityLabel="Go back"
+          >
+            <Feather name="arrow-left" size={ICON_SIZE} color={textColor} />
+          </TouchableOpacity>
+          <RNView style={styles.headerRightButtons}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => console.log('Share pressed')}
+              accessibilityLabel="Share"
+            >
+              <Feather name="share-2" size={ICON_SIZE} color={textColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => console.log('More options pressed')}
+              accessibilityLabel="More options"
+            >
+              <Feather name="more-horizontal" size={ICON_SIZE} color={textColor} />
+            </TouchableOpacity>
+          </RNView>
+        </ThemedView>
+        <PostDetailSkeleton />
+      </ScreenContainer>
     );
   }
 
@@ -129,7 +161,11 @@ const PostDetail = () => {
         </RNView>
       </ThemedView>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <ThemedView style={styles.contentContainer}>
           {/* Post Type Badge */}
           <RNView style={styles.typeBadgeContainer}>
@@ -140,7 +176,8 @@ const PostDetail = () => {
             />
             {post.industry && (
               <PostBadge
-                label={post.industry} size="small"
+                label={post.industry}
+                size="small"
               />
             )}
           </RNView>
@@ -148,14 +185,16 @@ const PostDetail = () => {
           {/* Title */}
           <ThemedText style={styles.postTitle}>{post.title}</ThemedText>
 
-          {/* Image */}
-          {post.image_url ? (
-            <Image
-              source={{ uri: post.image_url }}
-              style={styles.featureImage}
-              resizeMode="cover"
-            />
-          ) : null}
+          {/* Image - only show if provided */}
+          {post.image_url && (
+            <RNView style={styles.imageContainer}>
+              <Image
+                source={{ uri: post.image_url }}
+                style={styles.featureImage}
+                resizeMode="cover"
+              />
+            </RNView>
+          )}
 
           {/* Job-specific header */}
           {isJob && (
@@ -216,36 +255,67 @@ const PostDetail = () => {
             {formatDate(post.created_at)}
           </ThemedText>
 
-          {/* Actions */}
-          <RNView style={[styles.actionsContainer, { borderTopColor: borderColor }]}>
-            <PostInteractionBar postId={post.id} size="large" />
-            {isJob && (
-              <ApplyButton
-                onPress={() => {
-                  if (post) {
-                    openGlobalSheet({
-                      snapPoints: ['90%'],
-                      children: (
-                        <JobApplicationSheetContent
-                          post={post}
-                          onSuccess={() => router.back()}
-                        />
-                      ),
-                    });
-                  }
-                }}
-                size="medium"
-              />
-            )}
-            {isNews && post.criteria?.source && (
-              <TouchableOpacity
-                style={styles.readMoreButton}
-                onPress={handleSourcePress}
-              >
-                <ThemedText style={styles.readMoreText}>Read More</ThemedText>
-              </TouchableOpacity>
-            )}
-          </RNView>
+          {/* Application Status */}
+          {isJob && hasApplied && application && (
+            <ThemedView style={[styles.applicationStatus, { borderColor: borderColor }]}>
+              <RNView style={styles.applicationStatusHeader}>
+                <Feather name="check-circle" size={16} color="#10b981" />
+                <ThemedText style={[styles.applicationStatusTitle, { color: '#10b981' }]}>
+                  Application Submitted
+                </ThemedText>
+              </RNView>
+              <ThemedText style={[styles.applicationStatusText, { color: mutedTextColor }]}>
+                Applied on {formatDate(application.created_at)}
+              </ThemedText>
+              {application.status && (
+                <ThemedText style={[styles.applicationStatusText, { color: mutedTextColor }]}>
+                  Status: {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                </ThemedText>
+              )}
+            </ThemedView>
+          )}
+        </ThemedView>
+
+        {/* Actions */}
+        <ThemedView style={[styles.actionsContainer, { borderTopColor: borderColor }]}>
+          <PostInteractionBar postId={post.id} size="large" />
+          {isJob && (
+            <ApplyButton
+              onPress={() => {
+                if (post && !hasApplied) {
+                  openGlobalSheet({
+                    snapPoints: ['90%'],
+                    children: (
+                      <JobApplicationForm
+                        jobPost={post}
+                        onSuccess={() => {
+                          checkApplicationStatus();
+                          router.back();
+                        }}
+                      />
+                    ),
+                  });
+                } else if (hasApplied) {
+                  toast.show({
+                    type: 'info',
+                    title: 'Already Applied',
+                    message: 'You have already applied to this position.'
+                  });
+                }
+              }}
+              size="medium"
+              applied={hasApplied}
+              disabled={applicationLoading}
+            />
+          )}
+          {isNews && post.criteria?.source && (
+            <TouchableOpacity
+              style={styles.readMoreButton}
+              onPress={handleSourcePress}
+            >
+              <ThemedText style={styles.readMoreText}>Read More</ThemedText>
+            </TouchableOpacity>
+          )}
         </ThemedView>
 
         {/* Recommended Posts */}
@@ -271,7 +341,9 @@ const PostDetail = () => {
                   >
                     <Image source={{ uri: itemCompanyLogo }} style={styles.recommendedLogo} />
                     <RNView style={styles.recommendedInfo}>
-                      <ThemedText style={styles.recommendedTitle}>{item.title}</ThemedText>
+                      <ThemedText style={styles.recommendedTitle} numberOfLines={2}>
+                        {item.title}
+                      </ThemedText>
                       <ThemedText style={styles.recommendedCompany}>
                         {isJob ? itemCompanyName : item.criteria?.source || 'News Source'}
                       </ThemedText>
@@ -296,131 +368,233 @@ const PostDetail = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: {
+    flex: 1
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    minHeight: 60,
   },
-  headerRightButtons: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  iconButton: { padding: 8, borderRadius: 20 },
-  scrollView: { flex: 1 },
-  contentContainer: {},
+  headerRightButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 20,
+    minWidth: 40,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollView: {
+    flex: 1
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
   typeBadgeContainer: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16
+    marginBottom: 16,
+    flexWrap: 'wrap',
   },
   postTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     marginBottom: 16,
-    lineHeight: 30
+    lineHeight: 32,
+    letterSpacing: -0.5,
+  },
+  imageContainer: {
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   featureImage: {
     width: '100%',
-    height: 250,
-    borderRadius: 12,
-    marginBottom: 16
+    height: 280,
+    borderRadius: 16,
   },
   jobHeader: {
-    marginBottom: 16
+    marginBottom: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0, 122, 255, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.1)',
   },
   companyInfo: {
-    gap: 8
+    gap: 12,
   },
   companyName: {
-    fontSize: 18,
-    fontWeight: '600'
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   jobBadges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8
+    gap: 8,
   },
   newsHeader: {
-    marginBottom: 16
+    marginBottom: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 149, 0, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 149, 0, 0.1)',
   },
   sourceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6
+    gap: 8,
   },
   sourceText: {
-    fontSize: 14,
-    fontWeight: '500'
+    fontSize: 16,
+    fontWeight: '500',
   },
   description: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 16
+    fontSize: 17,
+    lineHeight: 26,
+    marginBottom: 20,
+    letterSpacing: 0.2,
   },
   timestamp: {
     fontSize: 14,
-    marginBottom: 16
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
+  applicationStatus: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 20,
+    backgroundColor: '#f0fdf4',
+  },
+  applicationStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  applicationStatusTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  applicationStatusText: {
+    fontSize: 14,
+    marginBottom: 4,
   },
   actionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
-    borderTopWidth: 1
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    marginTop: 8,
   },
   readMoreButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: '#007AFF',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   readMoreText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
   similarContainer: {
-    marginTop: 16,
+    marginTop: 24,
     borderTopWidth: 1,
-    paddingTop: 16,
+    paddingTop: 24,
+    paddingHorizontal: 20,
   },
   similarTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    marginBottom: 16
+    marginBottom: 20,
   },
   recommendedListContainer: {
-    gap: 12
+    gap: 16,
   },
   recommendedItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 8,
-    gap: 16
+    borderRadius: 12,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   recommendedLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 4
+    width: 48,
+    height: 48,
+    borderRadius: 8,
   },
   recommendedInfo: {
     flex: 1,
-    gap: 4
+    gap: 6,
+    minWidth: 0, // Allow text to shrink
   },
   recommendedTitle: {
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
+    lineHeight: 20,
   },
   recommendedCompany: {
     fontSize: 14,
-    opacity: 0.7
+    opacity: 0.7,
   },
   recommendedRight: {
-    alignItems: 'flex-end'
+    alignItems: 'flex-end',
+    minWidth: 60,
   },
 });
 

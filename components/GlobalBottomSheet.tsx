@@ -19,7 +19,7 @@ export interface SimpleBottomSheetProps {
 }
 
 const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
-  ({ snapPoints, onDismiss, children }, ref) => {
+  function SimpleBottomSheet({ snapPoints, onDismiss, children }, ref) {
     const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
     const borderColor = useThemeColor({}, 'border');
     const textColor = useThemeColor({}, 'text');
@@ -44,15 +44,17 @@ const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
     }), [mutedText]);
 
     const renderBackdrop = useMemo(
-      () => (backdropProps: BottomSheetBackdropProps) => (
-        <BottomSheetBackdrop
-          {...backdropProps}
-          appearsOnIndex={0}
-          disappearsOnIndex={-1}
-          opacity={0.44}
-          pressBehavior="close"
-        />
-      ), []
+      () => function RenderBackdrop(backdropProps: BottomSheetBackdropProps) {
+        return (
+          <BottomSheetBackdrop
+            {...backdropProps}
+            appearsOnIndex={0}
+            disappearsOnIndex={-1}
+            opacity={0.44}
+            pressBehavior="close"
+          />
+        );
+      }, []
     );
 
     return (

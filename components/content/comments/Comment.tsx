@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useComments } from "@/hooks/useComments";
@@ -22,9 +23,10 @@ type CountMap = Record<string, number>;
 
 interface CommentsProps {
   postId: string;
+  disableScrolling?: boolean;
 }
 
-export default function Comments({ postId }: CommentsProps) {
+export default function Comments({ postId, disableScrolling = false }: CommentsProps) {
   const { user, profile } = useAuth(); // Keep user for 'isOwn', use only profile for avatar
   const {
     comments,
@@ -132,40 +134,106 @@ export default function Comments({ postId }: CommentsProps) {
 
   const emojiReactions = ["❤️", "👏", "🔥", "🙏", "😢", "😊", "😮", "😂"];
 
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.sheet]}
-    >
-      <ScrollView
-        contentContainerStyle={
-          !comments.length && !loading ? styles.emptyList : undefined
-        }
-        style={{ flex: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        {loading && <ActivityIndicator />}
-        {!loading && comments.length === 0 && (
-          <View style={styles.emptyContainer}>
-            <ThemedText style={styles.emptyText}>
-              No comments yet. Be the first!
-            </ThemedText>
+  const content = (
+    <>
+      {/* Comments Section */}
+      {disableScrolling ? (
+        <View style={styles.scrollView}>
+          <View style={[
+            !comments.length && !loading ? styles.emptyList : styles.scrollContent
+          ]}>
+            {loading && (
+              <View style={styles.skeletonContainer}>
+                {[1, 2].map((index) => (
+                  <View key={index} style={styles.skeletonItem}>
+                    <View style={styles.skeletonHeader}>
+                      <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
+                      <View style={styles.skeletonText}>
+                        <Skeleton width={80} height={12} borderRadius={4} style={styles.skeletonName} />
+                        <Skeleton width={60} height={10} borderRadius={4} />
+                      </View>
+                    </View>
+                    <View style={styles.skeletonContent}>
+                      <Skeleton width="90%" height={12} borderRadius={4} style={styles.skeletonLine} />
+                      <Skeleton width="70%" height={12} borderRadius={4} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+            {!loading && comments.length === 0 && (
+              <View style={styles.emptyContainer}>
+                <ThemedText style={styles.emptyText}>
+                  No comments yet. Be the first!
+                </ThemedText>
+              </View>
+            )}
+            {comments.map((item) => (
+              <CommentItem
+                key={item.id}
+                item={item}
+                isOwn={profile ? item.user_id === profile.id : false}
+                isAuthor={item.user_id === profile?.id} liked={likedComments[item.id] || false}
+                likeCount={likeCounts[item.id] || 0}
+                onLike={() => handleToggleLike(item.id)}
+                onMenu={() => handleMenu(item.id)}
+                formatDate={formatCommentDate}
+              />
+            ))}
           </View>
-        )}
-        {comments.map((item) => (
-          <CommentItem
-            key={item.id}
-            item={item}
-            isOwn={profile ? item.user_id === profile.id : false}
-            isAuthor={item.user_id === profile?.id} liked={likedComments[item.id] || false}
-            likeCount={likeCounts[item.id] || 0}
-            onLike={() => handleToggleLike(item.id)}
-            onMenu={() => handleMenu(item.id)}
-            formatDate={formatCommentDate}
-          />
-        ))}
-      </ScrollView>
-      <View>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={
+            !comments.length && !loading ? styles.emptyList : styles.scrollContent
+          }
+          style={styles.scrollView}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {loading && (
+            <View style={styles.skeletonContainer}>
+              {[1, 2].map((index) => (
+                <View key={index} style={styles.skeletonItem}>
+                  <View style={styles.skeletonHeader}>
+                    <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
+                    <View style={styles.skeletonText}>
+                      <Skeleton width={80} height={12} borderRadius={4} style={styles.skeletonName} />
+                      <Skeleton width={60} height={10} borderRadius={4} />
+                    </View>
+                  </View>
+                  <View style={styles.skeletonContent}>
+                    <Skeleton width="90%" height={12} borderRadius={4} style={styles.skeletonLine} />
+                    <Skeleton width="70%" height={12} borderRadius={4} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+          {!loading && comments.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>
+                No comments yet. Be the first!
+              </ThemedText>
+            </View>
+          )}
+          {comments.map((item) => (
+            <CommentItem
+              key={item.id}
+              item={item}
+              isOwn={profile ? item.user_id === profile.id : false}
+              isAuthor={item.user_id === profile?.id} liked={likedComments[item.id] || false}
+              likeCount={likeCounts[item.id] || 0}
+              onLike={() => handleToggleLike(item.id)}
+              onMenu={() => handleMenu(item.id)}
+              formatDate={formatCommentDate}
+            />
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Fixed Input Section - Non-scrollable */}
+      <View style={styles.inputSection}>
         <EmojiBar emojis={emojiReactions} onEmoji={(e) => setCommentText((prev) => prev + e)} />
         <CommentsInputBar
           profile={profile}
@@ -176,7 +244,6 @@ export default function Comments({ postId }: CommentsProps) {
           inputRef={inputRef}
           onEmojiPicker={() => inputRef.current?.focus()}
         />
-
       </View>
 
       {error && (
@@ -184,16 +251,64 @@ export default function Comments({ postId }: CommentsProps) {
           <ThemedText style={styles.errorText}>{error}</ThemedText>
         </View>
       )}
+    </>
+  );
+
+  // Use KeyboardAvoidingView only when not in a bottom sheet
+  if (disableScrolling) {
+    return <View style={styles.container}>{content}</View>;
+  }
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      {content}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  sheet: {
+  container: {
     flex: 1,
     width: "100%",
-    paddingTop: 2,
-    overflow: "hidden",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 8,
+  },
+  skeletonContainer: {
+    padding: 12,
+  },
+  skeletonItem: {
+    marginBottom: 12,
+  },
+  skeletonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  skeletonAvatar: {
+    marginRight: 8,
+  },
+  skeletonText: {
+    flex: 1,
+  },
+  skeletonName: {
+    marginBottom: 4,
+  },
+  skeletonContent: {
+    marginLeft: 40,
+  },
+  skeletonLine: {
+    marginBottom: 4,
+  },
+  inputSection: {
+    // No border separator
   },
   emptyContainer: {
     flex: 1,

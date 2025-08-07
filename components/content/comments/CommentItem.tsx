@@ -29,6 +29,7 @@ export function CommentItem({
   formatDate,
 }: CommentItemProps) {
   const mutedTextColor = useThemeColor({}, "mutedText");
+  const tintColor = useThemeColor({}, "tint");
 
   const displayName = item.profiles
     ? `${item.profiles.name} ${item.profiles.surname}`
@@ -67,8 +68,8 @@ export function CommentItem({
               <Feather
                 name="heart"
                 size={15}
-                color={liked ? "#ff4757" : mutedTextColor}
-                fill={liked ? "#ff4757" : "none"}
+                color={liked ? tintColor : mutedTextColor}
+                fill={liked ? tintColor : "none"}
               />
             }
             onPress={onLike}

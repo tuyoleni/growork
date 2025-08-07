@@ -1,50 +1,74 @@
-# Welcome to your Expo app 👋
+# Growork - Professional Networking & Job Platform
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Growork is a modern professional networking and job search platform built with React Native and Expo. It connects professionals, job seekers, and companies in a seamless mobile experience.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Job Listings**: Browse and filter job opportunities by industry
+- **Professional Networking**: Connect with other professionals and companies
+- **Content Feed**: Stay updated with industry news and professional content
+- **Job Applications**: Apply to jobs directly through the app
+- **Profile Management**: Create and manage your professional profile
+- **Document Management**: Upload and manage CVs, cover letters, and certificates
+- **Bookmarks**: Save jobs and content for later viewing
+- **Company Profiles**: Companies can create profiles and post job opportunities
 
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v14 or newer)
+- npm or yarn
+- Expo CLI
+
+### Installation
+
+1. Clone the repository
    ```bash
-   npm install
+   git clone https://github.com/tuyoleni/growork.git
+   cd growork
    ```
 
-2. Start the app
+2. Install dependencies
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
+3. Start the development server
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+### Running the App
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The Expo development server provides options to run the app on:
+- iOS Simulator
+- Android Emulator
+- Physical devices using Expo Go
+- Web browser
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Tech Stack
 
-## Get a fresh project
+- **Frontend**: React Native, Expo
+- **Navigation**: Expo Router (file-based routing)
+- **State Management**: React Context API
+- **UI Components**: Custom themed components
+- **Database**: Supabase (as indicated by utils/superbase.ts)
 
-When you're ready, run:
+## Project Structure
 
-```bash
-npm run reset-project
-```
+- `/app`: Main application screens using file-based routing
+- `/components`: Reusable UI components
+- `/hooks`: Custom React hooks for data fetching and state management
+- `/types`: TypeScript type definitions
+- `/utils`: Utility functions and context providers
+- `/assets`: Images, fonts, and other static assets
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## User Types
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Growork supports three types of users:
+- Regular Users: Job seekers and general professionals
+- Professional Users: Verified professionals with enhanced profiles
+- Company Users: Organizations that can post jobs and manage applications

@@ -4,7 +4,8 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
+import BookmarksHeader from '@/components/ui/BookmarksHeader';
+import { ContentCardSkeleton } from '@/components/ui/Skeleton';
 
 import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useEffect, useState } from 'react';
@@ -14,11 +15,7 @@ import { PostType } from '@/types/enums';
 import { useRouter } from 'expo-router';
 
 
-const BOOKMARK_CATEGORIES = [
-  { icon: 'briefcase', label: 'Jobs' },
-  { icon: 'book-open', label: 'News' },
-  { icon: 'coffee', label: 'Applications' },
-];
+
 
 export default function Bookmarks() {
   const [selectedCategory, setSelectedCategory] = useState(3); // All category
@@ -109,33 +106,23 @@ export default function Bookmarks() {
 
   return (
     <ScreenContainer>
+      {/* Custom Header */}
+      <BookmarksHeader
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        subtitle={getCategorySubtitle()}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
       >
-        {/* Bookmarks Header */}
-        <ThemedView style={styles.header}>
-          <ThemedText style={styles.title}>Bookmarks</ThemedText>
-          <ThemedText style={styles.subtitle}>{getCategorySubtitle()}</ThemedText>
-        </ThemedView>
-
-        {/* Category Filter */}
-        <ThemedView style={styles.categorySection}>
-          <CustomOptionStrip
-            visibleOptions={BOOKMARK_CATEGORIES}
-            selectedIndex={selectedCategory}
-            onChange={setSelectedCategory}
-            style={styles.categorySelector}
-          />
-        </ThemedView>
-
         {/* Bookmarks Content */}
         <ThemedView style={styles.contentSection}>
           {loading && !refreshing && (
             <ThemedView style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={textColor} />
-              <ThemedText style={[styles.loadingText, { color: mutedText }]}>
-                Loading bookmarks...
-              </ThemedText>
+              {[1, 2, 3].map((index) => (
+                <ContentCardSkeleton key={index} />
+              ))}
             </ThemedView>
           )}
 
@@ -162,37 +149,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    marginBottom: 16,
-    paddingHorizontal: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    opacity: 0.7,
-  },
-  categorySection: {
-    marginBottom: 16,
-    paddingHorizontal: 16,
-  },
-  categorySelector: {
-    paddingHorizontal: 0,
-  },
   contentSection: {
     flex: 1,
   },
   loadingContainer: {
-    padding: 16,
-    alignItems: 'center',
     marginBottom: 16,
-  },
-  loadingText: {
-    fontSize: 14,
-    marginTop: 8,
   },
   errorContainer: {
     padding: 16,

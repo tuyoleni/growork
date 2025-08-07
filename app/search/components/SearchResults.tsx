@@ -3,11 +3,13 @@ import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-nativ
 import { Post } from '@/types/posts';
 import { Document } from '@/types/documents';
 import { Profile } from '@/types/profile';
-import ContentCard from '@/components/content/ContentCard';
 import DocumentCard from '@/components/content/DocumentCard';
 import { Feather } from '@expo/vector-icons';
 import { PostType } from '@/types';
 import ScreenContainer from '@/components/ScreenContainer';
+import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+import { SearchResultsSkeleton } from '@/components/ui/Skeleton';
+import ContentCard from '@/components/content/ContentCard';
 
 interface PostWithProfile extends Post {
   profiles?: Profile | null;
@@ -20,11 +22,7 @@ interface SearchResultsProps {
 
 export default function SearchResults({ results, loading }: SearchResultsProps) {
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
-    );
+    return <SearchResultsSkeleton />;
   }
 
   if (results.length === 0) {
@@ -35,7 +33,7 @@ export default function SearchResults({ results, loading }: SearchResultsProps) 
         </View>
         <Text style={styles.noResultsTitle}>No results found</Text>
         <Text style={styles.noResultsSub}>
-          Try adjusting your search terms or filters to find what you're looking for
+          Try adjusting your search terms or filters to find what you are looking for
         </Text>
       </View>
     );
@@ -80,6 +78,7 @@ export default function SearchResults({ results, loading }: SearchResultsProps) 
 }
 
 function PostResultItem({ post }: { post: PostWithProfile }) {
+  const { openJobApplicationSheet } = useBottomSheetManager();
   const cardVariant = post.type === PostType.Job ? 'job' : 'news';
 
   // Compose post title (may be null for older posts)
@@ -92,23 +91,23 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
   // Compose avatar, username, name with better fallbacks
   const username = profile?.username || 'user';
   const name = (profile?.name || '') + (profile?.surname ? ` ${profile.surname}` : '') || 'User';
-  
+
   // Generate avatar image with better fallbacks
   const getAvatarImage = () => {
     if (profile?.avatar_url) {
       return profile.avatar_url;
     }
-    
+
     // Generate avatar based on company name for jobs
     if (cardVariant === 'job' && post.criteria?.company) {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(post.criteria.company)}&background=random&size=40`;
     }
-    
+
     // Generate avatar based on user name
     if (name && name !== 'User') {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=40`;
     }
-    
+
     // Fallback to generic avatar
     return 'https://ui-avatars.com/api/?name=U&background=random&size=40';
   };
@@ -120,20 +119,18 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
     cardVariant === 'job'
       ? post.criteria?.company || 'Company'
       : profile?.name ||
-        post.criteria?.author ||
-        post.criteria?.source ||
-        'Publisher';
+      post.criteria?.author ||
+      post.criteria?.source ||
+      'Publisher';
 
-  // Enhanced data
-  const likesCount = post.likes?.length || 0;
-  const commentsCount = post.comments?.length || 0;
+
 
   // Validate and get main image
   const getMainImage = () => {
     if (!post.image_url || post.image_url.trim() === '') {
       return undefined;
     }
-    
+
     // Basic URL validation
     try {
       new URL(post.image_url);
@@ -144,6 +141,16 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
   };
 
   const mainImage = getMainImage();
+
+  const handleApplyToJob = () => {
+    if (post.type === PostType.Job) {
+      openJobApplicationSheet(post, {
+        onSuccess: () => {
+          console.log('Application submitted successfully');
+        }
+      });
+    }
+  };
 
   return (
     <ContentCard
@@ -164,16 +171,11 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
             : undefined
       }
       badgeVariant={cardVariant === 'news' ? 'error' : undefined}
-      // isVerified={!!profile?.verified}
       industry={post.industry || undefined}
-      onPressHeart={() => { }}
-      onPressBookmark={() => { }}
-      onPressShare={() => { }}
-      onPressApply={() => { }}
+      onPressApply={handleApplyToJob}
       jobId={post.id}
-      // Enhanced data fields
-      likesCount={likesCount}
-      commentsCount={commentsCount}
+      likesCount={0}
+      commentsCount={0}
       createdAt={post.created_at}
       criteria={post.criteria}
       isSponsored={post.is_sponsored}

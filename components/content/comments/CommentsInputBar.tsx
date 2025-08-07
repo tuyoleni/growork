@@ -3,7 +3,7 @@ import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedInput } from "../../ThemedInput";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import type { Profile } from "@/types"; 
+import type { Profile } from "@/types";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
 import { ThemedIconButton } from "@/components/ui/ThemedIconButton";
 
@@ -74,9 +74,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderTopWidth: 1,
-    paddingBottom: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
 });

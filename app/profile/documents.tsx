@@ -2,129 +2,85 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  Alert,
-  Pressable,
   StatusBar,
   ScrollView,
   TouchableOpacity,
   useColorScheme,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
-import { supabase, STORAGE_BUCKETS } from '@/utils/superbase';
+import DocumentManager from '@/components/content/DocumentManager';
+import DocumentCard from '@/components/content/DocumentCard';
 import { Document, DocumentType } from '@/types';
-
-interface DocumentWithDisplay extends Document {
-  displayName: string;
-  category: string;
-  updatedAt: string;
-}
+import { useDocuments } from '@/hooks/useDocuments';
+import { useFlashToast } from '@/components/ui/Flash';
+import { openGlobalSheet } from '@/utils/globalSheet';
 
 const DOCUMENT_CATEGORIES = [
-  { id: 'cv', label: 'CV/Resume', icon: 'briefcase' },
-  { id: 'cover-letter', label: 'Cover Letter', icon: 'mail' },
-  { id: 'certificate', label: 'Certificates', icon: 'award' },
-  { id: 'portfolio', label: 'Portfolio', icon: 'folder' },
-  { id: 'other', label: 'Other', icon: 'file' },
+  { id: DocumentType.CV, label: 'CV/Resume', icon: 'briefcase' },
+  { id: DocumentType.CoverLetter, label: 'Cover Letter', icon: 'mail' },
+  { id: DocumentType.Certificate, label: 'Certificates', icon: 'award' },
+  { id: DocumentType.Other, label: 'Other', icon: 'file' },
 ];
 
 export default function DocumentsManagement() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
+  const toast = useFlashToast();
   const colorScheme = useColorScheme();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const mutedTextColor = useThemeColor({}, 'mutedText');
   const tintColor = useThemeColor({}, 'tint');
-  const [documents, setDocuments] = useState<DocumentWithDisplay[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  const [selectedCategory, setSelectedCategory] = useState<DocumentType | 'all'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  const { documents, loading, fetchDocuments, deleteDocument } = useDocuments(user?.id);
 
   useEffect(() => {
-    if (user) {
-      fetchDocuments();
+    if (user?.id) {
+      fetchDocuments(selectedCategory === 'all' ? undefined : selectedCategory);
     }
-  }, [user]);
+  }, [user?.id, selectedCategory, fetchDocuments]);
 
-  const fetchDocuments = async () => {
-    if (!user) return;
+  const filteredDocuments = selectedCategory === 'all'
+    ? documents
+    : documents.filter(doc => doc.type === selectedCategory);
 
+  const handleViewDocument = async (document: Document) => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('uploaded_at', { ascending: false });
-
-      if (error) throw error;
-
-      const documentsWithDisplay = (data || []).map(doc => ({
-        ...doc,
-        displayName: doc.name,
-        category: doc.type,
-        updatedAt: new Date(doc.uploaded_at).toLocaleDateString(),
-      }));
-
-      setDocuments(documentsWithDisplay);
-    } catch (error: any) {
-      console.error('Error fetching documents:', error);
-      Alert.alert('Error', 'Failed to load documents');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUploadDocument = async (category: string) => {
-    if (!user) return;
-
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        copyToCacheDirectory: false,
+      if (document.file_url) {
+        await Linking.openURL(document.file_url);
+      } else {
+        toast.show({
+          type: 'info',
+          title: 'Document Unavailable',
+          message: 'This document is not available for viewing.'
+        });
+      }
+    } catch (error) {
+      toast.show({
+        type: 'danger',
+        title: 'Error',
+        message: 'Failed to open document. Please try again.'
       });
-
-      if (result.canceled || !result.assets || result.assets.length === 0) return;
-
-      const asset = result.assets[0];
-      setUploading(true);
-
-      // For now, we'll just add to local state since uploadDocument might not exist
-      const newDocument: DocumentWithDisplay = {
-        id: `temp-${Date.now()}`,
-        user_id: user.id,
-        name: asset.name,
-        type: category as DocumentType,
-        file_url: asset.uri,
-        uploaded_at: new Date().toISOString(),
-        displayName: asset.name,
-        category: category,
-        updatedAt: new Date().toLocaleDateString(),
-      };
-
-      setDocuments(prev => [newDocument, ...prev]);
-      Alert.alert('Success', 'Document added successfully!');
-    } catch (error: any) {
-      console.error('Error uploading document:', error);
-      Alert.alert('Error', error.message || 'Failed to upload document');
-    } finally {
-      setUploading(false);
     }
   };
 
-  const handleDeleteDocument = async (documentId: string) => {
+  const handleDeleteDocument = async (document: Document) => {
     Alert.alert(
       'Delete Document',
-      'Are you sure you want to delete this document?',
+      `Are you sure you want to delete "${document.name}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -132,18 +88,18 @@ export default function DocumentsManagement() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { error } = await supabase
-                .from('documents')
-                .delete()
-                .eq('id', documentId);
-
-              if (error) throw error;
-
-              await fetchDocuments();
-              Alert.alert('Success', 'Document deleted successfully!');
+              await deleteDocument(document.id);
+              toast.show({
+                type: 'success',
+                title: 'Success',
+                message: 'Document deleted successfully.'
+              });
             } catch (error: any) {
-              console.error('Error deleting document:', error);
-              Alert.alert('Error', 'Failed to delete document');
+              toast.show({
+                type: 'danger',
+                title: 'Error',
+                message: 'Failed to delete document. Please try again.'
+              });
             }
           },
         },
@@ -151,18 +107,18 @@ export default function DocumentsManagement() {
     );
   };
 
-  const filteredDocuments = selectedCategory === 'all' 
-    ? documents 
-    : documents.filter(doc => doc.category === selectedCategory);
-
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = (category: DocumentType) => {
     const cat = DOCUMENT_CATEGORIES.find(c => c.id === category);
     return cat?.icon || 'file';
   };
 
-  const getCategoryLabel = (category: string) => {
+  const getCategoryLabel = (category: DocumentType) => {
     const cat = DOCUMENT_CATEGORIES.find(c => c.id === category);
     return cat?.label || 'Other';
+  };
+
+  const getCategoryCount = (category: DocumentType) => {
+    return documents.filter(doc => doc.type === category).length;
   };
 
   return (
@@ -178,15 +134,53 @@ export default function DocumentsManagement() {
           <Feather name="arrow-left" size={24} color={textColor} />
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>
-          Documents
+          My Documents
         </ThemedText>
-        <View style={styles.headerRight} />
+        <TouchableOpacity
+          style={styles.viewModeButton}
+          onPress={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+        >
+          <Feather
+            name={viewMode === 'list' ? 'grid' : 'list'}
+            size={20}
+            color={textColor}
+          />
+        </TouchableOpacity>
       </ThemedView>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Stats Section */}
+        <ThemedView style={styles.statsSection}>
+          <ThemedText style={styles.sectionTitle}>Document Overview</ThemedText>
+          <View style={styles.statsGrid}>
+            <ThemedView style={[styles.statCard, { borderColor }]}>
+              <ThemedText style={styles.statNumber}>{documents.length}</ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Total Documents</ThemedText>
+            </ThemedView>
+            <ThemedView style={[styles.statCard, { borderColor }]}>
+              <ThemedText style={styles.statNumber}>
+                {documents.filter(doc => doc.type === DocumentType.CV).length}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Resumes</ThemedText>
+            </ThemedView>
+            <ThemedView style={[styles.statCard, { borderColor }]}>
+              <ThemedText style={styles.statNumber}>
+                {documents.filter(doc => doc.type === DocumentType.CoverLetter).length}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Cover Letters</ThemedText>
+            </ThemedView>
+            <ThemedView style={[styles.statCard, { borderColor }]}>
+              <ThemedText style={styles.statNumber}>
+                {documents.filter(doc => doc.type === DocumentType.Certificate).length}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Certificates</ThemedText>
+            </ThemedView>
+          </View>
+        </ThemedView>
+
         {/* Category Filter */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.categoryFilter}
           contentContainerStyle={styles.categoryFilterContent}
@@ -202,10 +196,10 @@ export default function DocumentsManagement() {
               styles.categoryChipText,
               selectedCategory === 'all' && { color: backgroundColor }
             ]}>
-              All
+              All ({documents.length})
             </ThemedText>
           </TouchableOpacity>
-          
+
           {DOCUMENT_CATEGORIES.map((category) => (
             <TouchableOpacity
               key={category.id}
@@ -215,16 +209,16 @@ export default function DocumentsManagement() {
               ]}
               onPress={() => setSelectedCategory(category.id)}
             >
-              <Feather 
-                name={category.icon as any} 
-                size={16} 
-                color={selectedCategory === category.id ? backgroundColor : textColor} 
+              <Feather
+                name={category.icon as any}
+                size={16}
+                color={selectedCategory === category.id ? backgroundColor : textColor}
               />
               <ThemedText style={[
                 styles.categoryChipText,
                 selectedCategory === category.id && { color: backgroundColor }
               ]}>
-                {category.label}
+                {category.label} ({getCategoryCount(category.id)})
               </ThemedText>
             </TouchableOpacity>
           ))}
@@ -236,14 +230,25 @@ export default function DocumentsManagement() {
           <ThemedText style={[styles.sectionSubtitle, { color: mutedTextColor }]}>
             Choose a category and upload your document
           </ThemedText>
-          
+
           <View style={styles.uploadGrid}>
             {DOCUMENT_CATEGORIES.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[styles.uploadCard, { borderColor }]}
-                onPress={() => handleUploadDocument(category.id)}
-                disabled={uploading}
+                onPress={() => {
+                  // Open DocumentManager for specific category
+                  openGlobalSheet({
+                    snapPoints: ['90%'],
+                    children: (
+                      <DocumentManager
+                        userId={user?.id}
+                        documentType={category.id}
+                        disableScrolling={true}
+                      />
+                    ),
+                  });
+                }}
               >
                 <Feather name={category.icon as any} size={24} color={tintColor} />
                 <ThemedText style={styles.uploadCardText}>{category.label}</ThemedText>
@@ -254,10 +259,32 @@ export default function DocumentsManagement() {
 
         {/* Documents List */}
         <ThemedView style={styles.documentsSection}>
-          <ThemedText style={styles.sectionTitle}>
-            My Documents ({filteredDocuments.length})
-          </ThemedText>
-          
+          <View style={styles.sectionHeader}>
+            <ThemedText style={styles.sectionTitle}>
+              {selectedCategory === 'all' ? 'All Documents' : getCategoryLabel(selectedCategory)} ({filteredDocuments.length})
+            </ThemedText>
+            {filteredDocuments.length > 0 && (
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={() => {
+                  openGlobalSheet({
+                    snapPoints: ['90%'],
+                    children: (
+                      <DocumentManager
+                        userId={user?.id}
+                        documentType={selectedCategory === 'all' ? undefined : selectedCategory}
+                        disableScrolling={true}
+                      />
+                    ),
+                  });
+                }}
+              >
+                <Feather name="plus" size={16} color={textColor} />
+                <ThemedText style={styles.uploadButtonText}>Add</ThemedText>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {loading ? (
             <ThemedView style={styles.loadingContainer}>
               <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
@@ -271,46 +298,23 @@ export default function DocumentsManagement() {
                 No documents found
               </ThemedText>
               <ThemedText style={[styles.emptySubtitle, { color: mutedTextColor }]}>
-                Upload your first document to get started
+                {selectedCategory === 'all'
+                  ? 'Upload your first document to get started'
+                  : `No ${getCategoryLabel(selectedCategory).toLowerCase()} documents found`
+                }
               </ThemedText>
             </ThemedView>
           ) : (
             <View style={styles.documentsList}>
               {filteredDocuments.map((document) => (
                 <ThemedView key={document.id} style={[styles.documentCard, { borderColor }]}>
-                  <View style={styles.documentInfo}>
-                    <Feather 
-                      name={getCategoryIcon(document.category) as any} 
-                      size={20} 
-                      color={tintColor} 
-                    />
-                    <View style={styles.documentDetails}>
-                      <ThemedText style={styles.documentName}>
-                        {document.displayName}
-                      </ThemedText>
-                      <ThemedText style={[styles.documentMeta, { color: mutedTextColor }]}>
-                        {getCategoryLabel(document.category)} • {document.updatedAt}
-                      </ThemedText>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.documentActions}>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => {
-                        // Handle document preview/download
-                        console.log('View document:', document.id);
-                      }}
-                    >
-                      <Feather name="eye" size={16} color={textColor} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleDeleteDocument(document.id)}
-                    >
-                      <Feather name="trash-2" size={16} color="#ef4444" />
-                    </TouchableOpacity>
-                  </View>
+                  <DocumentCard
+                    document={document}
+                    onPress={() => handleViewDocument(document)}
+                    onDelete={() => handleDeleteDocument(document)}
+                    showCategory={true}
+                    variant="detailed"
+                  />
                 </ThemedView>
               ))}
             </View>
@@ -337,15 +341,46 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  headerRight: {
-    width: 40,
+  viewModeButton: {
+    padding: 8,
   },
   container: {
     flex: 1,
   },
-  categoryFilter: {
+  statsSection: {
     paddingHorizontal: 16,
     marginVertical: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: '45%',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  categoryFilter: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   categoryFilterContent: {
     gap: 8,
@@ -367,11 +402,6 @@ const styles = StyleSheet.create({
   uploadSection: {
     paddingHorizontal: 16,
     marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
@@ -400,6 +430,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
   loadingContainer: {
     alignItems: 'center',
     paddingVertical: 32,
@@ -425,36 +475,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   documentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-  },
-  documentInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  documentDetails: {
-    flex: 1,
-  },
-  documentName: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  documentMeta: {
-    fontSize: 12,
-  },
-  documentActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    padding: 8,
-    borderRadius: 8,
+    overflow: 'hidden',
   },
 }); 

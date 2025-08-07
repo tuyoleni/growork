@@ -11,10 +11,11 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState, createContext, useContext, useRef } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import SimpleBottomSheet from '@/components/GlobalBottomSheet';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface AuthContextType {
   session: Session | null;
@@ -77,20 +78,42 @@ export default function RootLayout() {
     snapPoints: string[];
     onDismiss?: () => void;
   }) => {
+    console.log('openGlobalSheet called with props:', props);
     setSheetProps(props);
+
     if (props.snapPoints && props.snapPoints.length > 0) {
-      setTimeout(() => {
+      // Use a more robust approach to ensure the sheet is presented
+      const presentSheet = () => {
+        console.log('Attempting to present bottom sheet, ref:', sheetRef.current);
         if (sheetRef.current) {
-          sheetRef.current.present();
+          try {
+            sheetRef.current.present();
+            console.log('Bottom sheet presented successfully');
+          } catch (error) {
+            console.error('Error presenting bottom sheet:', error);
+          }
+        } else {
+          console.error('Bottom sheet ref is null, retrying...');
+          // Retry after a short delay
+          setTimeout(presentSheet, 50);
         }
-      }, 100);
+      };
+
+      // Initial attempt
+      setTimeout(presentSheet, 100);
     } else {
       console.warn('Cannot open bottom sheet: snapPoints array is empty or undefined');
     }
   };
 
   useEffect(() => {
-    setOpenGlobalSheet(openGlobalSheet);
+    // Ensure the global sheet is set after component is mounted
+    const timer = setTimeout(() => {
+      setOpenGlobalSheet(openGlobalSheet);
+      console.log('Global sheet function set');
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -129,8 +152,13 @@ export default function RootLayout() {
 
   if (!loaded || initialLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-        <ActivityIndicator />
+      <View style={{ flex: 1, backgroundColor: '#fff', padding: 20 }}>
+        <View style={{ alignItems: 'center', marginTop: 100 }}>
+          <Skeleton width={80} height={80} borderRadius={40} style={{ marginBottom: 20 }} />
+          <Skeleton width={200} height={24} style={{ marginBottom: 12 }} />
+          <Skeleton width={150} height={16} style={{ marginBottom: 8 }} />
+          <Skeleton width={120} height={16} />
+        </View>
       </View>
     );
   }
@@ -146,13 +174,15 @@ export default function RootLayout() {
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 <FlashBar />
 
-                <SimpleBottomSheet
-                  ref={sheetRef}
-                  snapPoints={sheetProps?.snapPoints || ['50%']}
-                  onDismiss={() => setSheetProps(null)}
-                >
-                  {sheetProps?.children}
-                </SimpleBottomSheet>
+                {sheetProps && (
+                  <SimpleBottomSheet
+                    ref={sheetRef}
+                    snapPoints={sheetProps.snapPoints}
+                    onDismiss={() => setSheetProps(null)}
+                  >
+                    {sheetProps.children}
+                  </SimpleBottomSheet>
+                )}
 
               </BottomSheetModalProvider>
             </AppProvider>

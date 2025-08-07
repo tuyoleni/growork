@@ -4,7 +4,7 @@ import { openGlobalSheet } from '@/utils/globalSheet';
 import Comments from '@/components/content/comments/Comment';
 import CreatePostSheetUI from '@/components/content/CreatePost';
 import DocumentManager from '@/components/content/DocumentManager';
-import { useJobApplicationForm } from '@/components/content/useJobApplicationForm';
+
 import { Post, DocumentType } from '@/types';
 
 // --- Optional: Main body for job application sheet ---
@@ -104,3 +104,7 @@ export function useBottomSheetManager(props?: BottomSheetManagerProps) {
 export default function BottomSheetManager({ onPostSuccess }: BottomSheetManagerProps) {
   return null;
 }
+function useJobApplicationForm(arg0: { jobPost: Post; onSuccess: (() => void) | undefined; }): { body: any; } {
+  throw new Error('Function not implemented.');
+}
+

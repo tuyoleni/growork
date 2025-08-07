@@ -86,6 +86,26 @@ export function useApplications(userId?: string) {
     }
   }, [fetchApplications]);
 
+  const checkIfApplied = useCallback(async (userId: string, postId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('post_id', postId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+        throw error;
+      }
+      
+      return { hasApplied: !!data, error: null };
+    } catch (err: any) {
+      console.error('Error checking application status:', err);
+      return { hasApplied: false, error: err };
+    }
+  }, []);
+
   return {
     applications,
     loading,
@@ -93,5 +113,6 @@ export function useApplications(userId?: string) {
     fetchApplications,
     addApplication,
     updateApplicationStatus,
+    checkIfApplied,
   };
 }
