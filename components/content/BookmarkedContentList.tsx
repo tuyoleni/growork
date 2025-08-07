@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons';
 import { BookmarkedItem } from '@/hooks/useBookmarks';
 import { PostType, ApplicationStatus } from '@/types/enums';
 import { Image } from 'expo-image';
+import ContentCard from './ContentCard';
 
 interface BookmarkedContentListProps {
     items: BookmarkedItem[];
@@ -88,61 +89,27 @@ export default function BookmarkedContentList({
     const renderPostItem = (item: BookmarkedItem) => {
         const post = item.data as any;
         return (
-            <Pressable
+            <ContentCard
                 key={item.id}
-                style={({ pressed }) => [
-                    styles.item,
-                    {
-                        backgroundColor: pressed ? cardBg : backgroundColor,
-                        borderColor: borderColor,
-                    }
-                ]}
-                onPress={() => onItemPress?.(item)}
-            >
-                <View style={styles.itemHeader}>
-                    <View style={styles.itemType}>
-                        <Feather name={getPostTypeIcon(post.type)} size={16} color={mutedTextColor} />
-                        <ThemedText style={[styles.itemTypeText, { color: mutedTextColor }]}>
-                            {post.type === PostType.Job ? 'Job' : 'News'}
-                        </ThemedText>
-                    </View>
-                    <Pressable
-                        onPress={() => onRemoveBookmark?.(item)}
-                        style={styles.removeButton}
-                    >
-                        <Feather name="bookmark" size={16} color={textColor} />
-                    </Pressable>
-                </View>
-
-                <View style={styles.itemContent}>
-                    {post.image_url && (
-                        <Image
-                            source={{ uri: post.image_url }}
-                            style={styles.itemImage}
-                            contentFit="cover"
-                        />
-                    )}
-                    <View style={styles.itemText}>
-                        <ThemedText style={[styles.itemTitle, { color: textColor }]} numberOfLines={2}>
-                            {post.title || 'Untitled'}
-                        </ThemedText>
-                        <ThemedText style={[styles.itemSubtitle, { color: mutedTextColor }]} numberOfLines={2}>
-                            {post.content || 'No content'}
-                        </ThemedText>
-                        {post.criteria?.company && (
-                            <ThemedText style={[styles.itemCompany, { color: mutedTextColor }]}>
-                                {post.criteria.company}
-                            </ThemedText>
-                        )}
-                    </View>
-                </View>
-
-                <View style={styles.itemFooter}>
-                    <ThemedText style={[styles.itemDate, { color: mutedTextColor }]}>
-                        {formatDate(item.bookmarked_at)}
-                    </ThemedText>
-                </View>
-            </Pressable>
+                id={item.id}
+                variant={post.type === PostType.Job ? 'job' : 'news'}
+                title={post.profiles?.name + ' ' + post.profiles?.surname || 'User'}
+                postTitle={post.title || 'Untitled'}
+                username={post.profiles?.username || 'user'}
+                name={post.profiles?.name + ' ' + post.profiles?.surname || 'User'}
+                avatarImage={post.profiles?.avatar_url}
+                mainImage={post.image_url}
+                description={post.content || 'No content'}
+                industry={post.industry}
+                user_id={post.user_id}
+                likesCount={post.likes?.length || 0}
+                commentsCount={post.comments?.length || 0}
+                createdAt={post.created_at}
+                criteria={post.criteria}
+                isSponsored={post.is_sponsored}
+                isLiked={false}
+                isBookmarked={true}
+            />
         );
     };
 
