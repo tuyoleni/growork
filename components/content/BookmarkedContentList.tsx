@@ -11,7 +11,6 @@ import ContentCard from './ContentCard';
 
 interface BookmarkedContentListProps {
     items: BookmarkedItem[];
-    title: string;
     subtitle: string;
     onItemPress?: (item: BookmarkedItem) => void;
     onRemoveBookmark?: (item: BookmarkedItem) => void;
@@ -20,7 +19,6 @@ interface BookmarkedContentListProps {
 
 export default function BookmarkedContentList({
     items,
-    title,
     subtitle,
     onItemPress,
     onRemoveBookmark,
@@ -88,16 +86,19 @@ export default function BookmarkedContentList({
 
     const renderPostItem = (item: BookmarkedItem) => {
         const post = item.data as any;
+        const profile = post.profiles;
+        const fullName = profile ? `${profile.name || ''} ${profile.surname || ''}`.trim() : 'User';
+
         return (
             <ContentCard
                 key={item.id}
                 id={item.id}
                 variant={post.type === PostType.Job ? 'job' : 'news'}
-                title={post.profiles?.name + ' ' + post.profiles?.surname || 'User'}
+                title={fullName}
                 postTitle={post.title || 'Untitled'}
-                username={post.profiles?.username || 'user'}
-                name={post.profiles?.name + ' ' + post.profiles?.surname || 'User'}
-                avatarImage={post.profiles?.avatar_url}
+                username={profile?.username || 'user'}
+                name={fullName}
+                avatarImage={profile?.avatar_url}
                 mainImage={post.image_url}
                 description={post.content || 'No content'}
                 industry={post.industry}
@@ -169,11 +170,6 @@ export default function BookmarkedContentList({
 
     return (
         <ThemedView style={styles.container}>
-            <View style={styles.header}>
-                <ThemedText style={[styles.title, { color: textColor }]}>{title}</ThemedText>
-                <ThemedText style={[styles.subtitle, { color: mutedTextColor }]}>{subtitle}</ThemedText>
-            </View>
-
             {items.length === 0 ? (
                 <View style={styles.emptyState}>
                     <Feather name="bookmark" size={48} color={mutedTextColor} />

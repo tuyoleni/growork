@@ -30,7 +30,7 @@ export function useBookmarks() {
       setLoading(true);
       setError(null);
 
-      // Fetch bookmarked posts with full post data
+      // Fetch bookmarked posts with full post data and user profiles
       const { data: bookmarkedPosts, error: postsError } = await supabase
         .from('bookmarks')
         .select(`
@@ -47,7 +47,14 @@ export function useBookmarks() {
             criteria,
             created_at,
             updated_at,
-            is_sponsored
+            is_sponsored,
+            profiles (
+              id,
+              username,
+              name,
+              surname,
+              avatar_url
+            )
           )
         `)
         .eq('user_id', user.id)

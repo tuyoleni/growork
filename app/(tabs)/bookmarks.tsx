@@ -4,6 +4,7 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
 
 import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useEffect, useState } from 'react';
@@ -13,8 +14,14 @@ import { PostType } from '@/types/enums';
 import { useRouter } from 'expo-router';
 
 
+const BOOKMARK_CATEGORIES = [
+  { icon: 'briefcase', label: 'Jobs' },
+  { icon: 'book-open', label: 'News' },
+  { icon: 'coffee', label: 'Applications' },
+];
 
 export default function Bookmarks() {
+  const [selectedCategory, setSelectedCategory] = useState(3); // All category
   const { user } = useAuth();
   const {
     bookmarkedItems,
@@ -29,7 +36,25 @@ export default function Bookmarks() {
   const textColor = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
 
-  const filteredItems = bookmarkedItems;
+  // Filter items based on selected category
+  const getFilteredItems = () => {
+    if (selectedCategory === 3) { // All
+      return bookmarkedItems;
+    } else if (selectedCategory === 0) { // Jobs
+      return bookmarkedItems.filter(item =>
+        item.type === 'post' && (item.data as any).type === PostType.Job
+      );
+    } else if (selectedCategory === 1) { // News
+      return bookmarkedItems.filter(item =>
+        item.type === 'post' && (item.data as any).type === PostType.News
+      );
+    } else if (selectedCategory === 2) { // Applications
+      return bookmarkedItems.filter(item => item.type === 'application');
+    }
+    return bookmarkedItems;
+  };
+
+  const filteredItems = getFilteredItems();
 
   // Refresh bookmarks
   const handleRefresh = async () => {
@@ -59,11 +84,27 @@ export default function Bookmarks() {
 
   const getCategorySubtitle = () => {
     const count = filteredItems.length;
-    return `${count} total bookmark${count !== 1 ? 's' : ''}`;
+    if (selectedCategory === 0) { // Jobs
+      return `${count} saved job${count !== 1 ? 's' : ''}`;
+    } else if (selectedCategory === 1) { // News
+      return `${count} saved news item${count !== 1 ? 's' : ''}`;
+    } else if (selectedCategory === 2) { // Applications
+      return `${count} job application${count !== 1 ? 's' : ''}`;
+    } else { // All
+      return `${count} total bookmark${count !== 1 ? 's' : ''}`;
+    }
   };
 
   const getEmptyText = () => {
-    return 'No bookmarks yet';
+    if (selectedCategory === 0) { // Jobs
+      return 'No saved jobs yet';
+    } else if (selectedCategory === 1) { // News
+      return 'No saved news yet';
+    } else if (selectedCategory === 2) { // Applications
+      return 'No job applications yet';
+    } else { // All
+      return 'No bookmarks yet';
+    }
   };
 
   return (
@@ -72,11 +113,21 @@ export default function Bookmarks() {
         style={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Bookmarks Header
+        {/* Bookmarks Header */}
         <ThemedView style={styles.header}>
           <ThemedText style={styles.title}>Bookmarks</ThemedText>
           <ThemedText style={styles.subtitle}>{getCategorySubtitle()}</ThemedText>
-        </ThemedView> */}
+        </ThemedView>
+
+        {/* Category Filter */}
+        <ThemedView style={styles.categorySection}>
+          <CustomOptionStrip
+            visibleOptions={BOOKMARK_CATEGORIES}
+            selectedIndex={selectedCategory}
+            onChange={setSelectedCategory}
+            style={styles.categorySelector}
+          />
+        </ThemedView>
 
         {/* Bookmarks Content */}
         <ThemedView style={styles.contentSection}>
@@ -97,7 +148,6 @@ export default function Bookmarks() {
 
           <BookmarkedContentList
             items={filteredItems}
-            title="Bookmarks"
             subtitle={getCategorySubtitle()}
             onItemPress={handleItemPress}
             onRemoveBookmark={handleRemoveBookmark}
@@ -114,7 +164,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 16,
     paddingHorizontal: 16,
     paddingTop: 16,
   },
@@ -127,9 +177,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     opacity: 0.7,
   },
-
+  categorySection: {
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  categorySelector: {
+    paddingHorizontal: 0,
+  },
   contentSection: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   loadingContainer: {
     padding: 16,
