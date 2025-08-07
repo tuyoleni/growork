@@ -55,7 +55,6 @@ export function CommentsInputBar({
           onChangeText={onChange}
           multiline
           style={{ flex: 1 }}
-          ref={inputRef}
           returnKeyType="send"
           onSubmitEditing={handleSend}
           blurOnSubmit={false}

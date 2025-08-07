@@ -315,6 +315,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 12,
+        gap: 12,
     },
     headerText: {
         flex: 1,
@@ -322,7 +323,6 @@ const styles = StyleSheet.create({
     nameRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 2,
     },
     name: {
         fontSize: 15,
@@ -339,7 +339,6 @@ const styles = StyleSheet.create({
     userDetails: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
     },
 
 
@@ -413,8 +412,8 @@ const styles = StyleSheet.create({
 
     actionButton: {
         backgroundColor: '#007AFF',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
         borderRadius: 8,
     },
     actionButtonText: {

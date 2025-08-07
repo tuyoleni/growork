@@ -22,6 +22,7 @@ import { CommentsInputBar } from "./CommentsInputBar";
 import { Feather } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Colors } from "@/constants/Colors";
 
 type LikeMap = Record<string, boolean>;
 type CountMap = Record<string, number>;
@@ -55,6 +56,7 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
     const [isSending, setIsSending] = useState(false);
     const [likedComments, setLikedComments] = useState<LikeMap>({});
     const [likeCounts, setLikeCounts] = useState<CountMap>({});
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
     const inputRef = useRef<any>(null);
 
     // Animation values
@@ -66,6 +68,21 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
     const borderColor = useThemeColor({}, 'border');
     const mutedText = useThemeColor({}, 'mutedText');
     const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
+
+    // Keyboard listeners
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+            setKeyboardVisible(true);
+        });
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setKeyboardVisible(false);
+        });
+
+        return () => {
+            keyboardDidShowListener?.remove();
+            keyboardDidHideListener?.remove();
+        };
+    }, []);
 
     useEffect(() => {
         if (visible) {
@@ -204,7 +221,10 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
                 <Animated.View
                     style={[
                         styles.backdrop,
-                        { opacity: backdropOpacity }
+                        {
+                            opacity: backdropOpacity,
+                            backgroundColor: textColor === Colors.light.text ? Colors.light.shadow : Colors.dark.shadow
+                        }
                     ]}
                 >
                     <Pressable
@@ -220,84 +240,88 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
                         {
                             backgroundColor: backgroundSecondary,
                             transform: [{ translateY }],
+                            shadowColor: textColor === Colors.light.text ? Colors.light.shadow : Colors.dark.shadow,
                         },
                     ]}
                 >
-                    {/* Handle Bar */}
-                    <View style={[styles.handleBar, { backgroundColor: borderColor }]} />
-
-                    {/* Header */}
-                    <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                        <View style={styles.headerContent}>
-                            <ThemedText style={styles.headerTitle}>Comments</ThemedText>
-                            <ThemedText style={[styles.commentCount, { color: mutedText }]}>
-                                {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-                            </ThemedText>
-                        </View>
-                        <Pressable onPress={onClose || (() => { })} style={styles.closeButton}>
-                            <Feather name="x" size={24} color={textColor} />
-                        </Pressable>
-                    </View>
-
-                    {/* Comments List - Scrollable */}
-                    <ScrollView
-                        style={styles.commentList}
-                        contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {loading && (
-                            <View style={styles.skeletonContainer}>
-                                {[1, 2, 3].map((index) => (
-                                    <View key={index} style={styles.skeletonItem}>
-                                        <View style={styles.skeletonHeader}>
-                                            <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
-                                            <View style={styles.skeletonText}>
-                                                <Skeleton width={80} height={12} borderRadius={4} style={styles.skeletonName} />
-                                                <Skeleton width={60} height={10} borderRadius={4} />
-                                            </View>
-                                        </View>
-                                        <View style={styles.skeletonContent}>
-                                            <Skeleton width="90%" height={12} borderRadius={4} style={styles.skeletonLine} />
-                                            <Skeleton width="70%" height={12} borderRadius={4} />
-                                        </View>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                        {!loading && comments.length === 0 && (
-                            <View style={styles.emptyContainer}>
-                                <Feather name="message-circle" size={48} color={mutedText} style={styles.emptyIcon} />
-                                <ThemedText style={[styles.emptyText, { color: mutedText }]}>
-                                    No comments yet
-                                </ThemedText>
-                                <ThemedText style={[styles.emptySubtext, { color: mutedText }]}>
-                                    Be the first to share your thoughts!
-                                </ThemedText>
-                            </View>
-                        )}
-                        {comments.map((item) => (
-                            <CommentItem
-                                key={item.id}
-                                item={item}
-                                isOwn={profile ? item.user_id === profile.id : false}
-                                isAuthor={item.user_id === profile?.id}
-                                liked={likedComments[item.id] || false}
-                                likeCount={likeCounts[item.id] || 0}
-                                onLike={() => handleToggleLike(item.id)}
-                                onMenu={() => handleMenu(item.id)}
-                                formatDate={formatCommentDate}
-                            />
-                        ))}
-                    </ScrollView>
-
-                    {/* Fixed Input Section - Not Scrollable */}
                     <KeyboardAvoidingView
                         behavior={Platform.OS === "ios" ? "padding" : "height"}
-                        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+                        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
                         style={styles.keyboardAvoidingView}
                     >
-                        <View style={[styles.inputSection, { borderTopColor: borderColor }]}>
+                        {/* Handle Bar */}
+                        <View style={[styles.handleBar, { backgroundColor: borderColor }]} />
+
+                        {/* Header */}
+                        <View style={[styles.header, { borderBottomColor: borderColor }]}>
+                            <View style={styles.headerContent}>
+                                <ThemedText style={styles.headerTitle}>Comments</ThemedText>
+                                <ThemedText style={[styles.commentCount, { color: mutedText }]}>
+                                    {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+                                </ThemedText>
+                            </View>
+                            <Pressable onPress={onClose || (() => { })} style={styles.closeButton}>
+                                <Feather name="x" size={24} color={textColor} />
+                            </Pressable>
+                        </View>
+
+                        {/* Comments List - Scrollable */}
+                        <ScrollView
+                            style={styles.commentList}
+                            contentContainerStyle={styles.scrollContent}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator={false}
+                        >
+                            {loading && (
+                                <View style={styles.skeletonContainer}>
+                                    {[1, 2, 3].map((index) => (
+                                        <View key={index} style={styles.skeletonItem}>
+                                            <View style={styles.skeletonHeader}>
+                                                <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
+                                                <View style={styles.skeletonText}>
+                                                    <Skeleton width={80} height={12} borderRadius={4} style={styles.skeletonName} />
+                                                    <Skeleton width={60} height={10} borderRadius={4} />
+                                                </View>
+                                            </View>
+                                            <View style={styles.skeletonContent}>
+                                                <Skeleton width="90%" height={12} borderRadius={4} style={styles.skeletonLine} />
+                                                <Skeleton width="70%" height={12} borderRadius={4} />
+                                            </View>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+                            {!loading && comments.length === 0 && (
+                                <View style={styles.emptyContainer}>
+                                    <Feather name="message-circle" size={48} color={mutedText} style={styles.emptyIcon} />
+                                    <ThemedText style={[styles.emptyText, { color: mutedText }]}>
+                                        No comments yet
+                                    </ThemedText>
+                                    <ThemedText style={[styles.emptySubtext, { color: mutedText }]}>
+                                        Be the first to share your thoughts!
+                                    </ThemedText>
+                                </View>
+                            )}
+                            {comments.map((item) => (
+                                <CommentItem
+                                    key={item.id}
+                                    item={item}
+                                    isOwn={profile ? item.user_id === profile.id : false}
+                                    isAuthor={item.user_id === profile?.id}
+                                    liked={likedComments[item.id] || false}
+                                    likeCount={likeCounts[item.id] || 0}
+                                    onLike={() => handleToggleLike(item.id)}
+                                    onMenu={() => handleMenu(item.id)}
+                                    formatDate={formatCommentDate}
+                                />
+                            ))}
+                        </ScrollView>
+
+                        {/* Fixed Input Section - Not Scrollable */}
+                        <View style={[styles.inputSection, {
+                            borderTopColor: borderColor,
+                            backgroundColor: backgroundSecondary
+                        }]}>
                             <EmojiBar emojis={emojiReactions} onEmoji={(e) => setCommentText((prev) => prev + e)} />
                             <CommentsInputBar
                                 profile={profile}
@@ -309,14 +333,16 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
                                 onEmojiPicker={() => inputRef.current?.focus()}
                             />
                         </View>
-                    </KeyboardAvoidingView>
 
-                    {/* Error Display */}
-                    {error && (
-                        <View style={styles.errorContainer}>
-                            <ThemedText style={styles.errorText}>{error}</ThemedText>
-                        </View>
-                    )}
+                        {/* Error Display */}
+                        {error && (
+                            <View style={styles.errorContainer}>
+                                <ThemedText style={[styles.errorText, {
+                                    color: textColor === Colors.light.text ? Colors.light.mutedText : Colors.dark.mutedText
+                                }]}>{error}</ThemedText>
+                            </View>
+                        )}
+                    </KeyboardAvoidingView>
                 </Animated.View>
             </GestureHandlerRootView>
         </Modal>
@@ -334,16 +360,15 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#000',
     },
     backdropPressable: {
         flex: 1,
     },
     bottomSheet: {
-        height: '80%',
+        maxHeight: '100%',
+        minHeight: '90%',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        shadowColor: '#000',
         shadowOffset: {
             width: 0,
             height: -2,
@@ -351,6 +376,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 8,
         elevation: 10,
+    },
+    keyboardAvoidingView: {
+        flex: 1,
     },
     handleBar: {
         width: 40,
@@ -433,15 +461,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
     },
-    keyboardAvoidingView: {
-        // This ensures the input section stays fixed at the bottom
-    },
     inputSection: {
-        backgroundColor: "#fff",
         borderTopWidth: 1,
         paddingTop: 8,
         paddingBottom: Platform.OS === 'ios' ? 20 : 8,
         paddingHorizontal: 8,
+        minHeight: 60,
     },
     errorContainer: {
         paddingHorizontal: 16,
@@ -450,6 +475,5 @@ const styles = StyleSheet.create({
     errorText: {
         fontSize: 14,
         textAlign: "center",
-        color: "#ff4757",
     },
 }); 
