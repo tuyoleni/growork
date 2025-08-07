@@ -5,7 +5,8 @@ import * as Haptics from 'expo-haptics';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useLikes } from '@/hooks/useLikes';
 import { useAppContext } from '@/utils/AppContext';
-import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+import { useCustomCommentsBottomSheet } from '../../hooks/useCustomCommentsBottomSheet';
+
 
 interface PostInteractionBarProps {
   postId: string;
@@ -22,7 +23,7 @@ export default function PostInteractionBar({
 }: PostInteractionBarProps) {
   const { isLiked, toggleLike } = useLikes();
   const { isBookmarked, toggleBookmark } = useAppContext();
-  const { openCommentSheet } = useBottomSheetManager();
+  const { openCommentsSheet } = useCustomCommentsBottomSheet();
 
   // UI state
   const [liked, setLiked] = useState(false);
@@ -75,7 +76,7 @@ export default function PostInteractionBar({
   const handleComment = () => {
     if (postId) {
       if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      openCommentSheet(postId);
+      openCommentsSheet(postId);
     }
   };
 

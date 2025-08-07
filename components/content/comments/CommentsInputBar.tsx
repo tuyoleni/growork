@@ -1,5 +1,5 @@
 import React, { RefObject, Dispatch, SetStateAction } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Keyboard } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedInput } from "../../ThemedInput";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -30,6 +30,13 @@ export function CommentsInputBar({
   const borderColor = useThemeColor({}, "border");
   const mutedTextColor = useThemeColor({}, "mutedText");
 
+  const handleSend = async () => {
+    if (value.trim()) {
+      await onSend();
+      Keyboard.dismiss();
+    }
+  };
+
   return (
     <View style={[styles.inputWrap, { borderColor }]}>
       {profile && (
@@ -48,6 +55,10 @@ export function CommentsInputBar({
           onChangeText={onChange}
           multiline
           style={{ flex: 1 }}
+          ref={inputRef}
+          returnKeyType="send"
+          onSubmitEditing={handleSend}
+          blurOnSubmit={false}
         />
         <ThemedIconButton
           icon={<Feather name="smile" size={20} color={mutedTextColor} />}
@@ -61,7 +72,7 @@ export function CommentsInputBar({
               <Feather name="send" size={20} color={tintColor} />
             )
           }
-          onPress={onSend}
+          onPress={handleSend}
           disabled={isSending || !value.trim()}
         />
       </View>

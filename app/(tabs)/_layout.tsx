@@ -32,6 +32,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="bottom-sheet-test"
+        options={{
+          title: 'Test',
+          tabBarIcon: ({ color }) => <Feather name="layers" size={20} color={color} />,
+          tabBarButton: (props) => <HapticTab {...props} />,
+        }}
+      />
+      <Tabs.Screen
         name="bookmarks"
         options={{
           title: 'Bookmarks',

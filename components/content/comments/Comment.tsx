@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
+  Platform,
+  StyleSheet,
+  Keyboard,
   ScrollView,
   KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  StyleSheet,
 } from "react-native";
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useActionSheet } from "@expo/react-native-action-sheet";
@@ -16,7 +16,6 @@ import { ThemedText } from "../../ThemedText";
 import { CommentItem } from "./CommentItem";
 import { EmojiBar } from "./EmojiBar";
 import { CommentsInputBar } from "./CommentsInputBar";
-import type { Profile } from "@/types"; // Adjust per your project
 
 type LikeMap = Record<string, boolean>;
 type CountMap = Record<string, number>;
@@ -27,7 +26,7 @@ interface CommentsProps {
 }
 
 export default function Comments({ postId, disableScrolling = false }: CommentsProps) {
-  const { user, profile } = useAuth(); // Keep user for 'isOwn', use only profile for avatar
+  const { user, profile } = useAuth();
   const {
     comments,
     loading,
@@ -51,12 +50,28 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
   const [likeCounts, setLikeCounts] = useState<CountMap>({});
   const inputRef = useRef<any>(null);
 
+  // Only needed if you want to style the bar higher with the keyboard
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
   useEffect(() => {
     if (postId) {
       fetchComments(postId);
       setCommentText("");
     }
   }, [postId]);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const loadLikeData = async () => {
@@ -83,7 +98,7 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
     setIsSending(true);
     await addComment(
       postId,
-      profile.id, // use profile id
+      profile.id,
       commentText,
       {
         id: profile.id,
@@ -134,106 +149,16 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
 
   const emojiReactions = ["❤️", "👏", "🔥", "🙏", "😢", "😊", "😮", "😂"];
 
-  const content = (
-    <>
-      {/* Comments Section */}
-      {disableScrolling ? (
-        <View style={styles.scrollView}>
-          <View style={[
-            !comments.length && !loading ? styles.emptyList : styles.scrollContent
-          ]}>
-            {loading && (
-              <View style={styles.skeletonContainer}>
-                {[1, 2].map((index) => (
-                  <View key={index} style={styles.skeletonItem}>
-                    <View style={styles.skeletonHeader}>
-                      <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
-                      <View style={styles.skeletonText}>
-                        <Skeleton width={80} height={12} borderRadius={4} style={styles.skeletonName} />
-                        <Skeleton width={60} height={10} borderRadius={4} />
-                      </View>
-                    </View>
-                    <View style={styles.skeletonContent}>
-                      <Skeleton width="90%" height={12} borderRadius={4} style={styles.skeletonLine} />
-                      <Skeleton width="70%" height={12} borderRadius={4} />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-            {!loading && comments.length === 0 && (
-              <View style={styles.emptyContainer}>
-                <ThemedText style={styles.emptyText}>
-                  No comments yet. Be the first!
-                </ThemedText>
-              </View>
-            )}
-            {comments.map((item) => (
-              <CommentItem
-                key={item.id}
-                item={item}
-                isOwn={profile ? item.user_id === profile.id : false}
-                isAuthor={item.user_id === profile?.id} liked={likedComments[item.id] || false}
-                likeCount={likeCounts[item.id] || 0}
-                onLike={() => handleToggleLike(item.id)}
-                onMenu={() => handleMenu(item.id)}
-                formatDate={formatCommentDate}
-              />
-            ))}
-          </View>
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={
-            !comments.length && !loading ? styles.emptyList : styles.scrollContent
-          }
-          style={styles.scrollView}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {loading && (
-            <View style={styles.skeletonContainer}>
-              {[1, 2].map((index) => (
-                <View key={index} style={styles.skeletonItem}>
-                  <View style={styles.skeletonHeader}>
-                    <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
-                    <View style={styles.skeletonText}>
-                      <Skeleton width={80} height={12} borderRadius={4} style={styles.skeletonName} />
-                      <Skeleton width={60} height={10} borderRadius={4} />
-                    </View>
-                  </View>
-                  <View style={styles.skeletonContent}>
-                    <Skeleton width="90%" height={12} borderRadius={4} style={styles.skeletonLine} />
-                    <Skeleton width="70%" height={12} borderRadius={4} />
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
-          {!loading && comments.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <ThemedText style={styles.emptyText}>
-                No comments yet. Be the first!
-              </ThemedText>
-            </View>
-          )}
-          {comments.map((item) => (
-            <CommentItem
-              key={item.id}
-              item={item}
-              isOwn={profile ? item.user_id === profile.id : false}
-              isAuthor={item.user_id === profile?.id} liked={likedComments[item.id] || false}
-              likeCount={likeCounts[item.id] || 0}
-              onLike={() => handleToggleLike(item.id)}
-              onMenu={() => handleMenu(item.id)}
-              formatDate={formatCommentDate}
-            />
-          ))}
-        </ScrollView>
-      )}
-
-      {/* Fixed Input Section - Non-scrollable */}
-      <View style={styles.inputSection}>
+  // --- Separate bottom input bar (emoji + input) ---
+  const InputBar = (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+    >
+      <View style={[
+        styles.inputSection,
+        keyboardVisible && styles.inputSectionKeyboard,
+      ]}>
         <EmojiBar emojis={emojiReactions} onEmoji={(e) => setCommentText((prev) => prev + e)} />
         <CommentsInputBar
           profile={profile}
@@ -245,41 +170,101 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
           onEmojiPicker={() => inputRef.current?.focus()}
         />
       </View>
+    </KeyboardAvoidingView>
+  );
 
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.commentList}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {loading && (
+          <View style={styles.skeletonContainer}>
+            {[1, 2].map((index) => (
+              <View key={index} style={styles.skeletonItem}>
+                <View style={styles.skeletonHeader}>
+                  <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
+                  <View style={styles.skeletonText}>
+                    <Skeleton width={80} height={12} borderRadius={4} style={styles.skeletonName} />
+                    <Skeleton width={60} height={10} borderRadius={4} />
+                  </View>
+                </View>
+                <View style={styles.skeletonContent}>
+                  <Skeleton width="90%" height={12} borderRadius={4} style={styles.skeletonLine} />
+                  <Skeleton width="70%" height={12} borderRadius={4} />
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+        {!loading && comments.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <ThemedText style={styles.emptyText}>
+              No comments yet. Be the first!
+            </ThemedText>
+          </View>
+        )}
+        {comments.map((item) => (
+          <CommentItem
+            key={item.id}
+            item={item}
+            isOwn={profile ? item.user_id === profile.id : false}
+            isAuthor={item.user_id === profile?.id}
+            liked={likedComments[item.id] || false}
+            likeCount={likeCounts[item.id] || 0}
+            onLike={() => handleToggleLike(item.id)}
+            onMenu={() => handleMenu(item.id)}
+            formatDate={formatCommentDate}
+          />
+        ))}
+      </ScrollView>
+      {/* Fixed bottom input bar */}
+      <View style={styles.fixedInputContainer}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <View style={[
+            styles.inputSection,
+            keyboardVisible && styles.inputSectionKeyboard,
+          ]}>
+            <EmojiBar emojis={emojiReactions} onEmoji={(e) => setCommentText((prev) => prev + e)} />
+            <CommentsInputBar
+              profile={profile}
+              value={commentText}
+              onChange={setCommentText}
+              onSend={handleSubmitComment}
+              isSending={isSending}
+              inputRef={inputRef}
+              onEmojiPicker={() => inputRef.current?.focus()}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </View>
       {error && (
         <View style={styles.errorContainer}>
           <ThemedText style={styles.errorText}>{error}</ThemedText>
         </View>
       )}
-    </>
-  );
-
-  // Use KeyboardAvoidingView only when not in a bottom sheet
-  if (disableScrolling) {
-    return <View style={styles.container}>{content}</View>;
-  }
-
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-    >
-      {content}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: "100%",
+    backgroundColor: "#FFF",
   },
-  scrollView: {
+  commentList: {
     flex: 1,
+    paddingBottom: 120, // Add padding to prevent overlap with fixed input
   },
   scrollContent: {
-    paddingBottom: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   skeletonContainer: {
     padding: 12,
@@ -308,7 +293,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   inputSection: {
-    // No border separator
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderColor: "#eee",
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    paddingHorizontal: 8,
+  },
+  inputSectionKeyboard: {
+    // If you want extra padding when keyboard is open (optional)
+    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
   },
   emptyContainer: {
     flex: 1,
@@ -319,10 +313,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
   },
-  emptyList: {
-    flex: 1,
-    justifyContent: "center",
-  },
   errorContainer: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -331,5 +321,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     color: "#ff4757",
+  },
+  fixedInputContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: '#eee',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    paddingHorizontal: 8,
   },
 });

@@ -8,6 +8,7 @@ import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
+  BottomSheetTextInput,
   BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -65,19 +66,22 @@ const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
         backgroundStyle={backgroundStyle}
         handleIndicatorStyle={handleIndicatorStyle}
         backdropComponent={renderBackdrop}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        enableDynamicSizing={false}
       >
-        <BottomSheetScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          <BottomSheetScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             {children}
-          </KeyboardAvoidingView>
-        </BottomSheetScrollView>
+          </BottomSheetScrollView>
+        </KeyboardAvoidingView>
       </BottomSheetModal>
     );
   }
@@ -90,4 +94,5 @@ const styles = StyleSheet.create({
   },
 });
 
+export { BottomSheetTextInput };
 export default SimpleBottomSheet;

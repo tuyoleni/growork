@@ -16,6 +16,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import SimpleBottomSheet from '@/components/GlobalBottomSheet';
 import { Skeleton } from '@/components/ui/Skeleton';
+import CommentsBottomSheet from '@/components/content/comments/CommentsBottomSheet';
+import { CommentsBottomSheetProvider, useCustomCommentsBottomSheet } from '@/hooks/useCustomCommentsBottomSheet';
 
 interface AuthContextType {
   session: Session | null;
@@ -26,7 +28,6 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Protect routes: allow public access to "post" (post detail) routes only.
 function useProtectedRoute() {
   const { session, initialLoading } = useAuth();
   const router = useRouter();
@@ -57,7 +58,7 @@ function AuthGate() {
   );
 }
 
-export default function RootLayout() {
+function AppContent() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -71,6 +72,9 @@ export default function RootLayout() {
     snapPoints: string[];
     onDismiss?: () => void;
   } | null>(null);
+
+  // Comments bottom sheet state
+  const { isVisible, currentPostId, closeCommentsSheet } = useCustomCommentsBottomSheet();
 
   // Expose openGlobalSheet globally
   const openGlobalSheet = (props: {
@@ -184,11 +188,26 @@ export default function RootLayout() {
                   </SimpleBottomSheet>
                 )}
 
+                {/* Comments Bottom Sheet */}
+                <CommentsBottomSheet
+                  postId={currentPostId || ''}
+                  visible={isVisible}
+                  onClose={closeCommentsSheet}
+                />
+
               </BottomSheetModalProvider>
             </AppProvider>
           </AuthContext.Provider>
         </ThemeProvider>
       </ActionSheetProvider>
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <CommentsBottomSheetProvider>
+      <AppContent />
+    </CommentsBottomSheetProvider>
   );
 }

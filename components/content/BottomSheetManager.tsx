@@ -1,9 +1,10 @@
 import React, { useCallback } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { openGlobalSheet } from '@/utils/globalSheet';
-import Comments from '@/components/content/comments/Comment';
+// Removed CommentsBottomSheet import - using custom implementation instead
 import CreatePostSheetUI from '@/components/content/CreatePost';
 import DocumentManager from '@/components/content/DocumentManager';
+import JobApplicationForm from '@/components/content/JobApplicationForm';
 
 import { Post, DocumentType } from '@/types';
 
@@ -18,8 +19,7 @@ const JobApplicationSheetContent: React.FC<JobApplicationSheetContentProps> = ({
   onSuccess,
   onCancel,
 }) => {
-  const { body } = useJobApplicationForm({ jobPost: post, onSuccess });
-  return body;
+  return <JobApplicationForm jobPost={post} onSuccess={onSuccess} />;
 };
 
 // --- Props interface for the manager ---
@@ -44,12 +44,10 @@ function withKeyboardAvoidance(children: React.ReactNode) {
 export function useBottomSheetManager(props?: BottomSheetManagerProps) {
   const { onPostSuccess } = props || {};
 
+  // Removed openCommentSheet - using custom CommentsBottomSheet instead
   const openCommentSheet = useCallback(
     (postId: string) => {
-      openGlobalSheet({
-        snapPoints: ['80%'],
-        children: withKeyboardAvoidance(<Comments postId={postId} />),
-      });
+      console.warn('openCommentSheet is deprecated. Use useCustomCommentsBottomSheet hook instead.');
     },
     []
   );
@@ -103,8 +101,5 @@ export function useBottomSheetManager(props?: BottomSheetManagerProps) {
 
 export default function BottomSheetManager({ onPostSuccess }: BottomSheetManagerProps) {
   return null;
-}
-function useJobApplicationForm(arg0: { jobPost: Post; onSuccess: (() => void) | undefined; }): { body: any; } {
-  throw new Error('Function not implemented.');
 }
 
