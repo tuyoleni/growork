@@ -7,18 +7,18 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   View as RNView,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { usePosts as usePostById } from '@/hooks/usePostById';
 import { usePosts as useFeedPosts } from '@/hooks/usePosts';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import ScreenContainer from '@/components/ScreenContainer';
 import { Post } from '@/types';
+import { PostType } from '@/types/enums';
 
 import PostInteractionBar from '@/components/content/PostInteractionBar';
 import ApplyButton from '@/components/content/post/ApplyButton';
@@ -31,15 +31,14 @@ const ICON_SIZE = 20;
 const PostDetail = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
   const [post, setPost] = useState<Post | null>(null);
 
   const borderColor = useThemeColor({}, 'border');
-  const backgroundColor = useThemeColor({}, 'background');
   const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
+  const mutedTextColor = useThemeColor({}, 'mutedText');
 
   const { loading: isLoading, getPostById } = usePostById();
   const { posts: allPosts, loading: feedLoading, fetchPosts } = useFeedPosts();
@@ -58,11 +57,30 @@ const PostDetail = () => {
   const recommendedPosts: Post[] =
     post && allPosts
       ? allPosts.filter(
-          (p: Post) =>
-            p.type === post.type &&
-            p.id !== post.id
-        )
+        (p: Post) =>
+          p.type === post.type &&
+          p.id !== post.id
+      )
       : [];
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    if (diff < 7) return `${diff} days ago`;
+    if (diff < 30) return `${Math.floor(diff / 7)} weeks ago`;
+    if (diff < 365) return `${Math.floor(diff / 30)} months ago`;
+    return `${Math.floor(diff / 365)} years ago`;
+  };
+
+  const handleSourcePress = () => {
+    if (post?.criteria?.source) {
+      Linking.openURL(post.criteria.source);
+    }
+  };
 
   if (isLoading || feedLoading) {
     return (
@@ -80,31 +98,16 @@ const PostDetail = () => {
     );
   }
 
-  const companyName = post.criteria?.company || 'Company';
-  const companyLogo =
-    post.criteria?.companyLogo ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&size=128`;
-  const verified = post.criteria?.isVerified;
-  const mainImage = post.image_url || '';
-  const location = post.criteria?.location || 'Remote';
-  const jobType = post.criteria?.jobType || post.type || 'Full-time';
-  const isRemote = location.toLowerCase().includes('remote');
-  const requirements = post.criteria?.requirements || [];
-  const benefits = post.criteria?.benefits || [];
-  const similarSectionLabel =
-    post.type && typeof post.type === 'string'
-      ? `Similar ${post.type.charAt(0).toUpperCase() + post.type.slice(1)}s`
-      : 'Similar';
+  const isJob = post.type === PostType.Job;
+  const isNews = post.type === PostType.News;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar style="dark" />
-
+    <ScreenContainer>
       <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
         <TouchableOpacity
-          onPress={() => router.replace('/(tabs)')}
+          onPress={() => router.back()}
           style={styles.iconButton}
-          accessibilityLabel="Go to main tabs"
+          accessibilityLabel="Go back"
         >
           <Feather name="arrow-left" size={ICON_SIZE} color={textColor} />
         </TouchableOpacity>
@@ -128,84 +131,104 @@ const PostDetail = () => {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <ThemedView style={styles.contentContainer}>
-          <RNView style={styles.companyHeader}>
-            <Image source={{ uri: companyLogo }} style={styles.companyLogo} />
-            <RNView style={styles.companyNameContainer}>
-              <RNView style={styles.companyNameRow}>
-                <ThemedText style={styles.companyName}>{companyName}</ThemedText>
-                {verified && (
-                  <TouchableOpacity
-                    onPress={() => console.log('Company is verified')}
-                    accessibilityLabel="Verified company"
-                  >
-                    <Feather name="check-circle" size={ICON_SIZE} color={tintColor} />
-                  </TouchableOpacity>
-                )}
-              </RNView>
-            </RNView>
-            {post.type === 'job' && (
+          {/* Post Type Badge */}
+          <RNView style={styles.typeBadgeContainer}>
+            <PostBadge
+              label={isJob ? 'Job Posting' : 'News Article'}
+              variant={isJob ? 'success' : 'default'}
+              size="small"
+            />
+            {post.industry && (
               <PostBadge
-                label="Actively Hiring"
-                variant="highlighted"
-                size="small"
-                style={styles.hiringBadge}
+                label={post.industry} size="small"
               />
             )}
           </RNView>
 
-          <ThemedText style={styles.jobTitle}>{post.title}</ThemedText>
+          {/* Title */}
+          <ThemedText style={styles.postTitle}>{post.title}</ThemedText>
 
-          {mainImage ? (
+          {/* Image */}
+          {post.image_url ? (
             <Image
-              source={{ uri: mainImage }}
+              source={{ uri: post.image_url }}
               style={styles.featureImage}
               resizeMode="cover"
             />
           ) : null}
 
-          <ThemedView style={styles.detailsContainer}>
-            <RNView style={styles.badgeContainer}>
-              <PostBadge label={location} icon="map-pin" size="medium" />
-              <PostBadge label={jobType} icon="clock" size="medium" />
-              {isRemote && (
-                <PostBadge label="Remote Available" size="medium" />
+          {/* Job-specific header */}
+          {isJob && (
+            <RNView style={styles.jobHeader}>
+              <RNView style={styles.companyInfo}>
+                <ThemedText style={styles.companyName}>
+                  {post.criteria?.company || 'Company'}
+                </ThemedText>
+                <RNView style={styles.jobBadges}>
+                  {post.criteria?.location && (
+                    <PostBadge
+                      label={post.criteria.location}
+                      icon="map-pin"
+                      size="small"
+                    />
+                  )}
+                  {post.criteria?.jobType && (
+                    <PostBadge
+                      label={post.criteria.jobType}
+                      icon="clock"
+                      size="small"
+                    />
+                  )}
+                  {post.criteria?.salary && (
+                    <PostBadge
+                      label={post.criteria.salary}
+                      icon="dollar-sign"
+                      size="small"
+                    />
+                  )}
+                </RNView>
+              </RNView>
+            </RNView>
+          )}
+
+          {/* News-specific header */}
+          {isNews && (
+            <RNView style={styles.newsHeader}>
+              {post.criteria?.source && (
+                <TouchableOpacity
+                  style={styles.sourceContainer}
+                  onPress={handleSourcePress}
+                >
+                  <Feather name="external-link" size={16} color="#007AFF" />
+                  <ThemedText style={[styles.sourceText, { color: '#007AFF' }]}>
+                    {post.criteria.source}
+                  </ThemedText>
+                </TouchableOpacity>
               )}
             </RNView>
-            <ThemedText style={styles.description}>{post.content}</ThemedText>
+          )}
 
-            {requirements.length > 0 && (
-              <RNView style={styles.requirementsContainer}>
-                <ThemedText style={styles.sectionTitle}>Requirements:</ThemedText>
-                {requirements.map((requirement, index) => (
-                  <ThemedText key={index} style={styles.listItem}>
-                    • {requirement}
-                  </ThemedText>
-                ))}
-              </RNView>
-            )}
+          {/* Content */}
+          <ThemedText style={styles.description}>{post.content}</ThemedText>
 
-            {benefits.length > 0 && (
-              <RNView style={styles.benefitsContainer}>
-                <ThemedText style={styles.sectionTitle}>Benefits:</ThemedText>
-                {benefits.map((benefit, index) => (
-                  <ThemedText key={index} style={styles.listItem}>
-                    • {benefit}
-                  </ThemedText>
-                ))}
-              </RNView>
-            )}
+          {/* Timestamp */}
+          <ThemedText style={[styles.timestamp, { color: mutedTextColor }]}>
+            {formatDate(post.created_at)}
+          </ThemedText>
 
-            <RNView style={[styles.actionsContainer, { borderTopColor: borderColor }]}>
-              <PostInteractionBar postId={post.id} size="large" />
+          {/* Actions */}
+          <RNView style={[styles.actionsContainer, { borderTopColor: borderColor }]}>
+            <PostInteractionBar postId={post.id} size="large" />
+            {isJob && (
               <ApplyButton
                 onPress={() => {
                   if (post) {
                     openGlobalSheet({
                       snapPoints: ['90%'],
                       children: (
-                        <JobApplicationSheetContent 
-                          post={post} 
-                          onSuccess={() => router.replace('/(tabs)')} 
+                        <JobApplicationSheetContent
+                          post={post}
+                          onSuccess={() => router.back()}
                         />
                       ),
                     });
@@ -213,46 +236,62 @@ const PostDetail = () => {
                 }}
                 size="medium"
               />
+            )}
+            {isNews && post.criteria?.source && (
+              <TouchableOpacity
+                style={styles.readMoreButton}
+                onPress={handleSourcePress}
+              >
+                <ThemedText style={styles.readMoreText}>Read More</ThemedText>
+              </TouchableOpacity>
+            )}
+          </RNView>
+        </ThemedView>
+
+        {/* Recommended Posts */}
+        {recommendedPosts.length > 0 && (
+          <ThemedView style={[styles.similarContainer, { borderTopColor: borderColor }]}>
+            <ThemedText style={styles.similarTitle}>
+              {isJob ? 'Similar Jobs' : 'Related News'}
+            </ThemedText>
+            <RNView style={styles.recommendedListContainer}>
+              {recommendedPosts.map((item) => {
+                const itemCompanyName = item.criteria?.company || 'Company';
+                const itemCompanyLogo =
+                  item.criteria?.companyLogo ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(itemCompanyName)}&size=128`;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.recommendedItem,
+                      { backgroundColor: backgroundSecondary },
+                    ]}
+                    onPress={() => router.push(`/post/${item.id}`)}
+                  >
+                    <Image source={{ uri: itemCompanyLogo }} style={styles.recommendedLogo} />
+                    <RNView style={styles.recommendedInfo}>
+                      <ThemedText style={styles.recommendedTitle}>{item.title}</ThemedText>
+                      <ThemedText style={styles.recommendedCompany}>
+                        {isJob ? itemCompanyName : item.criteria?.source || 'News Source'}
+                      </ThemedText>
+                    </RNView>
+                    <RNView style={styles.recommendedRight}>
+                      {isJob && (
+                        <PostBadge label={item.criteria?.location || 'Remote'} size="small" />
+                      )}
+                      {isNews && item.industry && (
+                        <PostBadge label={item.industry} size="small" />
+                      )}
+                    </RNView>
+                  </TouchableOpacity>
+                );
+              })}
             </RNView>
           </ThemedView>
-
-          {recommendedPosts.length > 0 && (
-            <ThemedView style={[styles.similarJobsContainer, { borderTopColor: borderColor }]}>
-              <ThemedText style={styles.similarJobsTitle}>
-                {similarSectionLabel}
-              </ThemedText>
-              <RNView style={styles.recommendedListContainer}>
-                {recommendedPosts.map((item) => {
-                  const itemCompanyName = item.criteria?.company || 'Company';
-                  const itemCompanyLogo =
-                    item.criteria?.companyLogo ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(itemCompanyName)}&size=128`;
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={[
-                        styles.recommendedItem,
-                        { backgroundColor: backgroundSecondary },
-                      ]}
-                      onPress={() => router.push(`/post/${item.id}`)}
-                    >
-                      <Image source={{ uri: itemCompanyLogo }} style={styles.recommendedLogo} />
-                      <RNView style={styles.recommendedInfo}>
-                        <ThemedText style={styles.recommendedTitle}>{item.title}</ThemedText>
-                        <ThemedText style={styles.recommendedCompany}>{itemCompanyName}</ThemedText>
-                      </RNView>
-                      <RNView style={styles.recommendedRight}>
-                        <PostBadge label={item.criteria?.location || 'Remote'} size="small" />
-                      </RNView>
-                    </TouchableOpacity>
-                  );
-                })}
-              </RNView>
-            </ThemedView>
-          )}
-        </ThemedView>
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 };
 
@@ -260,36 +299,129 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1
+  },
   headerRightButtons: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   iconButton: { padding: 8, borderRadius: 20 },
   scrollView: { flex: 1 },
-  contentContainer: { padding: 16 },
-  companyHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  companyLogo: { width: 40, height: 40, borderRadius: 4 },
-  companyNameContainer: { flex: 1 },
-  companyNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  companyName: { fontSize: 16, fontWeight: '600' },
-  hiringBadge: { borderRadius: 12 },
-  jobTitle: { fontSize: 24, fontWeight: '700', marginBottom: 16 },
-  featureImage: { width: '100%', height: 250, borderRadius: 8, marginBottom: 16 },
-  detailsContainer: { marginTop: 16, gap: 16 },
-  badgeContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  description: { fontSize: 16, lineHeight: 24 },
-  requirementsContainer: { gap: 8 },
-  benefitsContainer: { gap: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  listItem: { fontSize: 16, lineHeight: 24, paddingLeft: 8, marginBottom: 4 },
-  actionsContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderTopWidth: 1 },
-  similarJobsContainer: { marginTop: 16, borderTopWidth: 1, paddingTop: 16 },
-  similarJobsTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
-  recommendedListContainer: { gap: 12 },
-  recommendedItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 8, gap: 16 },
-  recommendedLogo: { width: 40, height: 40, borderRadius: 4 },
-  recommendedInfo: { flex: 1, gap: 4 },
-  recommendedTitle: { fontSize: 16, fontWeight: '600' },
-  recommendedCompany: { fontSize: 14, opacity: 0.7 },
-  recommendedRight: { alignItems: 'flex-end' },
+  contentContainer: {},
+  typeBadgeContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16
+  },
+  postTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 16,
+    lineHeight: 30
+  },
+  featureImage: {
+    width: '100%',
+    height: 250,
+    borderRadius: 12,
+    marginBottom: 16
+  },
+  jobHeader: {
+    marginBottom: 16
+  },
+  companyInfo: {
+    gap: 8
+  },
+  companyName: {
+    fontSize: 18,
+    fontWeight: '600'
+  },
+  jobBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  newsHeader: {
+    marginBottom: 16
+  },
+  sourceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  sourceText: {
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 16
+  },
+  timestamp: {
+    fontSize: 14,
+    marginBottom: 16
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderTopWidth: 1
+  },
+  readMoreButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  readMoreText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  similarContainer: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    paddingTop: 16,
+  },
+  similarTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16
+  },
+  recommendedListContainer: {
+    gap: 12
+  },
+  recommendedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 8,
+    gap: 16
+  },
+  recommendedLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 4
+  },
+  recommendedInfo: {
+    flex: 1,
+    gap: 4
+  },
+  recommendedTitle: {
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  recommendedCompany: {
+    fontSize: 14,
+    opacity: 0.7
+  },
+  recommendedRight: {
+    alignItems: 'flex-end'
+  },
 });
 
 export default PostDetail;

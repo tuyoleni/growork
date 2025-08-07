@@ -5,17 +5,15 @@ import React, { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, useColorScheme, Alert, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
-import { ThemedInput } from '../ThemedInput';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/utils/superbase';
 import { Company } from '@/types';
 import { useRouter } from 'expo-router';
 
-const PADDING = 16;
 
 export default function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';

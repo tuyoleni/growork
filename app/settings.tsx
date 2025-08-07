@@ -41,9 +41,6 @@ export default function Settings() {
   const colorScheme = useColorScheme();
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
-  const backgroundColor = useThemeColor({}, 'background');
-  const cardBg = useThemeColor({}, 'backgroundSecondary');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
 
   const handleSignOut = () => {
     Alert.alert(

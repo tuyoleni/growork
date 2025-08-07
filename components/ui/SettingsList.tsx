@@ -4,10 +4,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Switch,
-  Platform,
   SectionList,
   Text,
-  useColorScheme
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -117,7 +115,6 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
 };
 
 export default function SettingsList({ sections, style, contentContainerStyle }: SettingsListProps) {
-  const colorScheme = useColorScheme();
   const borderColor = useThemeColor({}, 'border');
   const backgroundColor = useThemeColor({}, 'background');
   const mutedTextColor = useThemeColor({}, 'mutedText');

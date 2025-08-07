@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  Pressable,
   ScrollView,
   TouchableOpacity,
   StatusBar,
   useColorScheme,
   Image,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -31,14 +29,13 @@ interface ProfileStats {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, profile, refresh } = useAuth();
+  const { user, profile } = useAuth();
   const colorScheme = useColorScheme();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const mutedTextColor = useThemeColor({}, 'mutedText');
   const tintColor = useThemeColor({}, 'tint');
-  const cardBg = useThemeColor({}, 'backgroundSecondary');
   const [stats, setStats] = useState<ProfileStats>({
     posts: 0,
     followers: 0,

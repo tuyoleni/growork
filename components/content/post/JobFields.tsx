@@ -2,7 +2,6 @@ import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { ThemedInput } from '@/components/ThemedInput';
 import JobTypeSelector from './JobTypeSelector';
-import DeadlineSelector from './DeadlineSelector';
 import SalarySelector from './SalarySelector';
 import IndustrySelector from './IndustrySelector';
 import { INDUSTRIES } from '@/dataset/industries';
@@ -12,9 +11,7 @@ export interface JobFieldsData {
   salary: string;
   jobType: string;
   industry: string;
-  requirements: string;
-  benefits: string;
-  deadline: string;
+  company: string;
 }
 
 interface JobFieldsProps {
@@ -24,14 +21,22 @@ interface JobFieldsProps {
 }
 
 export default function JobFields({ values, onChange, style }: JobFieldsProps) {
-
-
   const handleChange = (field: keyof JobFieldsData, value: string) => {
     onChange({ ...values, [field]: value });
   };
 
   return (
     <View style={[styles.container, style]}>
+      <ThemedInput
+        placeholder="Company name"
+        value={values.company}
+        onChangeText={(v) => handleChange('company', v)}
+      />
+      <ThemedInput
+        placeholder="Location (e.g., Remote, New York, NY)"
+        value={values.location}
+        onChangeText={(v) => handleChange('location', v)}
+      />
       <SalarySelector
         selectedSalary={values.salary}
         onSalaryChange={(v) => handleChange('salary', v)}
@@ -42,20 +47,8 @@ export default function JobFields({ values, onChange, style }: JobFieldsProps) {
       />
       <IndustrySelector
         selectedIndustry={values.industry}
-        onIndustryChange={(v) => handleChange('industry', v)} industries={INDUSTRIES}      />
-      <ThemedInput
-        placeholder="Requirements (comma separated)"
-        value={values.requirements}
-        onChangeText={(v) => handleChange('requirements', v)}
-      />
-      <ThemedInput
-        placeholder="Benefits (comma separated)"
-        value={values.benefits}
-        onChangeText={(v) => handleChange('benefits', v)}
-      />
-      <DeadlineSelector
-        selectedDeadline={values.deadline}
-        onDeadlineChange={(v) => handleChange('deadline', v)}
+        onIndustryChange={(v) => handleChange('industry', v)}
+        industries={INDUSTRIES}
       />
     </View>
   );
@@ -64,5 +57,6 @@ export default function JobFields({ values, onChange, style }: JobFieldsProps) {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    gap: 16,
   },
 });

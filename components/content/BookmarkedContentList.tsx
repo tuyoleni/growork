@@ -5,8 +5,7 @@ import { ThemedView } from '../ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import { BookmarkedItem } from '@/hooks/useBookmarks';
-import { PostType } from '@/types/enums';
-import { ApplicationStatus } from '@/types/enums';
+import { PostType, ApplicationStatus } from '@/types/enums';
 import { Image } from 'expo-image';
 
 interface BookmarkedContentListProps {

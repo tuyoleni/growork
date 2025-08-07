@@ -43,27 +43,18 @@ export interface ContentCardProps {
 export default function ContentCard({
     id,
     variant,
-    title,
     postTitle,
     username,
     name,
     avatarImage,
     mainImage,
     description,
-    badgeText,
-    badgeVariant = 'info',
     isVerified = false,
     industry,
     onPressApply,
-    jobId,
     style,
-    likesCount = 0,
-    commentsCount = 0,
     createdAt,
     criteria,
-    isSponsored = false,
-    isLiked = false,
-    isBookmarked = false,
     user_id,
 }: ContentCardProps) {
     const router = useRouter();
@@ -72,8 +63,6 @@ export default function ContentCard({
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
     const borderColor = useThemeColor({}, 'border');
-    const backgroundColor = useThemeColor({}, 'background');
-    const cardBg = useThemeColor({}, 'backgroundSecondary');
 
 
 
@@ -82,12 +71,21 @@ export default function ContentCard({
         const now = new Date();
         const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (diff === 0) return 'Today';
-        if (diff === 1) return 'Yesterday';
-        if (diff < 7) return `${diff} days ago`;
-        if (diff < 30) return `${Math.floor(diff / 7)} weeks ago`;
-        if (diff < 365) return `${Math.floor(diff / 30)} months ago`;
-        return `${Math.floor(diff / 365)} years ago`;
+        let timeAgo = '';
+        if (diff === 0) timeAgo = 'Today';
+        else if (diff === 1) timeAgo = 'Yesterday';
+        else if (diff < 7) timeAgo = `${diff} days ago`;
+        else if (diff < 30) timeAgo = `${Math.floor(diff / 7)} weeks ago`;
+        else if (diff < 365) timeAgo = `${Math.floor(diff / 30)} months ago`;
+        else timeAgo = `${Math.floor(diff / 365)} years ago`;
+
+        const time = date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        return `${timeAgo} at ${time}`;
     };
 
     const handleCardPress = () => {
@@ -359,50 +357,55 @@ const styles = StyleSheet.create({
         marginLeft: 6,
     },
     newsDetails: {
-        gap: 8,
+        marginBottom: 8,
     },
     newsDetail: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        marginBottom: 4,
     },
     newsDetailText: {
         fontSize: 14,
+        marginLeft: 6,
     },
     industryTag: {
         alignSelf: 'flex-start',
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 12,
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderRadius: 8,
+        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+        marginBottom: 8,
     },
     industryText: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '500',
+        opacity: 0.8,
     },
     timestamp: {
         fontSize: 12,
+        opacity: 0.6,
+        marginBottom: 12,
     },
     actionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 8,
     },
 
     actionButton: {
-        backgroundColor: '#3b82f6',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 6,
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
     },
     actionButtonText: {
         color: 'white',
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '600',
     },
     promotedText: {
         fontSize: 12,
         fontWeight: '500',
+        opacity: 0.6,
     },
 }); 

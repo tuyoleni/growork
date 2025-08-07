@@ -153,8 +153,10 @@ export default function PostForm({ onSuccess }: PostFormProps) {
             {postType === PostType.Job && (
               <View style={{ marginBottom: 12 }}>
                 <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Job Details:</ThemedText>
+                <ThemedText>Company: {jobFields.company || 'Not specified'}</ThemedText>
                 <ThemedText>Location: {jobFields.location || 'Not specified'}</ThemedText>
                 <ThemedText>Salary: {jobFields.salary || 'Not specified'}</ThemedText>
+                <ThemedText>Job Type: {jobFields.jobType || 'Not specified'}</ThemedText>
                 <ThemedText>Industry: {jobFields.industry || 'Not specified'}</ThemedText>
               </View>
             )}
@@ -162,8 +164,8 @@ export default function PostForm({ onSuccess }: PostFormProps) {
             {postType === PostType.News && (
               <View style={{ marginBottom: 12 }}>
                 <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Article Details:</ThemedText>
+                <ThemedText>Industry: {articleFields.industry || 'Not specified'}</ThemedText>
                 <ThemedText>Source: {articleFields.source || 'Not specified'}</ThemedText>
-                <ThemedText>Summary: {articleFields.summary || 'Not specified'}</ThemedText>
               </View>
             )}
           </View>

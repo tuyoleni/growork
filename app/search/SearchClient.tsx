@@ -28,13 +28,13 @@ export default function SearchClient() {
     search(term);
   };
 
-  const handleFilterChange = (filter: FilterKey) => {
-    setSelectedFilter(filter);
-    if (searchTerm) {
-      const postType = filter === 'jobs' ? PostType.Job : filter === 'news' ? PostType.News : undefined;
-      search(searchTerm, postType, selectedIndustry || undefined);
-    }
-  };
+  // const handleFilterChange = (filter: FilterKey) => {
+  //   setSelectedFilter(filter);
+  //   if (searchTerm) {
+  //     const postType = filter === 'jobs' ? PostType.Job : filter === 'news' ? PostType.News : undefined;
+  //     search(searchTerm, postType, selectedIndustry || undefined);
+  //   }
+  // };
 
   const handleIndustryChange = (industry: string) => {
     setSelectedIndustry(industry === 'All' ? null : industry);
@@ -161,7 +161,7 @@ function SearchResults({ results, loading }: SearchResultsProps) {
   ) as (Document & { _type: 'document' })[];
 
   return (
-    <ThemedView style={styles.resultsContainer}>
+    <ThemedView>
       {postResults.length > 0 && (
         <ThemedView style={styles.postsSection}>
           {postResults.map((item, index) => (
@@ -316,9 +316,7 @@ const styles = StyleSheet.create({
   resultsSection: {
     flex: 1,
   },
-  resultsContainer: {
-    paddingHorizontal: 16,
-  },
+
   postsSection: {
     gap: 12,
   },

@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { ThemedInput } from '@/components/ThemedInput';
+import IndustrySelector from './IndustrySelector';
+import { INDUSTRIES } from '@/dataset/industries';
 
 export interface ArticleFieldsData {
   source: string;
-  summary: string;
-  tags: string;
+  industry: string;
 }
 
 interface ArticleFieldsProps {
@@ -15,28 +16,21 @@ interface ArticleFieldsProps {
 }
 
 export default function ArticleFields({ values, onChange, style }: ArticleFieldsProps) {
-
-
   const handleChange = (field: keyof ArticleFieldsData, value: string) => {
     onChange({ ...values, [field]: value });
   };
 
   return (
     <View style={[styles.container, style]}>
+      <IndustrySelector
+        selectedIndustry={values.industry}
+        onIndustryChange={(v) => handleChange('industry', v)}
+        industries={INDUSTRIES}
+      />
       <ThemedInput
-        placeholder="Source (optional)"
+        placeholder="Source (e.g., website, publication)"
         value={values.source}
         onChangeText={(v) => handleChange('source', v)}
-      />
-      <ThemedInput
-        placeholder="Summary (optional)"
-        value={values.summary}
-        onChangeText={(v) => handleChange('summary', v)}
-      />
-      <ThemedInput
-        placeholder="Tags (comma separated, optional)"
-        value={values.tags}
-        onChangeText={(v) => handleChange('tags', v)}
       />
     </View>
   );
@@ -45,5 +39,6 @@ export default function ArticleFields({ values, onChange, style }: ArticleFields
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    gap: 16,
   },
 });

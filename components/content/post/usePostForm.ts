@@ -24,16 +24,13 @@ export function usePostForm(onSuccess?: () => void) {
     salary: '',
     jobType: '',
     industry: '',
-    requirements: '',
-    benefits: '',
-    deadline: '',
+    company: '',
   });
 
   // Article-specific fields
   const [articleFields, setArticleFields] = useState<ArticleFieldsData>({
     source: '',
-    summary: '',
-    tags: '',
+    industry: '',
   });
 
   const handleImageSelected = (imageUrl: string | null) => {
@@ -50,14 +47,11 @@ export function usePostForm(onSuccess?: () => void) {
       salary: '',
       jobType: '',
       industry: '',
-      requirements: '',
-      benefits: '',
-      deadline: '',
+      company: '',
     });
     setArticleFields({
       source: '',
-      summary: '',
-      tags: '',
+      industry: '',
     });
   };
 
@@ -79,21 +73,21 @@ export function usePostForm(onSuccess?: () => void) {
     if (!isFormValid()) return Alert.alert("Validation", "Title and content are required.");
 
     let criteria = {};
+    let industry = null;
+
     if (postType === PostType.Job) {
       criteria = {
+        company: jobFields.company,
         location: jobFields.location,
         salary: jobFields.salary,
         jobType: jobFields.jobType,
-        requirements: jobFields.requirements.split(',').map((s: string) => s.trim()).filter(Boolean),
-        benefits: jobFields.benefits.split(',').map((s: string) => s.trim()).filter(Boolean),
-        deadline: jobFields.deadline,
       };
+      industry = jobFields.industry;
     } else if (postType === PostType.News) {
       criteria = {
         source: articleFields.source,
-        summary: articleFields.summary,
-        tags: articleFields.tags.split(',').map(s => s.trim()).filter(Boolean),
       };
+      industry = articleFields.industry;
     }
 
     setLoading(true);
@@ -104,7 +98,7 @@ export function usePostForm(onSuccess?: () => void) {
         title: title.trim(),
         content: content.trim(),
         image_url: imageUrl,
-        industry: postType === PostType.Job ? jobFields.industry : null,
+        industry: industry,
         is_sponsored: false,
         criteria,
       });

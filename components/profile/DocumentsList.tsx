@@ -1,20 +1,15 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
-import { TouchableOpacity } from '@gorhom/bottom-sheet';
-import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
-import { ActionSheetIOS, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import DocumentCard from '../content/DocumentCard';
 import DocumentList from '../content/DocumentList';
-import { DocumentType } from '@/types';
-import { Document } from '@/types';
+import { DocumentType, Document } from '@/types';
 import CustomOptionStrip from '../ui/CustomOptionStrip';
 import { useDocumentUpload } from './useDocumentUpload';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 
-const MODAL_CATEGORIES = ['CV', 'Cover Letter', 'Certificate'];
 
 const DOCUMENT_FILTERS = [
   { icon: 'briefcase', label: 'CV' },
@@ -54,70 +49,17 @@ function filterDocumentsByCategory(documents: any[], categoryFilter: string) {
 function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListProps) {
   const {
     documents,
-    setDocuments,
-    borderColor,
-    backgroundColor,
     textColor,
-    dismiss,
   } = useDocumentUpload();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [file, setFile] = useState<{ name: string; uri: string; mimeType: string } | null>(null);
-  const [pendingDocs, setPendingDocs] = useState<any[]>([]);
-  const iconColor = useThemeColor({}, 'icon');
+  const [, setModalVisible] = useState(false);
   const tintColor = useThemeColor({}, 'tint');
   const mutedText = useThemeColor({}, 'mutedText');
   const [selectedDocumentFilterIndex, setSelectedDocumentFilterIndex] = useState(-1);
-  const [visibleDocumentFilters, setVisibleDocumentFilters] = useState(DOCUMENT_FILTERS);
+  const [visibleDocumentFilters] = useState(DOCUMENT_FILTERS);
   const { openDocumentsSheet } = useBottomSheetManager();
 
-  const handlePickPdf = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        copyToCacheDirectory: false,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        if (asset.mimeType === 'application/pdf' || asset.mimeType?.includes('word')) {
-          setFile({ name: asset.name, uri: asset.uri, mimeType: asset.mimeType });
-        } else {
-          alert('Please select a PDF or Word document.');
-        }
-      }
-    } catch (e) {
-      alert('An error occurred while picking the file.');
-    }
-  };
 
-  const handleAddDocument = () => {
-    if (!file) {
-      alert('Please select a PDF file.');
-      return;
-    }
-    setPendingDocs(prev => [
-      ...prev,
-      {
-        name: file.name,
-        uri: file.uri,
-        mimeType: file.mimeType,
-        category: 'CV',
-        updated: 'Just now',
-      },
-    ]);
-    setFile(null);
-  };
 
-  const handleContinue = () => {
-    setDocuments((prev: any[]) => [
-      ...pendingDocs,
-      ...prev,
-    ]);
-    setPendingDocs([]);
-    setFile(null);
-    setModalVisible(false);
-    // Just use the dismiss function from useDocumentUpload
-    dismiss();
-  };
 
   const openModal = () => {
     setModalVisible(true);
@@ -125,107 +67,10 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
     openDocumentsSheet();
   };
 
-  const closeModal = () => {
-    setModalVisible(false);
-    setFile(null);
-    setPendingDocs([]);
-    // Just use the dismiss function from useDocumentUpload
-    dismiss();
-  };
 
-  const handlePickPdfForType = async (docType: string) => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        copyToCacheDirectory: false,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        if (asset.mimeType === 'application/pdf' || asset.mimeType?.includes('word')) {
-          setPendingDocs(prev => [
-            ...prev,
-            {
-              name: asset.name,
-              uri: asset.uri,
-              mimeType: asset.mimeType,
-              category: docType,
-              updated: 'Just now',
-            },
-          ]);
-        } else {
-          alert('Please select a PDF or Word document.');
-        }
-      }
-    } catch (e) {
-      alert('An error occurred while picking the file.');
-    }
-  };
 
-  const handleReplaceDocument = async (docType: string, currentDoc: any) => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        copyToCacheDirectory: false,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        if (asset.mimeType === 'application/pdf' || asset.mimeType?.includes('word')) {
-          setPendingDocs(prev => prev.map(doc =>
-            doc.name === currentDoc.name && doc.category === currentDoc.category
-              ? {
-                name: asset.name,
-                uri: asset.uri,
-                mimeType: asset.mimeType,
-                category: docType,
-                updated: 'Just now',
-              }
-              : doc
-          ));
-        } else {
-          alert('Please select a PDF or Word document.');
-        }
-      }
-    } catch (e) {
-      alert('An error occurred while picking the file.');
-    }
-  };
 
-  const handleRemoveDocument = (doc: any) => {
-    setPendingDocs(prev => prev.filter(d =>
-      !(d.name === doc.name && d.category === doc.category)
-    ));
-  };
 
-  const handlePendingDocMenu = (docType: string, doc: any) => {
-    const options = ['Cancel', 'Replace', 'Remove'];
-    const actions = [
-      () => { },
-      () => handleReplaceDocument(docType, doc),
-      () => handleRemoveDocument(doc),
-    ];
-    if (process.env.EXPO_OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options,
-          cancelButtonIndex: 0,
-          destructiveButtonIndex: 2,
-        },
-        (buttonIndex) => {
-          if (buttonIndex > 0) actions[buttonIndex]();
-        }
-      );
-    } else {
-      Alert.alert(
-        'Document',
-        `What would you like to do with "${doc.name}"?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Replace', onPress: () => handleReplaceDocument(docType, doc) },
-          { text: 'Remove', style: 'destructive', onPress: () => handleRemoveDocument(doc) },
-        ]
-      );
-    }
-  };
 
   const handleDocumentFilterChange = (index: number) => {
     setSelectedDocumentFilterIndex(index);
@@ -236,21 +81,11 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
     }
   };
 
-  const handleMoreDocumentFilters = () => {
-    console.log('Show more document filters');
-  };
 
   const getSelectedDocumentFilterLabel = () => {
     return selectedDocumentFilterIndex >= 0 ? DOCUMENT_FILTERS[selectedDocumentFilterIndex]?.label : 'All';
   };
 
-  const handleDocumentFiltersChange = (newFilters: any[]) => {
-    setVisibleDocumentFilters(newFilters);
-    // Reset selection if the currently selected filter is no longer visible
-    if (selectedDocumentFilterIndex >= 0 && selectedDocumentFilterIndex >= newFilters.length) {
-      setSelectedDocumentFilterIndex(-1);
-    }
-  };
 
   // Filter documents by category
   const categoryFilteredDocuments = filterDocumentsByCategory(documents, getSelectedDocumentFilterLabel());
