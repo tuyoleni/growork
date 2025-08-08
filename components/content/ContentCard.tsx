@@ -8,6 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import { BadgeCheck } from 'lucide-react-native';
 import { ThemedAvatar } from '../ui/ThemedAvatar';
 import { ThemedIconButton } from '../ui/ThemedIconButton';
+import ThemedButton from '../ui/ThemedButton';
 import PostInteractionBar from './PostInteractionBar';
 import { useRouter } from 'expo-router';
 
@@ -62,6 +63,7 @@ export default function ContentCard({
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
     const borderColor = useThemeColor({}, 'border');
+    const backgroundColor = useThemeColor({}, 'background');
 
     // Log company data being displayed
     React.useEffect(() => {
@@ -97,8 +99,16 @@ export default function ContentCard({
     };
 
     const handleMenuPress = () => {
-        // TODO: Implement menu actions
-        console.log('Menu pressed');
+        // Navigate to post detail or show options
+        if (id) {
+            router.push(`/post/${id}`);
+        }
+    };
+
+    const handleReadMore = () => {
+        if (id) {
+            router.push(`/post/${id}`);
+        }
     };
 
     const renderDetails = () => {
@@ -189,7 +199,7 @@ export default function ContentCard({
                                     {company?.name || criteria?.company}
                                 </ThemedText>
                                 {company?.status === 'approved' && (
-                                    <BadgeCheck size={16} color="#3b82f6" style={styles.verifiedIcon} />
+                                    <BadgeCheck size={16} color={textColor} style={styles.verifiedIcon} />
                                 )}
                             </View>
                             {(company?.industry || company?.location) && (
@@ -224,8 +234,6 @@ export default function ContentCard({
                 {renderDetails()}
             </View>
 
-
-
             {/* Action Row */}
             <View style={styles.actionRow}>
                 <PostInteractionBar
@@ -235,24 +243,21 @@ export default function ContentCard({
                     size="medium"
                 />
                 {variant === 'job' && (
-                    <Pressable
-                        style={[styles.actionButton, hasApplied && styles.appliedButton]}
-                        onPress={onPressApply}
+                    <ThemedButton
+                        title={hasApplied ? 'Applied' : 'Apply Now'}
+                        onPress={onPressApply || (() => { })}
                         disabled={hasApplied}
-                    >
-                        <ThemedText style={[styles.actionButtonText, hasApplied && styles.appliedButtonText]}>
-                            {hasApplied ? 'Applied' : 'Apply Now'}
-                        </ThemedText>
-                    </Pressable>
+                        variant={hasApplied ? 'secondary' : 'primary'}
+                        size="medium"
+                    />
                 )}
                 {variant === 'news' && (
-                    <Pressable style={styles.actionButton} onPress={() => {
-                        if (id) {
-                            router.push(`/post/${id}`);
-                        }
-                    }}>
-                        <ThemedText style={styles.actionButtonText}>Read More</ThemedText>
-                    </Pressable>
+                    <ThemedButton
+                        title="Read More"
+                        onPress={handleReadMore}
+                        variant="primary"
+                        size="medium"
+                    />
                 )}
                 {variant === 'sponsored' && (
                     <ThemedText style={[styles.promotedText, { color: mutedTextColor }]}>Promoted</ThemedText>
@@ -330,24 +335,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-    },
-    actionButton: {
-        backgroundColor: '#007AFF',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-    },
-    actionButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    appliedButton: {
-        backgroundColor: '#10b981',
-        opacity: 0.8,
-    },
-    appliedButtonText: {
-        color: 'white',
     },
     promotedText: {
         fontSize: 12,

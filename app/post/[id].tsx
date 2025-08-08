@@ -9,6 +9,7 @@ import {
   View as RNView,
   Linking,
   Dimensions,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -26,9 +27,11 @@ import { useFlashToast } from '@/components/ui/Flash';
 import PostInteractionBar from '@/components/content/PostInteractionBar';
 import ApplyButton from '@/components/content/post/ApplyButton';
 import PostBadge from '@/components/content/post/PostBadge';
+import ThemedButton from '@/components/ui/ThemedButton';
 import { openGlobalSheet } from '@/utils/globalSheet';
 import JobApplicationForm from '@/components/content/JobApplicationForm';
 import { PostDetailSkeleton } from '@/components/ui/Skeleton';
+import { supabase } from '@/utils/superbase';
 
 const ICON_SIZE = 20;
 const { width: screenWidth } = Dimensions.get('window');
@@ -39,16 +42,35 @@ const PostDetail = () => {
   const toast = useFlashToast();
 
   const [post, setPost] = useState<Post | null>(null);
+  const [companyLogos, setCompanyLogos] = useState<Record<string, string>>({});
 
   const borderColor = useThemeColor({}, 'border');
   const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
   const textColor = useThemeColor({}, 'text');
-  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
   const mutedTextColor = useThemeColor({}, 'mutedText');
 
   const { loading: isLoading, getPostById } = usePostById();
   const { posts: allPosts, loading: feedLoading, fetchPosts } = useFeedPosts();
   const { application, hasApplied, loading: applicationLoading, checkApplicationStatus } = useApplicationStatus(id as string);
+
+  // Function to fetch company data
+  const fetchCompanyData = async (companyId: string) => {
+    try {
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .select('logo_url')
+        .eq('id', companyId)
+        .single();
+
+      if (!companyError && companyData?.logo_url) {
+        return companyData.logo_url;
+      }
+    } catch (error) {
+      console.error('Error fetching company data:', error);
+    }
+    return null;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,6 +92,28 @@ const PostDetail = () => {
       )
       : [];
 
+  // Fetch company logos for recommended posts
+  useEffect(() => {
+    const fetchCompanyLogos = async () => {
+      if (recommendedPosts.length > 0) {
+        const logos: Record<string, string> = {};
+
+        for (const post of recommendedPosts) {
+          if (post.criteria?.companyId) {
+            const logoUrl = await fetchCompanyData(post.criteria.companyId);
+            if (logoUrl) {
+              logos[post.criteria.companyId] = logoUrl;
+            }
+          }
+        }
+
+        setCompanyLogos(logos);
+      }
+    };
+
+    fetchCompanyLogos();
+  }, [recommendedPosts]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -87,6 +131,18 @@ const PostDetail = () => {
     if (post?.criteria?.source) {
       Linking.openURL(post.criteria.source);
     }
+  };
+
+  const handleShare = () => {
+    if (post) {
+      // TODO: Implement share functionality
+      console.log('Share post:', post.id);
+    }
+  };
+
+  const handleMoreOptions = () => {
+    // TODO: Implement more options menu
+    console.log('More options pressed');
   };
 
   if (isLoading || feedLoading) {
@@ -146,14 +202,14 @@ const PostDetail = () => {
         <RNView style={styles.headerRightButtons}>
           <TouchableOpacity
             style={styles.iconButton}
-            onPress={() => console.log('Share pressed')}
+            onPress={handleShare}
             accessibilityLabel="Share"
           >
             <Feather name="share-2" size={ICON_SIZE} color={textColor} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
-            onPress={() => console.log('More options pressed')}
+            onPress={handleMoreOptions}
             accessibilityLabel="More options"
           >
             <Feather name="more-horizontal" size={ICON_SIZE} color={textColor} />
@@ -167,23 +223,32 @@ const PostDetail = () => {
         contentContainerStyle={styles.scrollContent}
       >
         <ThemedView style={styles.contentContainer}>
-          {/* Post Type Badge */}
-          <RNView style={styles.typeBadgeContainer}>
-            <PostBadge
-              label={isJob ? 'Job Posting' : 'News Article'}
-              variant={isJob ? 'success' : 'default'}
-              size="small"
-            />
-            {post.industry && (
-              <PostBadge
-                label={post.industry}
-                size="small"
-              />
-            )}
-          </RNView>
-
           {/* Title */}
           <ThemedText style={styles.postTitle}>{post.title}</ThemedText>
+
+          {/* Company Info - Minimal */}
+          {isJob && post.criteria?.company && (
+            <RNView style={styles.companyRow}>
+              <ThemedText style={[styles.companyName, { color: mutedTextColor }]}>
+                {post.criteria.company}
+              </ThemedText>
+              {post.criteria.location && (
+                <ThemedText style={[styles.locationText, { color: mutedTextColor }]}>
+                  • {post.criteria.location}
+                </ThemedText>
+              )}
+            </RNView>
+          )}
+
+          {/* News Source - Minimal */}
+          {isNews && post.criteria?.source && (
+            <RNView style={styles.sourceRow}>
+              <Feather name="external-link" size={14} color={mutedTextColor} />
+              <ThemedText style={[styles.sourceText, { color: mutedTextColor }]}>
+                {post.criteria.source}
+              </ThemedText>
+            </RNView>
+          )}
 
           {/* Image - only show if provided */}
           {post.image_url && (
@@ -196,87 +261,53 @@ const PostDetail = () => {
             </RNView>
           )}
 
-          {/* Job-specific header */}
-          {isJob && (
-            <RNView style={styles.jobHeader}>
-              <RNView style={styles.companyInfo}>
-                <ThemedText style={styles.companyName}>
-                  {post.criteria?.company || 'Company'}
-                </ThemedText>
-                <RNView style={styles.jobBadges}>
-                  {post.criteria?.location && (
-                    <PostBadge
-                      label={post.criteria.location}
-                      icon="map-pin"
-                      size="small"
-                    />
-                  )}
-                  {post.criteria?.jobType && (
-                    <PostBadge
-                      label={post.criteria.jobType}
-                      icon="clock"
-                      size="small"
-                    />
-                  )}
-                  {post.criteria?.salary && (
-                    <PostBadge
-                      label={post.criteria.salary}
-                      icon="dollar-sign"
-                      size="small"
-                    />
-                  )}
-                </RNView>
-              </RNView>
-            </RNView>
-          )}
+          {/* Content */}
+          <ThemedText style={styles.description}>{post.content}</ThemedText>
 
-          {/* News-specific header */}
-          {isNews && (
-            <RNView style={styles.newsHeader}>
-              {post.criteria?.source && (
-                <TouchableOpacity
-                  style={styles.sourceContainer}
-                  onPress={handleSourcePress}
-                >
-                  <Feather name="external-link" size={16} color="#007AFF" />
-                  <ThemedText style={[styles.sourceText, { color: '#007AFF' }]}>
-                    {post.criteria.source}
+          {/* Minimal Job Details */}
+          {isJob && (
+            <RNView style={styles.jobDetails}>
+              {post.criteria?.salary && (
+                <RNView style={styles.detailItem}>
+                  <Feather name="dollar-sign" size={14} color={mutedTextColor} />
+                  <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                    {post.criteria.salary}
                   </ThemedText>
-                </TouchableOpacity>
+                </RNView>
+              )}
+              {post.criteria?.jobType && (
+                <RNView style={styles.detailItem}>
+                  <Feather name="clock" size={14} color={mutedTextColor} />
+                  <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                    {post.criteria.jobType}
+                  </ThemedText>
+                </RNView>
               )}
             </RNView>
           )}
-
-          {/* Content */}
-          <ThemedText style={styles.description}>{post.content}</ThemedText>
 
           {/* Timestamp */}
           <ThemedText style={[styles.timestamp, { color: mutedTextColor }]}>
             {formatDate(post.created_at)}
           </ThemedText>
 
-          {/* Application Status */}
+          {/* Application Status - Minimal */}
           {isJob && hasApplied && application && (
-            <ThemedView style={[styles.applicationStatus, { borderColor: borderColor }]}>
+            <RNView style={[styles.applicationStatus, { borderColor: borderColor }]}>
               <RNView style={styles.applicationStatusHeader}>
-                <Feather name="check-circle" size={16} color="#10b981" />
-                <ThemedText style={[styles.applicationStatusTitle, { color: '#10b981' }]}>
-                  Application Submitted
+                <Feather name="check-circle" size={16} color={textColor} />
+                <ThemedText style={[styles.applicationStatusTitle, { color: textColor }]}>
+                  Applied
                 </ThemedText>
               </RNView>
               <ThemedText style={[styles.applicationStatusText, { color: mutedTextColor }]}>
-                Applied on {formatDate(application.created_at)}
+                {formatDate(application.created_at)}
               </ThemedText>
-              {application.status && (
-                <ThemedText style={[styles.applicationStatusText, { color: mutedTextColor }]}>
-                  Status: {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                </ThemedText>
-              )}
-            </ThemedView>
+            </RNView>
           )}
         </ThemedView>
 
-        {/* Actions */}
+        {/* Actions - Minimal */}
         <ThemedView style={[styles.actionsContainer, { borderTopColor: borderColor }]}>
           <PostInteractionBar postId={post.id} postOwnerId={post.user_id} size="large" />
           {isJob && (
@@ -309,16 +340,15 @@ const PostDetail = () => {
             />
           )}
           {isNews && post.criteria?.source && (
-            <TouchableOpacity
-              style={styles.readMoreButton}
+            <ThemedButton
+              title="Read More"
               onPress={handleSourcePress}
-            >
-              <ThemedText style={styles.readMoreText}>Read More</ThemedText>
-            </TouchableOpacity>
+              variant="primary"
+              size="medium"
+            />
           )}
         </ThemedView>
 
-        {/* Recommended Posts */}
         {recommendedPosts.length > 0 && (
           <ThemedView style={[styles.similarContainer, { borderTopColor: borderColor }]}>
             <ThemedText style={styles.similarTitle}>
@@ -327,15 +357,19 @@ const PostDetail = () => {
             <RNView style={styles.recommendedListContainer}>
               {recommendedPosts.map((item) => {
                 const itemCompanyName = item.criteria?.company || 'Company';
-                const itemCompanyLogo =
-                  item.criteria?.companyLogo ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(itemCompanyName)}&size=128`;
+                const itemCompanyId = item.criteria?.companyId;
+
+                // Use actual company logo if available, otherwise fallback to UI Avatars
+                const itemCompanyLogo = itemCompanyId && companyLogos[itemCompanyId]
+                  ? companyLogos[itemCompanyId]
+                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(itemCompanyName)}&size=128`;
+
                 return (
                   <TouchableOpacity
                     key={item.id}
                     style={[
                       styles.recommendedItem,
-                      { backgroundColor: backgroundSecondary },
+                      { borderColor: borderColor }
                     ]}
                     onPress={() => router.push(`/post/${item.id}`)}
                   >
@@ -344,17 +378,9 @@ const PostDetail = () => {
                       <ThemedText style={styles.recommendedTitle} numberOfLines={2}>
                         {item.title}
                       </ThemedText>
-                      <ThemedText style={styles.recommendedCompany}>
+                      <ThemedText style={[styles.recommendedCompany, { color: mutedTextColor }]}>
                         {isJob ? itemCompanyName : item.criteria?.source || 'News Source'}
                       </ThemedText>
-                    </RNView>
-                    <RNView style={styles.recommendedRight}>
-                      {isJob && (
-                        <PostBadge label={item.criteria?.location || 'Remote'} size="small" />
-                      )}
-                      {isNews && item.industry && (
-                        <PostBadge label={item.industry} size="small" />
-                      )}
                     </RNView>
                   </TouchableOpacity>
                 );
@@ -385,21 +411,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    minHeight: 60,
+    minHeight: 56,
   },
   headerRightButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12
+    gap: 8
   },
   iconButton: {
     padding: 8,
-    borderRadius: 20,
-    minWidth: 40,
-    minHeight: 40,
+    borderRadius: 4,
+    minWidth: 32,
+    minHeight: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -410,191 +436,136 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   contentContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
   },
-  typeBadgeContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
   postTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 16,
-    lineHeight: 32,
-    letterSpacing: -0.5,
-  },
-  imageContainer: {
-    marginBottom: 24,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  featureImage: {
-    width: '100%',
-    height: 280,
-    borderRadius: 16,
-  },
-  jobHeader: {
-    marginBottom: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.1)',
-  },
-  companyInfo: {
-    gap: 12,
-  },
-  companyName: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '600',
-    color: '#007AFF',
+    marginBottom: 8,
+    lineHeight: 28,
   },
-  jobBadges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  newsHeader: {
-    marginBottom: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255, 149, 0, 0.05)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 149, 0, 0.1)',
-  },
-  sourceContainer: {
+  companyRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
     gap: 8,
   },
-  sourceText: {
+  companyName: {
     fontSize: 16,
     fontWeight: '500',
   },
-  description: {
-    fontSize: 17,
-    lineHeight: 26,
+  locationText: {
+    fontSize: 14,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  sourceText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  imageContainer: {
     marginBottom: 20,
-    letterSpacing: 0.2,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  featureImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 4,
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  jobDetails: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 20,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  detailText: {
+    fontSize: 14,
   },
   timestamp: {
-    fontSize: 14,
+    fontSize: 12,
     marginBottom: 20,
-    fontStyle: 'italic',
   },
   applicationStatus: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 4,
     borderWidth: 1,
     marginBottom: 20,
-    backgroundColor: '#f0fdf4',
   },
   applicationStatusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   applicationStatusTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   applicationStatusText: {
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: 12,
   },
   actionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
-    marginTop: 8,
-  },
-  readMoreButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-    shadowColor: '#007AFF',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  readMoreText: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '600',
   },
   similarContainer: {
-    marginTop: 24,
+    marginTop: 20,
     borderTopWidth: 1,
-    paddingTop: 24,
-    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingHorizontal: 16,
   },
   similarTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   recommendedListContainer: {
-    gap: 16,
+    gap: 12,
   },
   recommendedItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    gap: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    padding: 12,
+    borderRadius: 4,
+    gap: 12,
+    borderWidth: 1,
   },
   recommendedLogo: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 4,
   },
   recommendedInfo: {
     flex: 1,
-    gap: 6,
-    minWidth: 0, // Allow text to shrink
+    gap: 4,
+    minWidth: 0,
   },
   recommendedTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   recommendedCompany: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  recommendedRight: {
-    alignItems: 'flex-end',
-    minWidth: 60,
+    fontSize: 12,
   },
 });
 
