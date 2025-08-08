@@ -224,13 +224,7 @@ const PostDetail = () => {
               />
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleShare}
-            accessibilityLabel="Share"
-          >
-            <Feather name="share-2" size={ICON_SIZE} color={textColor} />
-          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.iconButton}
             onPress={handleMoreOptions}
@@ -250,14 +244,6 @@ const PostDetail = () => {
           {/* Title */}
           <ThemedText style={styles.postTitle}>{post.title}</ThemedText>
 
-          {/* Text-to-Speech Button */}
-          <RNView style={styles.textToSpeechContainer}>
-            <TextToSpeechButton
-              text={`${post.title}. ${post.content}`}
-              title="Listen to Post"
-              size="medium"
-            />
-          </RNView>
 
           {/* Company Info - Minimal */}
           {isJob && post.criteria?.company && (
@@ -270,16 +256,6 @@ const PostDetail = () => {
                   • {post.criteria.location}
                 </ThemedText>
               )}
-            </RNView>
-          )}
-
-          {/* News Source - Minimal */}
-          {isNews && post.criteria?.source && (
-            <RNView style={styles.sourceRow}>
-              <Feather name="external-link" size={14} color={mutedTextColor} />
-              <ThemedText style={[styles.sourceText, { color: mutedTextColor }]}>
-                {post.criteria.source}
-              </ThemedText>
             </RNView>
           )}
 

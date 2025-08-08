@@ -7,19 +7,9 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@/utils/superbase';
 import { useAuth } from '@/hooks/useAuth';
-
-interface Notification {
-    id: string;
-    title: string;
-    body: string;
-    type: string;
-    data?: any;
-    read: boolean;
-    created_at: string;
-    user_id: string;
-}
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/utils/notifications';
+import type { Notification } from '@/types/notifications';
 
 export default function NotificationsScreen() {
     const router = useRouter();
@@ -35,17 +25,7 @@ export default function NotificationsScreen() {
         if (!user?.id) return;
 
         try {
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching notifications:', error);
-                return;
-            }
-
+            const data = await getNotifications(user.id);
             setNotifications(data || []);
         } catch (error) {
             console.error('Error fetching notifications:', error);
@@ -56,15 +36,7 @@ export default function NotificationsScreen() {
 
     const markAsRead = async (notificationId: string) => {
         try {
-            const { error } = await supabase
-                .from('notifications')
-                .update({ read: true })
-                .eq('id', notificationId);
-
-            if (error) {
-                console.error('Error marking notification as read:', error);
-                return;
-            }
+            await markNotificationAsRead(notificationId);
 
             // Update local state
             setNotifications(prev =>
@@ -79,16 +51,7 @@ export default function NotificationsScreen() {
         if (!user?.id) return;
 
         try {
-            const { error } = await supabase
-                .from('notifications')
-                .update({ read: true })
-                .eq('user_id', user.id)
-                .eq('read', false);
-
-            if (error) {
-                console.error('Error marking all notifications as read:', error);
-                return;
-            }
+            await markAllNotificationsAsRead(user.id);
 
             // Update local state
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -116,6 +79,8 @@ export default function NotificationsScreen() {
         // Navigate based on notification type
         if (notification.data?.postId) {
             router.push(`/post/${notification.data.postId}`);
+        } else if (notification.data?.applicationId) {
+            router.push(`/application/${notification.data.applicationId}`);
         }
     };
 

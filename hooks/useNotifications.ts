@@ -3,13 +3,19 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { 
+    checkNotificationPermissions, 
+    requestNotificationPermissions,
+    sendNotification,
+    NotificationType 
+} from '@/utils/notifications';
 
 // Set notification handler (following Expo docs)
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
-        shouldPlaySound: false,
-        shouldSetBadge: false,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
         shouldShowBanner: true,
         shouldShowList: true,
     }),
@@ -18,6 +24,7 @@ Notifications.setNotificationHandler({
 export function useNotifications() {
     const [expoPushToken, setExpoPushToken] = useState('');
     const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);
+    const [permissionsGranted, setPermissionsGranted] = useState<boolean | null>(null);
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
 
@@ -32,7 +39,7 @@ export function useNotifications() {
         });
 
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-            console.log(response);
+            console.log('Notification response received:', response);
         });
 
         return () => {
@@ -45,43 +52,69 @@ export function useNotifications() {
         };
     }, []);
 
+    const checkPermissions = async () => {
+        const granted = await checkNotificationPermissions();
+        setPermissionsGranted(granted);
+        return granted;
+    };
+
+    const requestPermissions = async () => {
+        const granted = await requestNotificationPermissions();
+        setPermissionsGranted(granted);
+        return granted;
+    };
+
     return {
         expoPushToken,
         notification,
+        permissionsGranted,
+        checkPermissions,
+        requestPermissions,
         scheduleNotification: async (title: string, body: string, data?: any) => {
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title,
-                    body,
-                    data: data || {},
-                },
-                trigger: null, // null means show immediately
-            });
+            const granted = await checkPermissions();
+            if (!granted) {
+                const requested = await requestPermissions();
+                if (!requested) {
+                    console.warn('Notification permissions not granted');
+                    return;
+                }
+            }
+
+            await sendNotification(
+                '', // userId will be handled by the calling function
+                title,
+                body,
+                NotificationType.POST_LIKE, // default type
+                data,
+                expoPushToken
+            );
         },
         notifyPostBookmark: async (postId: string, postOwnerId: string, bookmarkerName: string) => {
             try {
-                // Check if notifications are permitted
-                const { status } = await Notifications.getPermissionsAsync();
-                if (status !== 'granted') {
-                    console.warn('Notification permissions not granted');
-                    return;
+                const granted = await checkPermissions();
+                if (!granted) {
+                    const requested = await requestPermissions();
+                    if (!requested) {
+                        console.warn('Notification permissions not granted');
+                        return;
+                    }
                 }
 
                 const title = 'New Bookmark';
                 const body = `${bookmarkerName} bookmarked your post`;
 
-                await Notifications.scheduleNotificationAsync({
-                    content: {
-                        title,
-                        body,
-                        data: {
-                            type: 'post_bookmark',
-                            postId,
-                            bookmarkerName,
-                        },
+                await sendNotification(
+                    postOwnerId,
+                    title,
+                    body,
+                    NotificationType.POST_BOOKMARK,
+                    {
+                        type: 'post_bookmark',
+                        postId,
+                        bookmarkerName,
                     },
-                    trigger: null,
-                });
+                    expoPushToken
+                );
             } catch (error) {
                 console.warn('Failed to send bookmark notification:', error);
             }

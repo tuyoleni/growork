@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/utils/superbase';
-import { sendPushNotification, NotificationType } from '@/utils/notifications';
+import { sendNotification, NotificationType } from '@/utils/notifications';
 
 export function useApplicationNotifications() {
     const { user } = useAuth();
@@ -37,13 +37,19 @@ export function useApplicationNotifications() {
                     const title = `Application status updated`;
                     const body = `Your application for "${post.title}" is now ${newStatus}`;
 
-                    await sendPushNotification(applicantId, title, body, {
-                        type: NotificationType.APPLICATION_STATUS,
-                        applicationId,
-                        postId: post.user_id,
-                        newStatus,
-                        postOwnerName,
-                    });
+                    await sendNotification(
+                        applicantId,
+                        title,
+                        body,
+                        NotificationType.APPLICATION_STATUS,
+                        {
+                            type: 'application_status',
+                            applicationId,
+                            postId: post.user_id,
+                            newStatus,
+                            postOwnerName,
+                        }
+                    );
                 }
             }
         } catch (error) {
@@ -64,12 +70,18 @@ export function useApplicationNotifications() {
             const title = `New application received`;
             const body = `${applicantName} applied to your job "${jobTitle}"`;
 
-            await sendPushNotification(postOwnerId, title, body, {
-                type: NotificationType.APPLICATION_STATUS,
-                applicationId,
-                applicantName,
-                jobTitle,
-            });
+            await sendNotification(
+                postOwnerId,
+                title,
+                body,
+                NotificationType.APPLICATION_STATUS,
+                {
+                    type: 'application_status',
+                    applicationId,
+                    applicantName,
+                    jobTitle,
+                }
+            );
         } catch (error) {
             console.error('Error sending new application notification:', error);
         }

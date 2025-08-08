@@ -29,7 +29,10 @@ export enum UserType {
 }
 
 export enum NotificationType {
+  POST_LIKE = 'post_like',
+  POST_COMMENT = 'post_comment',
+  POST_BOOKMARK = 'post_bookmark',
+  COMMENT_LIKE = 'comment_like',
   APPLICATION_STATUS = 'application_status',
-  NEW_APPLICATION = 'new_application',
-  INTERACTION = 'interaction',
+  COMPANY_STATUS = 'company_status',
 } 

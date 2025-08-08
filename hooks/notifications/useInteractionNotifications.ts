@@ -1,11 +1,5 @@
 import { useCallback } from 'react';
-import * as Notifications from 'expo-notifications';
-
-// Helper function to check notification permissions
-async function checkNotificationPermissions() {
-    const { status } = await Notifications.getPermissionsAsync();
-    return status === 'granted';
-}
+import { sendNotification, checkNotificationPermissions, requestNotificationPermissions } from '@/utils/notifications';
 
 export function useInteractionNotifications() {
     const notifyPostComment = useCallback(async (
@@ -16,27 +10,29 @@ export function useInteractionNotifications() {
     ) => {
         try {
             // Check if notifications are permitted
-            const hasPermission = await checkNotificationPermissions();
+            let hasPermission = await checkNotificationPermissions();
             if (!hasPermission) {
-                console.warn('Notification permissions not granted');
-                return;
+                hasPermission = await requestNotificationPermissions();
+                if (!hasPermission) {
+                    console.warn('Notification permissions not granted');
+                    return;
+                }
             }
 
             const title = 'New Comment';
             const body = `${commenterName} commented on your post: "${commentContent.substring(0, 50)}${commentContent.length > 50 ? '...' : ''}"`;
 
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title,
-                    body,
-                    data: {
-                        type: 'post_comment',
-                        postId,
-                        commenterName,
-                    },
-                },
-                trigger: null,
-            });
+            await sendNotification(
+                postOwnerId,
+                title,
+                body,
+                'post_comment',
+                {
+                    type: 'post_comment',
+                    postId,
+                    commenterName,
+                }
+            );
         } catch (error) {
             console.warn('Failed to send post comment notification:', error);
         }
@@ -49,27 +45,29 @@ export function useInteractionNotifications() {
     ) => {
         try {
             // Check if notifications are permitted
-            const hasPermission = await checkNotificationPermissions();
+            let hasPermission = await checkNotificationPermissions();
             if (!hasPermission) {
-                console.warn('Notification permissions not granted');
-                return;
+                hasPermission = await requestNotificationPermissions();
+                if (!hasPermission) {
+                    console.warn('Notification permissions not granted');
+                    return;
+                }
             }
 
             const title = 'New Like';
             const body = `${likerName} liked your comment`;
 
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title,
-                    body,
-                    data: {
-                        type: 'comment_like',
-                        commentId,
-                        likerName,
-                    },
-                },
-                trigger: null,
-            });
+            await sendNotification(
+                commentOwnerId,
+                title,
+                body,
+                'comment_like',
+                {
+                    type: 'comment_like',
+                    commentId,
+                    likerName,
+                }
+            );
         } catch (error) {
             console.warn('Failed to send comment like notification:', error);
         }
@@ -82,27 +80,29 @@ export function useInteractionNotifications() {
     ) => {
         try {
             // Check if notifications are permitted
-            const hasPermission = await checkNotificationPermissions();
+            let hasPermission = await checkNotificationPermissions();
             if (!hasPermission) {
-                console.warn('Notification permissions not granted');
-                return;
+                hasPermission = await requestNotificationPermissions();
+                if (!hasPermission) {
+                    console.warn('Notification permissions not granted');
+                    return;
+                }
             }
 
             const title = 'New Like';
             const body = `${likerName} liked your post`;
 
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title,
-                    body,
-                    data: {
-                        type: 'post_like',
-                        postId,
-                        likerName,
-                    },
-                },
-                trigger: null,
-            });
+            await sendNotification(
+                postOwnerId,
+                title,
+                body,
+                'post_like',
+                {
+                    type: 'post_like',
+                    postId,
+                    likerName,
+                }
+            );
         } catch (error) {
             console.warn('Failed to send post like notification:', error);
         }

@@ -5,4 +5,5 @@ export * from './documents';
 export * from './enums';
 export * from './posts';
 export * from './profile';
+export * from './notifications';
 

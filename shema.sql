@@ -4,6 +4,7 @@ CREATE TYPE ad_status AS ENUM ('active', 'paused', 'completed');
 CREATE TYPE application_status AS ENUM ('pending', 'reviewed', 'accepted', 'rejected');
 CREATE TYPE document_type AS ENUM ('cv', 'cover_letter', 'certificate', 'other');
 CREATE TYPE user_type AS ENUM ('user', 'business');
+CREATE TYPE notification_type AS ENUM ('post_like', 'post_comment', 'post_bookmark', 'comment_like', 'application_status', 'company_status');
 
 -- Create a function to update the updated_at timestamp automatically
 CREATE OR REPLACE FUNCTION update_modified_column()
@@ -19,6 +20,25 @@ CREATE TRIGGER set_posts_updated_at
 BEFORE UPDATE ON public.posts
 FOR EACH ROW
 EXECUTE FUNCTION update_modified_column();
+
+-- Create notifications table
+CREATE TABLE public.notifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  body text NOT NULL,
+  type notification_type NOT NULL,
+  data jsonb,
+  read boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- Create index for notifications
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications(created_at DESC);
 
 -- Create companies table
 CREATE TABLE public.companies (

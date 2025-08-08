@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { handleNotificationResponse } from '@/utils/notifications';
+import { handleNotificationResponse, checkNotificationPermissions, requestNotificationPermissions } from '@/utils/notifications';
 
 // Configure default notification behavior
 Notifications.setNotificationHandler({
@@ -17,8 +17,8 @@ Notifications.setNotificationHandler({
 });
 
 export function useNotificationSetup() {
-    const notificationListener = useRef(null);
-    const responseListener = useRef(null);
+    const notificationListener = useRef<Notifications.Subscription | null>(null);
+    const responseListener = useRef<Notifications.Subscription | null>(null);
 
     useEffect(() => {
         registerForPushNotificationsAsync();
@@ -26,9 +26,10 @@ export function useNotificationSetup() {
         // Set up notification listeners
         notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
             console.log('Received notification:', notification);
-        }) as unknown as null;
+        });
 
-        responseListener.current = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse) as unknown as null;
+        responseListener.current = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+
         return () => {
             if (notificationListener.current) {
                 Notifications.removeNotificationSubscription(notificationListener.current);
@@ -57,17 +58,13 @@ async function registerForPushNotificationsAsync() {
     }
 
     // Check permissions
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-        console.warn('Failed to get push token for push notification!');
-        return;
+    let hasPermission = await checkNotificationPermissions();
+    if (!hasPermission) {
+        hasPermission = await requestNotificationPermissions();
+        if (!hasPermission) {
+            console.warn('Failed to get push token for push notification!');
+            return;
+        }
     }
 
     try {
