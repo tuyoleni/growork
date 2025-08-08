@@ -5,11 +5,9 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   View as RNView,
   Linking,
   Dimensions,
-  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -32,6 +30,8 @@ import { openGlobalSheet } from '@/utils/globalSheet';
 import JobApplicationForm from '@/components/content/JobApplicationForm';
 import { PostDetailSkeleton } from '@/components/ui/Skeleton';
 import { supabase } from '@/utils/superbase';
+import { TextToSpeechButton } from '@/components/content/TextToSpeechButton';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 
 const ICON_SIZE = 20;
 const { width: screenWidth } = Dimensions.get('window');
@@ -53,6 +53,14 @@ const PostDetail = () => {
   const { loading: isLoading, getPostById } = usePostById();
   const { posts: allPosts, loading: feedLoading, fetchPosts } = useFeedPosts();
   const { application, hasApplied, loading: applicationLoading, checkApplicationStatus } = useApplicationStatus(id as string);
+  const { speak, stop, isSpeaking, isPaused } = useTextToSpeech();
+
+  // Cleanup text-to-speech when component unmounts
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop]);
 
   // Function to fetch company data
   const fetchCompanyData = async (companyId: string) => {
@@ -200,6 +208,22 @@ const PostDetail = () => {
           <Feather name="arrow-left" size={ICON_SIZE} color={textColor} />
         </TouchableOpacity>
         <RNView style={styles.headerRightButtons}>
+          {post && (
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => {
+                const textToSpeak = `${post.title}. ${post.content}`;
+                speak(textToSpeak);
+              }}
+              accessibilityLabel="Listen to post"
+            >
+              <Feather
+                name={isSpeaking ? (isPaused ? 'play' : 'pause') : 'volume-2'}
+                size={ICON_SIZE}
+                color={textColor}
+              />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.iconButton}
             onPress={handleShare}
@@ -225,6 +249,15 @@ const PostDetail = () => {
         <ThemedView style={styles.contentContainer}>
           {/* Title */}
           <ThemedText style={styles.postTitle}>{post.title}</ThemedText>
+
+          {/* Text-to-Speech Button */}
+          <RNView style={styles.textToSpeechContainer}>
+            <TextToSpeechButton
+              text={`${post.title}. ${post.content}`}
+              title="Listen to Post"
+              size="medium"
+            />
+          </RNView>
 
           {/* Company Info - Minimal */}
           {isJob && post.criteria?.company && (
@@ -444,6 +477,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     lineHeight: 28,
+  },
+  textToSpeechContainer: {
+    marginBottom: 16,
   },
   companyRow: {
     flexDirection: 'row',
