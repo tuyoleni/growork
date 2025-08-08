@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/utils/superbase';
-import { sendNotification, NotificationType } from '@/utils/notifications';
+import { sendNotification } from '@/utils/notifications';
 
 export function useApplicationNotifications() {
     const { user } = useAuth();
@@ -41,7 +41,7 @@ export function useApplicationNotifications() {
                         applicantId,
                         title,
                         body,
-                        NotificationType.APPLICATION_STATUS,
+                        'application_status',
                         {
                             type: 'application_status',
                             applicationId,
@@ -74,7 +74,7 @@ export function useApplicationNotifications() {
                 postOwnerId,
                 title,
                 body,
-                NotificationType.APPLICATION_STATUS,
+                'application_status',
                 {
                     type: 'application_status',
                     applicationId,
