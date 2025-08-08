@@ -28,6 +28,12 @@ interface SettingsItemProps {
   onSwitchChange?: (value: boolean) => void;
   destructive?: boolean;
   iconColor?: string;
+  // Text input props
+  showTextInput?: boolean;
+  textInputValue?: string;
+  textInputPlaceholder?: string;
+  onTextInputChange?: (text: string) => void;
+  textInputProps?: any;
 }
 
 interface SettingsSection {
@@ -39,7 +45,7 @@ export default function Settings() {
   const router = useRouter();
   const { signOut, user } = useAuth();
   const colorScheme = useColorScheme();
-  const textColor = useThemeColor({}, 'text');
+    const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
 
   const handleSignOut = () => {

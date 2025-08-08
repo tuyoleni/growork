@@ -4,10 +4,23 @@ import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { useColorScheme } from 'react-native';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? 'light';
   const tabBarBackground = Colors[colorScheme].background;
+  const { isBusinessUser } = usePermissions();
+  const applicationTabOptions = isBusinessUser
+    ? {
+      title: 'Applications',
+      tabBarIcon: ({ color }: { color: string }) => (
+        <Feather name="briefcase" size={20} color={color} />
+      ),
+      tabBarButton: (props: any) => <HapticTab {...props} />,
+    }
+    : {
+      href: null as any,
+    };
   return (
     <Tabs
       screenOptions={{
@@ -31,14 +44,8 @@ export default function TabLayout() {
           tabBarButton: (props) => <HapticTab {...props} />,
         }}
       />
-      <Tabs.Screen
-        name="bottom-sheet-test"
-        options={{
-          title: 'Test',
-          tabBarIcon: ({ color }) => <Feather name="layers" size={20} color={color} />,
-          tabBarButton: (props) => <HapticTab {...props} />,
-        }}
-      />
+
+      <Tabs.Screen name="applications" options={applicationTabOptions as any} />
       <Tabs.Screen
         name="bookmarks"
         options={{

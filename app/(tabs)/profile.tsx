@@ -10,21 +10,21 @@ import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';
 import React, { useState, useRef } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, Pressable, View } from 'react-native';
-import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-import { DocumentType } from '@/types';
-import { UserType } from '@/types/enums';
+import { Animated, StyleSheet, View } from 'react-native';
+// import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+// import { DocumentType } from '@/types';
+// import { UserType } from '@/types/enums';
 import { Feather } from '@expo/vector-icons';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
-import { calculateProfileStrength, formatUserDetails } from '@/lib/utils';
+import { calculateProfileStrength } from '@/lib/utils';
 
 const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 
 export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
-  const { profile, loading, user } = useAuth();
+  const { profile, loading } = useAuth();
   const scrollY = useRef(new Animated.Value(0)).current;
   const iconColor = useThemeColor({}, 'icon');
   const backgroundColor = useThemeColor({}, 'background');
@@ -35,9 +35,6 @@ export default function Profile() {
   // If loading, you can show a loader or return null
   if (loading) return null;
 
-  // Debug: log profile and user data
-  console.log('Profile:', profile);
-  console.log('User:', user);
 
   // Placeholder image for avatar, use name or username if available
   const avatarName = profile
@@ -52,18 +49,22 @@ export default function Profile() {
 
   // Calculate profile strength and format user details
   const profileStrength = calculateProfileStrength(profile);
-  const userDetails = formatUserDetails(profile);
+
+  // Build subtitle
+  const subtitleParts = [];
+  if (profile?.profession) subtitleParts.push(profile.profession);
+  if (profile?.location) subtitleParts.push(profile.location);
+  const subtitle = subtitleParts.length > 0 ? subtitleParts.join(' • ') : 'No profession or location set';
 
   // Compose header props from profile or fallback
   const headerProps = {
     name: profile ? `${profile.name} ${profile.surname}` : 'User',
     avatarUrl: profile && profile.avatar_url ? profile.avatar_url : placeholderAvatar,
     status: 'Available',
-    subtitle: userDetails.subtitle,
+    subtitle: subtitle,
     bio: profile?.bio || undefined,
     profileStrength: `Profile Strength: ${profileStrength.level} (${profileStrength.percentage}%)`,
     profileStrengthDescription: profileStrength.description,
-    details: userDetails.details,
     stats: [
       { label: 'Following', value: 0 }, // TODO: Replace with real data
       { label: 'Channels', value: 0 },  // TODO: Replace with real data

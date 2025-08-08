@@ -1,15 +1,15 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import DocumentList from '../content/DocumentList';
-import { DocumentType, Document } from '@/types';
+import { Document } from '@/types';
 import CustomOptionStrip from '../ui/CustomOptionStrip';
-import { useDocumentUpload } from './useDocumentUpload';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-
+import { useDocuments } from '@/hooks/useDocuments';
+import { useAuth } from '@/hooks/useAuth';
 
 const DOCUMENT_FILTERS = [
   { icon: 'briefcase', label: 'CV' },
@@ -25,19 +25,22 @@ const ALL_DOCUMENT_OPTIONS = [
 
 interface DocumentsListProps {
   selectedDocumentFilter?: string;
+  showHeader?: boolean;
+  showUploadButton?: boolean;
+  onUploadPress?: () => void;
 }
 
-function filterDocumentsByCategory(documents: any[], categoryFilter: string) {
+function filterDocumentsByCategory(documents: Document[], categoryFilter: string) {
   if (!categoryFilter || categoryFilter === 'All') return documents;
 
   return documents.filter(doc => {
-    const docCategory = doc.category?.toLowerCase() || '';
+    const docCategory = doc.type?.toLowerCase() || '';
     const filterCategory = categoryFilter.toLowerCase();
 
     // Map filter labels to document categories
     const categoryMapping: Record<string, string[]> = {
       'cv': ['cv', 'resume'],
-      'cover letter': ['cover letter', 'coverletter'],
+      'cover letter': ['cover_letter', 'coverletter'],
       'certificate': ['certificate', 'cert', 'diploma', 'achievement']
     };
 
@@ -46,70 +49,47 @@ function filterDocumentsByCategory(documents: any[], categoryFilter: string) {
   });
 }
 
-function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListProps) {
-  const {
-    documents,
-    textColor,
-  } = useDocumentUpload();
+function DocumentsListInner({
+  selectedDocumentFilter = 'All',
+  showHeader = true,
+  showUploadButton = true,
+  onUploadPress
+}: DocumentsListProps) {
+  const { user } = useAuth();
+  const { documents, loading, fetchDocuments } = useDocuments(user?.id);
   const [, setModalVisible] = useState(false);
   const tintColor = useThemeColor({}, 'tint');
   const mutedText = useThemeColor({}, 'mutedText');
+  const textColor = useThemeColor({}, 'text');
   const [selectedDocumentFilterIndex, setSelectedDocumentFilterIndex] = useState(-1);
   const [visibleDocumentFilters] = useState(DOCUMENT_FILTERS);
   const { openDocumentsSheet } = useBottomSheetManager();
 
-
-
+  useEffect(() => {
+    if (user?.id) {
+      fetchDocuments();
+    }
+  }, [user?.id, fetchDocuments]);
 
   const openModal = () => {
-    setModalVisible(true);
-    // Use the centralized bottom sheet manager instead of direct ref manipulation
-    openDocumentsSheet();
-  };
-
-
-
-
-
-
-  const handleDocumentFilterChange = (index: number) => {
-    setSelectedDocumentFilterIndex(index);
-    if (index >= 0) {
-      console.log('Document filter changed to:', DOCUMENT_FILTERS[index]?.label);
+    if (onUploadPress) {
+      onUploadPress();
     } else {
-      console.log('Filter cleared');
+      setModalVisible(true);
+      openDocumentsSheet();
     }
   };
 
+  const handleDocumentFilterChange = (index: number) => {
+    setSelectedDocumentFilterIndex(index);
+  };
 
   const getSelectedDocumentFilterLabel = () => {
     return selectedDocumentFilterIndex >= 0 ? DOCUMENT_FILTERS[selectedDocumentFilterIndex]?.label : 'All';
   };
 
-
   // Filter documents by category
   const categoryFilteredDocuments = filterDocumentsByCategory(documents, getSelectedDocumentFilterLabel());
-
-  // Create properly typed document objects that are compatible with DocumentList component
-  const documentsForList = categoryFilteredDocuments.map(doc => {
-    // Create a valid Document object with required fields
-    const document: Document = {
-      id: doc.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
-      user_id: doc.user_id || 'unknown',
-      type: doc.category as DocumentType || DocumentType.Other,
-      name: doc.name,
-      file_url: doc.uri || '',
-      uploaded_at: new Date().toISOString()
-    };
-
-    // Add display properties used by DocumentList
-    return {
-      ...document,
-      updated: doc.updated || 'Recently',
-      category: doc.category,
-      note: doc.note
-    };
-  });
 
   const handleDocumentPress = (document: Document) => {
     console.log('Document pressed:', document.name);
@@ -140,21 +120,25 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
   return (
     <>
       {/* Document Heading */}
-      <View style={styles.headerRow}>
-        <ThemedText style={styles.headerTitle}>Documents</ThemedText>
-        <Pressable
-          onPress={() => {
-            if (process.env.EXPO_OS === 'ios') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-            openModal();
-          }}
-        >
-          <ThemedText style={[styles.uploadText, { color: tintColor }]}>
-            Upload
-          </ThemedText>
-        </Pressable>
-      </View>
+      {showHeader && (
+        <View style={styles.headerRow}>
+          <ThemedText style={styles.headerTitle}>Documents</ThemedText>
+          {showUploadButton && (
+            <Pressable
+              onPress={() => {
+                if (process.env.EXPO_OS === 'ios') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+                openModal();
+              }}
+            >
+              <ThemedText style={[styles.uploadText, { color: tintColor }]}>
+                Upload
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       {/* Document Filter */}
       <View style={{ paddingHorizontal: 16, paddingVertical: 8, marginBottom: 16 }}>
@@ -169,30 +153,48 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
       </View>
 
       {/* Documents List */}
-      {documentsForList.length === 0 ? (
-        <Pressable
-          style={({ pressed }) => [
-            styles.emptyState,
-            { opacity: pressed ? 0.7 : 1 }
-          ]}
-          onPress={() => {
-            if (process.env.EXPO_OS === 'ios') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-            openModal();
-          }}
-        >
-          <Feather name="folder" size={48} color={mutedText} />
-          <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
-            No Documents Yet
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ThemedText style={[styles.loadingText, { color: mutedText }]}>
+            Loading documents...
           </ThemedText>
-          <ThemedText style={[styles.emptyDescription, { color: mutedText }]}>
-            Tap to upload your CV, cover letter, and certificates
-          </ThemedText>
-        </Pressable>
+        </View>
+      ) : categoryFilteredDocuments.length === 0 ? (
+        showUploadButton ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.emptyState,
+              { opacity: pressed ? 0.7 : 1 }
+            ]}
+            onPress={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+              openModal();
+            }}
+          >
+            <Feather name="folder" size={48} color={mutedText} />
+            <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
+              No Documents Yet
+            </ThemedText>
+            <ThemedText style={[styles.emptyDescription, { color: mutedText }]}>
+              Tap to upload your CV, cover letter, and certificates
+            </ThemedText>
+          </Pressable>
+        ) : (
+          <View style={styles.emptyState}>
+            <Feather name="folder" size={48} color={mutedText} />
+            <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
+              No Documents Yet
+            </ThemedText>
+            <ThemedText style={[styles.emptyDescription, { color: mutedText }]}>
+              No documents found
+            </ThemedText>
+          </View>
+        )
       ) : (
         <DocumentList
-          documents={documentsForList}
+          documents={categoryFilteredDocuments}
           groupedByCategory={true}
           onDocumentPress={handleDocumentPress}
           onDocumentDownload={handleDocumentDownload}
@@ -201,8 +203,6 @@ function DocumentsListInner({ selectedDocumentFilter = 'All' }: DocumentsListPro
           emptyText={`No ${getSelectedDocumentFilterLabel().toLowerCase()} documents found`}
         />
       )}
-
-      {/* We're now using the centralized BottomSheetManager via openDocumentsSheet */}
     </>
   );
 }
@@ -269,6 +269,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
   list: {
     width: '100%',

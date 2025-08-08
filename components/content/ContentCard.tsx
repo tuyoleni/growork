@@ -10,289 +10,247 @@ import { ThemedAvatar } from '../ui/ThemedAvatar';
 import { ThemedIconButton } from '../ui/ThemedIconButton';
 import PostInteractionBar from './PostInteractionBar';
 import { useRouter } from 'expo-router';
-import { useActionSheet } from '@expo/react-native-action-sheet';
-import { useAuth } from '@/hooks/useAuth';
 
 export interface ContentCardProps {
     id?: string;
     variant: 'job' | 'news' | 'sponsored';
     title: string;
-    postTitle: string;
-    username: string;
-    name: string;
-    avatarImage?: string;
-    mainImage?: string;
     description: string;
-    badgeText?: string;
-    badgeVariant?: 'success' | 'error' | 'warning' | 'info';
-    isVerified?: boolean;
-    industry?: string;
-    onPressApply?: () => void;
-    jobId?: string;
-    style?: any;
-    // Enhanced data fields
-    likesCount?: number;
-    commentsCount?: number;
+    mainImage?: string;
     createdAt?: string;
-    criteria?: any;
-    isSponsored?: boolean;
-    isLiked?: boolean;
-    isBookmarked?: boolean;
-    user_id?: string;
-    // Application status
+    criteria?: {
+        companyId?: string;
+        company?: string;
+        location?: string;
+        salary?: string;
+        jobType?: string;
+        source?: string;
+        publication_date?: string;
+    };
+    isVerified?: boolean;
+    onPressApply?: () => void;
     hasApplied?: boolean;
-    applicationStatus?: string;
+    user_id?: string;
+    style?: any;
+    // Company information (if available)
+    company?: {
+        id: string;
+        name: string;
+        logo_url?: string;
+        industry?: string;
+        location?: string;
+        status?: string;
+    };
 }
 
 export default function ContentCard({
     id,
     variant,
-    postTitle,
-    username,
-    name,
-    avatarImage,
-    mainImage,
+    title,
     description,
-    isVerified = false,
-    industry,
-    onPressApply,
-    style,
+    mainImage,
     createdAt,
     criteria,
-    user_id,
+    isVerified = false,
+    onPressApply,
     hasApplied = false,
-    applicationStatus,
+    user_id,
+    style,
+    company,
 }: ContentCardProps) {
     const router = useRouter();
-    const { user } = useAuth();
-    const { showActionSheetWithOptions } = useActionSheet();
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
     const borderColor = useThemeColor({}, 'border');
 
-
+    // Log company data being displayed
+    React.useEffect(() => {
+        console.log('=== ContentCard Company Data ===');
+        console.log('Company object:', company);
+        console.log('Criteria company:', criteria?.company);
+        console.log('Company ID:', company?.id || criteria?.companyId);
+        console.log('Company name:', company?.name || criteria?.company);
+        console.log('Company logo URL:', company?.logo_url);
+        console.log('Company industry:', company?.industry);
+        console.log('Company location:', company?.location);
+        console.log('Company status:', company?.status);
+        console.log('==============================');
+    }, [company, criteria]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
         const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-        let timeAgo = '';
-        if (diff === 0) timeAgo = 'Today';
-        else if (diff === 1) timeAgo = 'Yesterday';
-        else if (diff < 7) timeAgo = `${diff} days ago`;
-        else if (diff < 30) timeAgo = `${Math.floor(diff / 7)} weeks ago`;
-        else if (diff < 365) timeAgo = `${Math.floor(diff / 30)} months ago`;
-        else timeAgo = `${Math.floor(diff / 365)} years ago`;
-
-        const time = date.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
-
-        return `${timeAgo} at ${time}`;
+        if (diff === 0) return 'Today';
+        if (diff === 1) return 'Yesterday';
+        if (diff < 7) return `${diff} days ago`;
+        if (diff < 30) return `${Math.floor(diff / 7)} weeks ago`;
+        if (diff < 365) return `${Math.floor(diff / 30)} months ago`;
+        return `${Math.floor(diff / 365)} years ago`;
     };
 
-    const handleCardPress = () => {
-        if (id) {
-            router.push(`/post/${id}`);
+    const handleCompanyPress = () => {
+        if (company?.id) {
+            router.push(`/profile/CompanyManagement?id=${company.id}`);
         }
     };
 
-    const handleProfilePress = () => {
-        // Navigate to user profile
-        console.log('Navigate to profile:', username);
+    const handleMenuPress = () => {
+        // TODO: Implement menu actions
+        console.log('Menu pressed');
     };
 
-    const handleMenuPress = () => {
-        const isOwner = user?.id === user_id;
+    const renderDetails = () => {
+        if (!criteria) return null;
 
-        if (!isOwner) return;
+        const details = [];
+        const uniqueId = id || `card-${title}-${variant}`;
 
-        const options = [
-            'View Stats',
-            'Promote Post',
-            'Edit Post',
-            'Delete Post',
-            'Cancel'
-        ];
+        // Location
+        if (criteria.location) {
+            details.push(
+                <View key={`${uniqueId}-location`} style={styles.detailRow}>
+                    <Feather name="map-pin" size={14} color={mutedTextColor} />
+                    <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                        {criteria.location}
+                    </ThemedText>
+                </View>
+            );
+        }
 
-        const destructiveButtonIndex = 3; // Delete Post
-        const cancelButtonIndex = 4; // Cancel
-
-        showActionSheetWithOptions(
-            {
-                options,
-                cancelButtonIndex,
-                destructiveButtonIndex,
-                title: 'Post Options',
-                message: 'Choose an action for this post',
-            },
-            (selectedIndex?: number) => {
-                if (selectedIndex === 0) {
-                    // View Stats
-                    console.log('View stats for post:', id);
-                    // TODO: Navigate to stats page
-                } else if (selectedIndex === 1) {
-                    // Promote Post
-                    console.log('Promote post:', id);
-                    // TODO: Open promotion modal
-                } else if (selectedIndex === 2) {
-                    // Edit Post
-                    console.log('Edit post:', id);
-                    // TODO: Navigate to edit page
-                } else if (selectedIndex === 3) {
-                    // Delete Post
-                    console.log('Delete post:', id);
-                    // TODO: Show delete confirmation
-                }
+        // Job-specific details
+        if (variant === 'job') {
+            if (criteria.salary) {
+                details.push(
+                    <View key={`${uniqueId}-salary`} style={styles.detailRow}>
+                        <Feather name="dollar-sign" size={14} color={mutedTextColor} />
+                        <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                            {criteria.salary}
+                        </ThemedText>
+                    </View>
+                );
             }
-        );
+            if (criteria.jobType) {
+                details.push(
+                    <View key={`${uniqueId}-jobType`} style={styles.detailRow}>
+                        <Feather name="clock" size={14} color={mutedTextColor} />
+                        <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                            {criteria.jobType}
+                        </ThemedText>
+                    </View>
+                );
+            }
+        }
+
+        // News-specific details
+        if (variant === 'news') {
+            if (criteria.source) {
+                details.push(
+                    <View key={`${uniqueId}-source`} style={styles.detailRow}>
+                        <Feather name="external-link" size={14} color={mutedTextColor} />
+                        <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                            {criteria.source}
+                        </ThemedText>
+                    </View>
+                );
+            }
+            if (criteria.publication_date) {
+                details.push(
+                    <View key={`${uniqueId}-date`} style={styles.detailRow}>
+                        <Feather name="calendar" size={14} color={mutedTextColor} />
+                        <ThemedText style={[styles.detailText, { color: mutedTextColor }]}>
+                            {formatDate(criteria.publication_date)}
+                        </ThemedText>
+                    </View>
+                );
+            }
+        }
+
+        return <View style={styles.detailsContainer}>{details}</View>;
     };
 
     return (
         <ThemedView style={[styles.container, { borderBottomColor: borderColor + '20' }, style]}>
-            {/* Header */}
-            <Pressable style={styles.header} onPress={handleProfilePress}>
-                <ThemedAvatar
-                    size={40}
-                    image={avatarImage || ''}
-                />
-                <View style={styles.headerText}>
-                    <View style={styles.nameRow}>
-                        <ThemedText style={[styles.name, { color: textColor }]} numberOfLines={1}>
-                            {name}
-                        </ThemedText>
-                        {isVerified && (
-                            <BadgeCheck size={16} color="#3b82f6" style={styles.verifiedIcon} />
-                        )}
-                    </View>
-                    <ThemedText style={[styles.username, { color: mutedTextColor }]} numberOfLines={1}>
-                        @{username}
-                    </ThemedText>
-                </View>
-                {industry && (
-                    <ThemedText style={[styles.industryText, { color: mutedTextColor }]}>
-                        {industry}
-                    </ThemedText>
-                )}
-                {user?.id === user_id && (
+
+            {/* Profile Header */}
+            {(company || criteria?.company) && (
+                <View style={styles.profileHeader}>
+                    <Pressable style={styles.profileInfo} onPress={handleCompanyPress}>
+                        <ThemedAvatar
+                            size={40}
+                            image={company?.logo_url ||
+                                `https://ui-avatars.com/api/?name=${encodeURIComponent(company?.name || criteria?.company || '')}&size=40`}
+                            square={true}
+                        />
+                        <View style={styles.profileText}>
+                            <View style={styles.nameRow}>
+                                <ThemedText style={[styles.profileName, { color: textColor }]}>
+                                    {company?.name || criteria?.company}
+                                </ThemedText>
+                                {company?.status === 'approved' && (
+                                    <BadgeCheck size={16} color="#3b82f6" style={styles.verifiedIcon} />
+                                )}
+                            </View>
+                            {(company?.industry || company?.location) && (
+                                <ThemedText style={[styles.profileSubtitle, { color: mutedTextColor }]}>
+                                    {[company?.industry, company?.location].filter(Boolean).join(' • ')}
+                                </ThemedText>
+                            )}
+                        </View>
+                    </Pressable>
                     <ThemedIconButton
                         icon={<Feather name="more-horizontal" size={20} color={textColor} />}
                         onPress={handleMenuPress}
                     />
-                )}
-            </Pressable>
+                </View>
+            )}
+
+            {/* Main Image */}
+            {mainImage && (
+                <Image
+                    source={{ uri: mainImage }}
+                    style={styles.mainImage}
+                    contentFit="cover"
+                />
+            )}
 
             {/* Content */}
-            <Pressable style={styles.content} onPress={handleCardPress}>
-
-
-                <ThemedText style={[styles.postTitle, { color: textColor }]} numberOfLines={3}>
-                    {postTitle}
-                </ThemedText>
-
-                {mainImage && (
-                    <Image
-                        source={{ uri: mainImage }}
-                        style={styles.mainImage}
-                        contentFit="cover"
-                    />
-                )}
-
-                <ThemedText style={[styles.description, { color: mutedTextColor }]} numberOfLines={4}>
+            <View style={styles.content}>
+                <ThemedText style={[styles.description, { color: textColor }]} numberOfLines={4}>
                     {description}
                 </ThemedText>
 
-                {/* Job-specific details */}
-                {variant === 'job' && criteria && (
-                    <View style={styles.jobDetails}>
-                        {criteria.company && (
-                            <View style={styles.jobDetail}>
-                                <Feather name="briefcase" size={14} color={mutedTextColor} />
-                                <ThemedText style={[styles.jobDetailText, { color: mutedTextColor }]}>
-                                    {criteria.company}
-                                </ThemedText>
-                            </View>
-                        )}
-                        {criteria.location && (
-                            <View style={styles.jobDetail}>
-                                <Feather name="map-pin" size={14} color={mutedTextColor} />
-                                <ThemedText style={[styles.jobDetailText, { color: mutedTextColor }]}>
-                                    {criteria.location}
-                                </ThemedText>
-                            </View>
-                        )}
-                        {criteria.salary && (
-                            <View style={styles.jobDetail}>
-                                <Feather name="dollar-sign" size={14} color={mutedTextColor} />
-                                <ThemedText style={[styles.jobDetailText, { color: mutedTextColor }]}>
-                                    {criteria.salary}
-                                </ThemedText>
-                            </View>
-                        )}
-                    </View>
-                )}
-
-                {/* News-specific details */}
-                {variant === 'news' && criteria && (
-                    <View style={styles.newsDetails}>
-                        {criteria.source && (
-                            <View style={styles.newsDetail}>
-                                <Feather name="external-link" size={14} color={mutedTextColor} />
-                                <ThemedText style={[styles.newsDetailText, { color: mutedTextColor }]}>
-                                    {criteria.source}
-                                </ThemedText>
-                            </View>
-                        )}
-                        {criteria.publication_date && (
-                            <View style={styles.newsDetail}>
-                                <Feather name="calendar" size={14} color={mutedTextColor} />
-                                <ThemedText style={[styles.newsDetailText, { color: mutedTextColor }]}>
-                                    {formatDate(criteria.publication_date)}
-                                </ThemedText>
-                            </View>
-                        )}
-                    </View>
-                )}
+                {renderDetails()}
+            </View>
 
 
-
-                {/* Timestamp */}
-                {createdAt && (
-                    <ThemedText style={[styles.timestamp, { color: mutedTextColor }]}>
-                        {formatDate(createdAt)}
-                    </ThemedText>
-                )}
-            </Pressable>
 
             {/* Action Row */}
             <View style={styles.actionRow}>
                 <PostInteractionBar
                     postId={id || ''}
+                    postOwnerId={user_id}
                     variant="horizontal"
                     size="medium"
                 />
                 {variant === 'job' && (
                     <Pressable
-                        style={[
-                            styles.actionButton,
-                            hasApplied && styles.appliedButton
-                        ]}
+                        style={[styles.actionButton, hasApplied && styles.appliedButton]}
                         onPress={onPressApply}
                         disabled={hasApplied}
                     >
-                        <ThemedText style={[
-                            styles.actionButtonText,
-                            hasApplied && styles.appliedButtonText
-                        ]}>
+                        <ThemedText style={[styles.actionButtonText, hasApplied && styles.appliedButtonText]}>
                             {hasApplied ? 'Applied' : 'Apply Now'}
                         </ThemedText>
                     </Pressable>
                 )}
                 {variant === 'news' && (
-                    <Pressable style={styles.actionButton} onPress={handleCardPress}>
+                    <Pressable style={styles.actionButton} onPress={() => {
+                        if (id) {
+                            router.push(`/post/${id}`);
+                        }
+                    }}>
                         <ThemedText style={styles.actionButtonText}>Read More</ThemedText>
                     </Pressable>
                 )}
@@ -308,112 +266,75 @@ const styles = StyleSheet.create({
     container: {
         borderBottomWidth: 0.5,
         paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 12,
+        paddingVertical: 16,
     },
-    header: {
+    profileHeader: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: 12,
         gap: 12,
     },
-    headerText: {
+    profileInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        gap: 12,
+    },
+    profileText: {
         flex: 1,
     },
     nameRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 8,
     },
-    name: {
-        fontSize: 15,
+    profileName: {
+        fontSize: 16,
         fontWeight: '600',
-        marginRight: 4,
     },
     verifiedIcon: {
         marginLeft: 4,
     },
-    username: {
-        fontSize: 13,
-        opacity: 0.6,
-    },
-    userDetails: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-
-
-    content: {
-        marginBottom: 8,
-    },
-    postTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        lineHeight: 22,
-        marginBottom: 8,
+    profileSubtitle: {
+        fontSize: 12,
+        opacity: 0.7,
     },
     mainImage: {
         width: '100%',
-        height: 240,
-        borderRadius: 12,
-        marginBottom: 8,
+        height: 384,
+        borderRadius: 4,
+        marginBottom: 12,
+    },
+    content: {
+        marginBottom: 12,
+        gap: 12,
     },
     description: {
-        fontSize: 15,
+        fontSize: 16,
         lineHeight: 20,
-        marginBottom: 8,
     },
-    jobDetails: {
-        marginBottom: 8,
+    detailsContainer: {
+        marginTop: 4,
     },
-    jobDetail: {
+    detailRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: 3,
+        gap: 6,
     },
-    jobDetailText: {
-        fontSize: 14,
-        marginLeft: 6,
-    },
-    newsDetails: {
-        marginBottom: 8,
-    },
-    newsDetail: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    newsDetailText: {
-        fontSize: 14,
-        marginLeft: 6,
-    },
-    industryTag: {
-        alignSelf: 'flex-start',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        backgroundColor: 'rgba(59, 130, 246, 0.08)',
-        marginBottom: 8,
-    },
-    industryText: {
-        fontSize: 11,
-        fontWeight: '500',
-        opacity: 0.8,
-    },
-    timestamp: {
-        fontSize: 12,
-        opacity: 0.6,
-        marginBottom: 8,
+    detailText: {
+        fontSize: 13,
     },
     actionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-
     actionButton: {
         backgroundColor: '#007AFF',
         paddingHorizontal: 12,
-        paddingVertical: 4,
+        paddingVertical: 6,
         borderRadius: 8,
     },
     actionButtonText: {
@@ -433,4 +354,4 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         opacity: 0.6,
     },
-}); 
+});

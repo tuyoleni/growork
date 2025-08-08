@@ -1,0 +1,77 @@
+import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/utils/superbase';
+import { useAuth } from '@/hooks/useAuth';
+import { Company } from '@/types';
+
+export function useCompanyFollows() {
+    const { profile } = useAuth();
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchFollowedCompanies = useCallback(async () => {
+        if (!profile?.id) return;
+        try {
+            setLoading(true);
+            setError(null);
+            const { data, error: queryError } = await supabase
+                .from('company_follows')
+                .select('company:companies(*)')
+                .eq('profile_id', profile.id)
+                .order('created_at', { ascending: false });
+
+            if (queryError) throw queryError;
+
+            const mapped: Company[] = (data || [])
+                .map((row: any) => row.company)
+                .filter(Boolean);
+            setCompanies(mapped);
+        } catch (err: any) {
+            setError(err.message);
+            console.error('Error fetching followed companies:', err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [profile?.id]);
+
+    const followCompany = useCallback(async (companyId: string) => {
+        if (!profile?.id) return { error: 'Not authenticated' };
+        try {
+            const { error: insertError } = await supabase
+                .from('company_follows')
+                .insert({ profile_id: profile.id, company_id: companyId });
+            if (insertError) return { error: insertError.message };
+            await fetchFollowedCompanies();
+            return { success: true };
+        } catch (err: any) {
+            return { error: err.message };
+        }
+    }, [profile?.id, fetchFollowedCompanies]);
+
+    const unfollowCompany = useCallback(async (companyId: string) => {
+        if (!profile?.id) return { error: 'Not authenticated' };
+        try {
+            const { error: delError } = await supabase
+                .from('company_follows')
+                .delete()
+                .eq('profile_id', profile.id)
+                .eq('company_id', companyId);
+            if (delError) return { error: delError.message };
+            await fetchFollowedCompanies();
+            return { success: true };
+        } catch (err: any) {
+            return { error: err.message };
+        }
+    }, [profile?.id, fetchFollowedCompanies]);
+
+    useEffect(() => {
+        if (profile?.id) {
+            fetchFollowedCompanies();
+        } else {
+            setCompanies([]);
+        }
+    }, [profile?.id, fetchFollowedCompanies]);
+
+    return { companies, loading, error, fetchFollowedCompanies, followCompany, unfollowCompany };
+}
+

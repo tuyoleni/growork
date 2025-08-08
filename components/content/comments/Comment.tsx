@@ -26,7 +26,7 @@ interface CommentsProps {
 }
 
 export default function Comments({ postId, disableScrolling = false }: CommentsProps) {
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const {
     comments,
     loading,
@@ -58,7 +58,7 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
       fetchComments(postId);
       setCommentText("");
     }
-  }, [postId]);
+  }, [postId, fetchComments]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
@@ -149,29 +149,7 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
 
   const emojiReactions = ["❤️", "👏", "🔥", "🙏", "😢", "😊", "😮", "😂"];
 
-  // --- Separate bottom input bar (emoji + input) ---
-  const InputBar = (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-    >
-      <View style={[
-        styles.inputSection,
-        keyboardVisible && styles.inputSectionKeyboard,
-      ]}>
-        <EmojiBar emojis={emojiReactions} onEmoji={(e) => setCommentText((prev) => prev + e)} />
-        <CommentsInputBar
-          profile={profile}
-          value={commentText}
-          onChange={setCommentText}
-          onSend={handleSubmitComment}
-          isSending={isSending}
-          inputRef={inputRef}
-          onEmojiPicker={() => inputRef.current?.focus()}
-        />
-      </View>
-    </KeyboardAvoidingView>
-  );
+
 
   return (
     <View style={styles.container}>

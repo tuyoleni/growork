@@ -50,7 +50,7 @@ interface AppContextType {
   isBookmarked: (postId: string) => boolean;
   addBookmark: (postId: string) => Promise<any>;
   removeBookmark: (postId: string) => Promise<any>;
-  toggleBookmark: (postId: string) => Promise<any>;
+  toggleBookmark: (postId: string, postOwnerId?: string) => Promise<any>;
   fetchBookmarks: () => Promise<void>;
 
   // Comment Likes

@@ -88,28 +88,30 @@ export default function BookmarkedContentList({
         const post = item.data as any;
         const profile = post.profiles;
         const fullName = profile ? `${profile.name || ''} ${profile.surname || ''}`.trim() : 'User';
+        const companyName = post.type === PostType.Job && post.criteria?.company ? post.criteria.company : undefined;
+        const newsSource = post.type === PostType.News && (post.criteria?.source || post.criteria?.author)
+            ? (post.criteria.source || post.criteria.author)
+            : undefined;
+        const headerTitle = companyName || newsSource || fullName;
+        const avatarImage = post?.image_url
+            ? post.image_url
+            : companyName
+                ? `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random&size=40`
+                : newsSource
+                    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(newsSource)}&background=random&size=40`
+                    : (profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random&size=40`);
 
         return (
             <ContentCard
                 key={item.id}
                 id={item.id}
                 variant={post.type === PostType.Job ? 'job' : 'news'}
-                title={fullName}
-                postTitle={post.title || 'Untitled'}
-                username={profile?.username || 'user'}
-                name={fullName}
-                avatarImage={profile?.avatar_url}
-                mainImage={post.image_url}
+                title={post.title || 'Untitled'}
                 description={post.content || 'No content'}
-                industry={post.industry}
-                user_id={post.user_id}
-                likesCount={post.likes?.length || 0}
-                commentsCount={post.comments?.length || 0}
+                mainImage={post.image_url}
                 createdAt={post.created_at}
-                criteria={post.criteria}
-                isSponsored={post.is_sponsored}
-                isLiked={false}
-                isBookmarked={true}
+                criteria={post.criteria || undefined}
+                user_id={post.user_id}
             />
         );
     };

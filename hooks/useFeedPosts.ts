@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/utils/superbase';
 import { PostType } from '@/types';
 import { ContentCardProps } from '@/components/content/ContentCard';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 // Extended ContentCardProps to include database fields and industry
 export type ExtendedContentCardProps = ContentCardProps & {
@@ -10,7 +11,6 @@ export type ExtendedContentCardProps = ContentCardProps & {
   user_id?: string;
 };
 
-// Interface for database posts
 export interface DbPost {
   id: string;
   user_id: string;
@@ -33,11 +33,115 @@ export interface DbPost {
   comments?: { id: string; user_id: string; post_id: string; content: string }[];
 }
 
-export function useFeedPosts() {
+export function useFeedPosts(pollingInterval = 30000) {
   const [posts, setPosts] = useState<DbPost[]>([]);
+  const [convertedPosts, setConvertedPosts] = useState<ExtendedContentCardProps[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const subscriptionRef = useRef<RealtimeChannel | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Convert database posts to ContentCard format
+  const convertDbPostToContentCard = useCallback(async (post: DbPost): Promise<ExtendedContentCardProps> => {
+    const postProfile = post.profiles || { avatar_url: null, name: 'Anonymous', surname: '' };
+
+    // Get criteria and company info
+    const criteria = (post as any).criteria || {};
+    const companyName = (post.type === PostType.Job && criteria?.company)
+      ? criteria.company
+      : undefined;
+    const newsSource = (post.type === PostType.News && (criteria?.source || criteria?.author))
+      ? (criteria.source || criteria.author)
+      : undefined;
+
+    // Determine post variant based on type
+    let variant: 'job' | 'news' | 'sponsored';
+    if (post.is_sponsored) {
+      variant = 'sponsored';
+    } else if (post.type === PostType.Job) {
+      variant = 'job';
+    } else {
+      variant = 'news';
+    }
+
+    // Prepare author profile data
+    const authorProfile = postProfile && 'id' in postProfile ? {
+      id: postProfile.id,
+      name: postProfile.name,
+      surname: postProfile.surname,
+      username: postProfile.username || undefined,
+      avatar_url: postProfile.avatar_url || undefined,
+      profession: undefined,
+      location: undefined,
+    } : undefined;
+
+    // Prepare company data if available - fetch actual company data
+    let company = undefined;
+    if (criteria?.companyId) {
+      try {
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', criteria.companyId)
+          .single();
+
+        if (!companyError && companyData) {
+          company = {
+            id: companyData.id,
+            name: companyData.name || criteria.company || '',
+            logo_url: companyData.logo_url || undefined,
+            industry: companyData.industry || criteria.industry || undefined,
+            location: companyData.location || criteria.location || undefined,
+            status: companyData.status || criteria.companyStatus || undefined,
+          };
+        } else {
+          console.warn('Failed to fetch company data for ID:', criteria.companyId, companyError);
+          // Fallback to criteria data
+          company = {
+            id: criteria.companyId,
+            name: criteria.company || '',
+            logo_url: undefined,
+            industry: criteria.industry || undefined,
+            location: criteria.location || undefined,
+            status: criteria.companyStatus || undefined,
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching company data:', error);
+        // Fallback to criteria data
+        company = {
+          id: criteria.companyId,
+          name: criteria.company || '',
+          logo_url: undefined,
+          industry: criteria.industry || undefined,
+          location: criteria.location || undefined,
+          status: criteria.companyStatus || undefined,
+        };
+      }
+    }
+
+    return {
+      id: post.id,
+      user_id: post.user_id,
+      variant,
+      title: post.title || '',
+      description: post.content || '',
+      mainImage: post.image_url || undefined,
+      createdAt: post.created_at,
+      criteria: criteria || null,
+      isVerified: true,
+      industry: post.industry || (variant === 'job' ? 'Technology' : undefined),
+      company,
+    };
+  }, []);
+
+  // Convert all posts to ContentCard format
+  const convertAllPosts = useCallback(async (dbPosts: DbPost[]) => {
+    const converted = await Promise.all(dbPosts.map(convertDbPostToContentCard));
+    setConvertedPosts(converted);
+  }, [convertDbPostToContentCard]);
 
   // Fetch posts from Supabase
   const fetchPosts = useCallback(async (refresh = false) => {
@@ -54,17 +158,17 @@ export function useFeedPosts() {
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
-        
+
       if (postsError) throw postsError;
-      
+
       if (!postsData || postsData.length === 0) {
         setPosts([]);
         return;
       }
-      
+
       // Get all user IDs from the posts, filtering out any null values
       const userIds = [...new Set(postsData.map(post => post.user_id))].filter(Boolean);
-      
+
       // Fetch the profiles for these users (only if we have valid IDs)
       let profilesData = [];
       if (userIds.length > 0) {
@@ -74,13 +178,13 @@ export function useFeedPosts() {
           .in('id', userIds);
         profilesData = profiles || [];
       }
-        
+
       // Create a map of user IDs to profiles
       const profilesMap = (profilesData || []).reduce((map, profile) => {
         map[profile.id] = profile;
         return map;
       }, {});
-      
+
       // Fetch likes and comments for each post
       const postsWithRelations = await Promise.all(postsData.map(async (post) => {
         // Fetch likes
@@ -88,13 +192,13 @@ export function useFeedPosts() {
           .from('likes')
           .select('*')
           .eq('post_id', post.id);
-          
+
         // Fetch comments
         const { data: commentsData } = await supabase
           .from('comments')
           .select('*')
           .eq('post_id', post.id);
-          
+
         return {
           ...post,
           profiles: profilesMap[post.user_id] || null,
@@ -102,8 +206,9 @@ export function useFeedPosts() {
           comments: commentsData || []
         };
       }));
-      
+
       setPosts(postsWithRelations);
+      await convertAllPosts(postsWithRelations); // Convert posts after fetching
     } catch (err: any) {
       console.error('Error fetching posts:', err);
       setError(err.message);
@@ -111,46 +216,66 @@ export function useFeedPosts() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]);
+  }, [refreshing, convertAllPosts]);
 
-  // Fetch posts on mount
+  // Setup real-time subscription and polling
   useEffect(() => {
+    // Initial fetch
     fetchPosts();
-  }, [fetchPosts]);
 
-  // Convert database posts to ContentCard format
-  const convertDbPostToContentCard = useCallback((post: DbPost): ExtendedContentCardProps => {
-    const postProfile = post.profiles || { avatar_url: null, name: 'Anonymous', surname: '' };
-    const avatarUrl = postProfile.avatar_url || 
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(postProfile.name || 'User')}&size=128`;
-    
-    // Determine post variant based on type
-    let variant: 'job' | 'news' | 'sponsored';
-    if (post.is_sponsored) {
-      variant = 'sponsored';
-    } else if (post.type === PostType.Job) {
-      variant = 'job';
-    } else {
-      variant = 'news';
+    // Setup Supabase real-time subscription
+    try {
+      console.log('Setting up real-time subscription for posts...');
+      subscriptionRef.current = supabase
+        .channel('posts_channel')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+            schema: 'public',
+            table: 'posts'
+          },
+          async (payload) => {
+            console.log('Real-time update received:', payload);
+            // Fetch fresh data when any change occurs
+            await fetchPosts(true);
+          }
+        )
+        .subscribe((status) => {
+          console.log('Subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to posts real-time updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Failed to subscribe to posts real-time updates');
+          }
+        });
+    } catch (error) {
+      console.error('Error setting up real-time subscription:', error);
     }
 
-    return {
-      id: post.id,
-      user_id: post.user_id,
-      variant,
-      title: postProfile.name + ' ' + postProfile.surname,
-      postTitle: post.title || '',
-      username: (postProfile as any).username || '',
-      name: postProfile.name + ' ' + postProfile.surname,
-      avatarImage: avatarUrl,
-      mainImage: post.image_url || undefined,
-      description: post.content || '',
-      badgeText: post.type === PostType.Job ? 'JOB' : 'NEWS',
-      badgeVariant: post.type === PostType.Job ? 'success' : 'info',
-      isVerified: true,
-      industry: post.industry || (variant === 'job' ? 'Technology' : undefined)
+    // Setup polling as fallback (every 30 seconds)
+    console.log('Setting up polling fallback...');
+    pollingIntervalRef.current = setInterval(() => {
+      console.log('Polling for new posts...');
+      fetchPosts(true);
+    }, pollingInterval);
+
+    // Cleanup function
+    return () => {
+      console.log('Cleaning up real-time subscription and polling...');
+      // Cleanup Supabase subscription
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+
+      // Cleanup polling interval
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
     };
-  }, []);
+  }, [fetchPosts, pollingInterval]);
 
   // Add a post
   const addPost = useCallback(async (postData: {
@@ -230,11 +355,11 @@ export function useFeedPosts() {
 
   return {
     posts,
+    convertedPosts, // Expose converted posts
     loading,
     error,
     refreshing,
     fetchPosts,
-    convertDbPostToContentCard,
     addPost,
     toggleLike
   };

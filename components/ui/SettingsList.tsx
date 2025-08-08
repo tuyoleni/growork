@@ -6,6 +6,7 @@ import {
   Switch,
   SectionList,
   Text,
+  TextInput,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -24,6 +25,12 @@ interface SettingsItemProps {
   destructive?: boolean;
   iconColor?: string;
   rightComponent?: React.ReactNode;
+  // New text input props
+  showTextInput?: boolean;
+  textInputValue?: string;
+  textInputPlaceholder?: string;
+  onTextInputChange?: (text: string) => void;
+  textInputProps?: any; // Additional TextInput props
 }
 
 interface SettingsSection {
@@ -49,6 +56,12 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
   destructive = false,
   iconColor,
   rightComponent,
+  // New text input props
+  showTextInput = false,
+  textInputValue = '',
+  textInputPlaceholder,
+  onTextInputChange,
+  textInputProps = {},
 }) => {
   const textColor = useThemeColor({}, 'text');
   const mutedTextColor = useThemeColor({}, 'mutedText');
@@ -57,60 +70,87 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
   const cardBg = useThemeColor({}, 'backgroundSecondary');
 
   return (
-    <TouchableOpacity
+    <View
       style={[
         styles.settingsItem,
         {
           backgroundColor,
         }
       ]}
-      onPress={onPress}
-      disabled={showSwitch}
-      activeOpacity={0.7}
     >
-      <View style={styles.settingsItemLeft}>
-        <View style={[
-          styles.iconContainer,
-          { backgroundColor: cardBg },
-          destructive && styles.destructiveIcon
-        ]}>
-          <Feather
-            name={icon as any}
-            size={18}
-            color={iconColor || (destructive ? '#ef4444' : textColor)}
-          />
-        </View>
-        <View style={styles.settingsItemContent}>
-          <ThemedText
-            style={[
-              styles.settingsItemTitle,
-              { color: destructive ? '#ef4444' : textColor }
-            ]}
-          >
-            {title}
-          </ThemedText>
-          {subtitle && (
-            <ThemedText style={[styles.settingsItemSubtitle, { color: mutedTextColor }]}>
-              {subtitle}
+      <View style={styles.settingsItemTop}>
+        <View style={styles.settingsItemLeft}>
+          <View style={[
+            styles.iconContainer,
+            { backgroundColor: cardBg },
+            destructive && styles.destructiveIcon
+          ]}>
+            <Feather
+              name={icon as any}
+              size={18}
+              color={iconColor || (destructive ? '#ef4444' : textColor)}
+            />
+          </View>
+          <View style={styles.settingsItemContent}>
+            <ThemedText
+              style={[
+                styles.settingsItemTitle,
+                { color: destructive ? '#ef4444' : textColor }
+              ]}
+            >
+              {title}
             </ThemedText>
-          )}
+            {subtitle && (
+              <ThemedText style={[styles.settingsItemSubtitle, { color: mutedTextColor }]}>
+                {subtitle}
+              </ThemedText>
+            )}
+          </View>
         </View>
+
+        {rightComponent ? (
+          rightComponent
+        ) : showSwitch ? (
+          <Switch
+            value={switchValue}
+            onValueChange={onSwitchChange}
+            trackColor={{ false: '#e5e5e5', true: '#2563eb' }}
+            thumbColor={switchValue ? '#ffffff' : '#ffffff'}
+            ios_backgroundColor="#e5e5e5"
+          />
+        ) : showArrow && !showTextInput ? (
+          <Feather name="chevron-right" size={16} color={mutedTextColor} />
+        ) : null}
       </View>
 
-      {rightComponent ? (
-        rightComponent
-      ) : showSwitch ? (
-        <Switch
-          value={switchValue}
-          onValueChange={onSwitchChange}
-          trackColor={{ false: '#e5e5e5', true: '#2563eb' }}
-          thumbColor={switchValue ? '#ffffff' : '#ffffff'}
-          ios_backgroundColor="#e5e5e5"
+      {showTextInput && (
+        <View style={styles.textInputContainer}>
+          <TextInput
+            style={[
+              styles.textInput,
+              {
+                color: textColor,
+                borderColor: borderColor,
+                backgroundColor: cardBg,
+              }
+            ]}
+            value={textInputValue}
+            placeholder={textInputPlaceholder}
+            placeholderTextColor={mutedTextColor}
+            onChangeText={onTextInputChange}
+            {...textInputProps}
+          />
+        </View>
+      )}
+
+      {!showTextInput && onPress && (
+        <TouchableOpacity
+          style={styles.touchableOverlay}
+          onPress={onPress}
+          activeOpacity={0.7}
         />
-      ) : showArrow ? (
-        <Feather name="chevron-right" size={16} color={mutedTextColor} />
-      ) : null}
-    </TouchableOpacity>
+      )}
+    </View>
   );
 };
 
@@ -170,6 +210,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingTop: 16,
     paddingBottom: 6,
+    paddingLeft: 16,
   },
   sectionHeaderText: {
     fontSize: 13,
@@ -193,12 +234,14 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   settingsItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
     minHeight: 44,
+  },
+  settingsItemTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   settingsItemLeft: {
     flexDirection: 'row',
@@ -230,5 +273,24 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
+  },
+  textInput: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    fontSize: 16,
+    borderWidth: 1,
+  },
+  textInputContainer: {
+    marginTop: 12,
+    paddingHorizontal: 44, // Align with content (icon width + margin)
+  },
+  touchableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 }); 

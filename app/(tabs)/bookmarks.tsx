@@ -121,7 +121,7 @@ export default function Bookmarks() {
           {loading && !refreshing && (
             <ThemedView style={styles.loadingContainer}>
               {[1, 2, 3].map((index) => (
-                <ContentCardSkeleton key={index} />
+                <ContentCardSkeleton key={`bookmark-skeleton-${index}`} />
               ))}
             </ThemedView>
           )}

@@ -1,12 +1,15 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/utils/superbase';
 import { useAuth } from './useAuth';
+import { useInteractionNotifications } from './notifications/useInteractionNotifications';
+
 
 // For use with 'comment_likes' table
 export function useCommentLikes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { notifyCommentLike } = useInteractionNotifications();
 
   // Is this comment liked by this user?
   const isLiked = useCallback(async (commentId: string) => {
@@ -24,13 +27,13 @@ export function useCommentLikes() {
         return false;
       }
       return !!data;
-    } catch (err) {
+    } catch {
       return false;
     }
   }, [user]);
 
   // Like a comment
-  const likeComment = useCallback(async (commentId: string) => {
+  const likeComment = useCallback(async (commentId: string, commentOwnerId?: string) => {
     if (!user) {
       setError('You must be logged in to like a comment');
       return { success: false, error: 'Authentication required' };
@@ -55,6 +58,15 @@ export function useCommentLikes() {
         return { success: false, error: error.message };
       }
 
+      // Send notification if comment owner is different from current user
+      if (commentOwnerId && commentOwnerId !== user.id && profile) {
+        const likerName = profile.name && profile.surname
+          ? `${profile.name} ${profile.surname}`
+          : profile.username || 'Someone';
+
+        await notifyCommentLike(commentId, commentOwnerId, likerName);
+      }
+
       return { success: true, error: null };
     } catch (err: any) {
       const message = err.message || 'Failed to like comment';
@@ -63,7 +75,7 @@ export function useCommentLikes() {
     } finally {
       setLoading(false);
     }
-  }, [user, isLiked]);
+  }, [user, isLiked, profile, notifyCommentLike]);
 
   // Unlike a comment
   const unlikeComment = useCallback(async (commentId: string) => {
@@ -131,7 +143,7 @@ export function useCommentLikes() {
         return 0;
       }
       return count || 0;
-    } catch (err) {
+    } catch {
       return 0;
     }
   }, []);

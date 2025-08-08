@@ -17,7 +17,9 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
 import { supabase } from '@/utils/superbase';
-import { UserType } from '@/types/enums';
+// import { UserType } from '@/types/enums';
+import { useFlashToast } from '@/components/ui/Flash';
+import { checkProfileCompleteness } from '@/hooks/useProfileCompleteness';
 
 interface ProfileStats {
   posts: number;
@@ -44,12 +46,28 @@ export default function ProfileScreen() {
     bookmarks: 0,
   });
   const [loading, setLoading] = useState(true);
+  const toast = useFlashToast();
 
   useEffect(() => {
     if (user) {
       fetchProfileStats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const completeness = checkProfileCompleteness(profile);
+    if (!completeness.isComplete) {
+      const required = completeness.missingRequired.map((k) => String(k)).join(', ');
+      toast.show({
+        type: 'info',
+        title: 'Complete your profile',
+        message: required ? `Missing required: ${required}` : 'Add more details to improve your profile.',
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   const fetchProfileStats = async () => {
     if (!user) return;
@@ -175,7 +193,7 @@ export default function ProfileScreen() {
                 <Feather name="map-pin" size={12} color={mutedTextColor} /> {profile.location}
               </ThemedText>
             )}
-            {profile.user_type === UserType.Professional && profile.experience_years && (
+            {profile.experience_years && (
               <ThemedText style={[styles.profileExperience, { color: mutedTextColor }]}>
                 <Feather name="clock" size={12} color={mutedTextColor} /> {profile.experience_years} years experience
               </ThemedText>

@@ -4,6 +4,7 @@ import { ThemedInput } from '@/components/ThemedInput';
 import JobTypeSelector from './JobTypeSelector';
 import SalarySelector from './SalarySelector';
 import IndustrySelector from './IndustrySelector';
+import CompanySelector, { CompanySelectorData } from './CompanySelector';
 import { INDUSTRIES } from '@/dataset/industries';
 
 export interface JobFieldsData {
@@ -12,6 +13,7 @@ export interface JobFieldsData {
   jobType: string;
   industry: string;
   company: string;
+  companyId?: string;
 }
 
 interface JobFieldsProps {
@@ -25,12 +27,19 @@ export default function JobFields({ values, onChange, style }: JobFieldsProps) {
     onChange({ ...values, [field]: value });
   };
 
+  const handleCompanyChange = (companyData: CompanySelectorData) => {
+    onChange({
+      ...values,
+      company: companyData.company,
+      companyId: companyData.companyId,
+    });
+  };
+
   return (
     <View style={[styles.container, style]}>
-      <ThemedInput
-        placeholder="Company name"
-        value={values.company}
-        onChangeText={(v) => handleChange('company', v)}
+      <CompanySelector
+        values={{ company: values.company, companyId: values.companyId }}
+        onChange={handleCompanyChange}
       />
       <ThemedInput
         placeholder="Location (e.g., Remote, New York, NY)"

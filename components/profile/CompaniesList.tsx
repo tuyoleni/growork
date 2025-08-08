@@ -1,21 +1,22 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, useColorScheme, Alert, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Image, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/utils/superbase';
 import { Company } from '@/types';
 import { useRouter } from 'expo-router';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useCompanies } from '@/hooks/useCompanies';
 
 
 export default function CompaniesList() {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [, setLoading] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
+  const { isBusinessUser } = usePermissions();
+  const { companies, fetchCompanies } = useCompanies();
   const colorScheme = useColorScheme() ?? 'light';
   const borderColor = useThemeColor({}, 'border');
   const backgroundColor = useThemeColor({}, 'background');
@@ -30,28 +31,9 @@ export default function CompaniesList() {
     }
   }, [user]);
 
-  const fetchCompanies = async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setCompanies(data || []);
-    } catch (error: any) {
-      console.error('Error fetching companies:', error);
-      Alert.alert('Error', 'Failed to load companies');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateCompany = () => {
+    if (!isBusinessUser) return;
     router.push('/profile/CompanyManagement');
   };
 
@@ -61,41 +43,28 @@ export default function CompaniesList() {
     <ThemedView style={styles.container}>
       <View style={styles.headerRow}>
         <ThemedText style={styles.headerTitle}>Companies</ThemedText>
-        <Pressable
-          onPress={() => {
-            if (process.env.EXPO_OS === 'ios') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-            handleCreateCompany();
-          }}
-        >
-          <ThemedText style={[styles.addButtonText, { color: tintColor }]}>
-            Add New
-          </ThemedText>
-        </Pressable>
+        {isBusinessUser && (
+          <Pressable
+            onPress={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+              handleCreateCompany();
+            }}
+          >
+            <ThemedText style={[styles.addButtonText, { color: tintColor }]}>Add New</ThemedText>
+          </Pressable>
+        )}
       </View>
 
       {companies.length === 0 ? (
-        <Pressable
-          style={({ pressed }) => [
-            styles.emptyState,
-            { opacity: pressed ? 0.7 : 1 }
-          ]}
-          onPress={() => {
-            if (process.env.EXPO_OS === 'ios') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-            handleCreateCompany();
-          }}
-        >
+        <View style={styles.emptyState}>
           <Feather name="briefcase" size={48} color={mutedTextColor} />
-          <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
-            No Companies Yet
-          </ThemedText>
+          <ThemedText style={[styles.emptyTitle, { color: textColor }]}>No Companies Yet</ThemedText>
           <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }]}>
-            Tap to create your first company profile
+            {isBusinessUser ? 'Tap the Add New button to create your first company profile' : 'Only business accounts can create company profiles.'}
           </ThemedText>
-        </Pressable>
+        </View>
       ) : (
         <ThemedView style={styles.companiesList}>
           {companies.map((company: Company) => (

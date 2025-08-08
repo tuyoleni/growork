@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   Animated,
   Easing,
@@ -9,9 +9,10 @@ import {
   Share,
 } from 'react-native';
 
+
 import Header, { HEADER_HEIGHT } from '@/components/home/Header';
 import ScreenContainer from '@/components/ScreenContainer';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth } from '@/hooks/useAuth';
 import {
   useFeedPosts,
   ExtendedContentCardProps,
@@ -19,7 +20,7 @@ import {
 import { ThemedText } from '@/components/ThemedText';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 import ContentCard from '@/components/content/ContentCard';
-import { PostType } from '@/types/enums';
+import { PostType, UserType } from '@/types/enums';
 import { ContentCardSkeleton } from '@/components/ui/Skeleton';
 
 const INDUSTRIES = [
@@ -29,6 +30,7 @@ const INDUSTRIES = [
 ];
 
 export default function Home() {
+  const { profile } = useAuth();
   const [selectedContentType, setSelectedContentType] = useState(0);
   const [selectedIndustry, setSelectedIndustry] = useState(-1);
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -38,17 +40,14 @@ export default function Home() {
   // Data from feed posts hook
   const {
     posts: dbPosts,
+    convertedPosts,
     loading,
     error,
     fetchPosts,
-    convertDbPostToContentCard,
   } = useFeedPosts();
 
-  // Convert all dbPosts to UI card props
-  const cardPosts = useMemo(
-    () => dbPosts.map(convertDbPostToContentCard),
-    [dbPosts, convertDbPostToContentCard]
-  );
+  // Use converted posts directly
+  const cardPosts = convertedPosts;
 
   // UI filtering on card posts
   const getIndustryLabel = (index: number) => INDUSTRIES[index] || '';
@@ -130,7 +129,7 @@ export default function Home() {
       // We need to fetch the full post data to pass to the application form
       const jobPost = {
         id: post.id,
-        title: post.postTitle || post.title,
+        title: post.title,
         content: post.description,
         type: PostType.Job,
         user_id: post.user_id || '',
@@ -138,8 +137,8 @@ export default function Home() {
         updated_at: null,
         image_url: post.mainImage || null,
         industry: post.industry || null,
-        criteria: post.criteria,
-        is_sponsored: post.isSponsored || false,
+        criteria: post.criteria || null,
+        is_sponsored: false,
       };
 
       openJobApplicationSheet(jobPost, {
@@ -166,6 +165,7 @@ export default function Home() {
             selectedIndustry={selectedIndustry}
             onIndustryChange={setSelectedIndustry}
             onAddPost={handleShowCreatePost}
+            isBusinessUser={Boolean(profile?.user_type === UserType.Business)}
           />
         </Animated.View>
 
@@ -176,7 +176,7 @@ export default function Home() {
           contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
         >
           {[1, 2, 3, 4, 5].map((index) => (
-            <ContentCardSkeleton key={index} />
+            <ContentCardSkeleton key={`skeleton-${index}`} />
           ))}
         </Animated.ScrollView>
       </ScreenContainer>
@@ -198,6 +198,7 @@ export default function Home() {
           selectedIndustry={selectedIndustry}
           onIndustryChange={setSelectedIndustry}
           onAddPost={handleShowCreatePost}
+          isBusinessUser={Boolean(profile?.user_type === UserType.Business)}
         />
       </Animated.View>
 
@@ -212,7 +213,6 @@ export default function Home() {
             <ContentCard
               key={`${post.title}-${post.variant}-${index}-${post.id ?? 'unknown'}`}
               {...post}
-              jobId={post.variant === 'job' ? post.id : undefined}
               onPressApply={() => handleApplyToJob(post)}
               style={index === 0 ? { marginTop: HEADER_HEIGHT - 48 } : undefined}
             />

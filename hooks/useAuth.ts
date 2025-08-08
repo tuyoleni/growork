@@ -1,6 +1,6 @@
 import { Profile, UserType } from '@/types';
 import { supabase, CACHE_TTL } from '@/utils/superbase';
-import type { User, Session } from '@supabase/supabase-js';
+import type { User, Session, RealtimeChannel } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -19,6 +19,7 @@ export function useAuth() {
   // Use refs to track whether we've already loaded profile data
   const profileLoaded = useRef(false);
   const profileFetching = useRef(false);
+  const profileSubscription = useRef<RealtimeChannel | null>(null);
 
   // Load profile from cache
   const loadProfileFromCache = async (userId: string): Promise<Profile | null> => {
@@ -53,6 +54,58 @@ export function useAuth() {
       console.error('Error saving profile to cache:', e);
     }
   };
+
+
+
+  // Setup real-time subscription for profile changes
+  const setupProfileSubscription = useCallback((userId: string) => {
+    // Clean up existing subscription
+    if (profileSubscription.current) {
+      profileSubscription.current.unsubscribe();
+      profileSubscription.current = null;
+    }
+
+    // Create new subscription
+    profileSubscription.current = supabase
+      .channel(`profile-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('Profile updated via real-time:', payload);
+          const updatedProfile = payload.new as Profile;
+
+          // Update local state immediately
+          setProfile(updatedProfile);
+          profileLoaded.current = true;
+
+          // Update cache
+          saveProfileToCache(userId, updatedProfile);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${userId}`
+        },
+        () => {
+          console.log('Profile deleted via real-time');
+          setProfile(null);
+          profileLoaded.current = false;
+        }
+      )
+      .subscribe((status) => {
+        console.log('Profile subscription status:', status);
+      });
+  }, []);
 
   // Fetch user profile efficiently
   const fetchUserProfile = async (userId: string, force = false) => {
@@ -163,6 +216,8 @@ export function useAuth() {
           if (sessionUser) {
             // First try to get it from cache (non-blocking)
             fetchUserProfile(sessionUser.id);
+            // Setup real-time subscription for profile changes
+            setupProfileSubscription(sessionUser.id);
           }
         } else {
           // No session found
@@ -196,6 +251,8 @@ export function useAuth() {
           setUser(newSession.user);
           // Fetch profile (with cache)
           fetchUserProfile(newSession.user.id);
+          // Setup real-time subscription for profile changes
+          setupProfileSubscription(newSession.user.id);
         }
       } else if (event === 'SIGNED_OUT') {
         // When the user signs out, clear their data
@@ -203,6 +260,12 @@ export function useAuth() {
         setProfile(null);
         setSession(null);
         profileLoaded.current = false;
+
+        // Clean up profile subscription
+        if (profileSubscription.current) {
+          profileSubscription.current.unsubscribe();
+          profileSubscription.current = null;
+        }
       } else if (event === 'TOKEN_REFRESHED') {
         // When the token is refreshed, update the session and user
         setSession(newSession);
@@ -214,8 +277,13 @@ export function useAuth() {
 
     return () => {
       listener?.subscription.unsubscribe();
+      // Clean up profile subscription on unmount
+      if (profileSubscription.current) {
+        profileSubscription.current.unsubscribe();
+        profileSubscription.current = null;
+      }
     };
-  }, []);
+  }, [setupProfileSubscription]);
 
   // Sign up
   const signUp = useCallback(async (
@@ -306,15 +374,25 @@ export function useAuth() {
   const signOut = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      setError(error.message);
+    try {
+      // Clean up notification tokens before signing out
+      if (user?.id) {
+        // await cleanupNotificationTokens(user.id);
+      }
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        setError(error.message);
+        return { error };
+      }
+      return { error: null };
+    } catch (err: any) {
+      console.error('Error during sign out:', err);
+      setError(err.message);
+      return { error: err };
+    } finally {
       setLoading(false);
-      return { error };
     }
-    setLoading(false);
-    return { error: null };
-  }, []);
+  }, [user]);
 
   return {
     user,

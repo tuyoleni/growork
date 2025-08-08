@@ -262,7 +262,7 @@ export default function MediaOutletsManagement() {
                 No media outlets found
               </ThemedText>
               <ThemedText style={[styles.emptySubtitle, { color: mutedTextColor }]}>
-                Follow media outlets you're interested in to stay updated
+                Follow media outlets you&apos;re interested in to stay updated
               </ThemedText>
               <TouchableOpacity
                 style={[styles.discoverButton, { borderColor }]}

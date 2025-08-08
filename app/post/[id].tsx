@@ -278,7 +278,7 @@ const PostDetail = () => {
 
         {/* Actions */}
         <ThemedView style={[styles.actionsContainer, { borderTopColor: borderColor }]}>
-          <PostInteractionBar postId={post.id} size="large" />
+          <PostInteractionBar postId={post.id} postOwnerId={post.user_id} size="large" />
           {isJob && (
             <ApplyButton
               onPress={() => {

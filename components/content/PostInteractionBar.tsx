@@ -10,6 +10,7 @@ import { useCustomCommentsBottomSheet } from '../../hooks/useCustomCommentsBotto
 
 interface PostInteractionBarProps {
   postId: string;
+  postOwnerId?: string;
   variant?: 'horizontal' | 'vertical';
   size?: 'small' | 'medium' | 'large';
   containerStyle?: any;
@@ -17,6 +18,7 @@ interface PostInteractionBarProps {
 
 export default function PostInteractionBar({
   postId,
+  postOwnerId,
   variant = 'horizontal',
   size = 'medium', // ignored for icon size, always 20
   containerStyle,
@@ -61,7 +63,7 @@ export default function PostInteractionBar({
     if (!postId) return;
     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLiked((curr) => !curr);
-    await toggleLike(postId);
+    await toggleLike(postId, postOwnerId);
   };
 
   // Handle bookmark action
@@ -69,14 +71,23 @@ export default function PostInteractionBar({
     if (!postId) return;
     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setBookmarked((curr) => !curr);
-    await toggleBookmark(postId);
+    await toggleBookmark(postId, postOwnerId);
   };
 
   // Handle comment action
   const handleComment = () => {
     if (postId) {
       if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      openCommentsSheet(postId);
+      openCommentsSheet(postId, postOwnerId);
+    }
+  };
+
+  // Handle share action
+  const handleShare = () => {
+    if (postId) {
+      if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // TODO: Implement share functionality
+      console.log('Share post:', postId);
     }
   };
 
@@ -105,6 +116,14 @@ export default function PostInteractionBar({
 
       <TouchableOpacity
         style={styles.iconButton}
+        onPress={handleShare}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Feather name="share" size={iconSize} color={iconColor} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.iconButton}
         onPress={handleBookmark}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
@@ -118,7 +137,7 @@ const styles = StyleSheet.create({
   horizontalContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 8,
   },
   verticalContainer: {
     flexDirection: 'column',

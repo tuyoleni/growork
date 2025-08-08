@@ -98,7 +98,7 @@ export default function UserProfileEdit() {
             if (error) throw error;
             Alert.alert('Success', 'Profile updated!');
             setEditing(false);
-            refresh && refresh();
+            // Profile will be updated automatically via real-time subscription
         } catch (e: any) {
             Alert.alert('Error', e.message || 'Update failed');
         } finally {

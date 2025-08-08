@@ -1,111 +1,176 @@
-import { useDocuments } from '@/hooks/useDocuments';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { Document, DocumentType } from '@/types';
+import { DocumentType, Document } from '@/types';
 import { supabase, STORAGE_BUCKETS } from '@/utils/superbase';
 import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View, ScrollView } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
+import BadgeSelector, { BadgeOption } from '../ui/BadgeSelector';
 import DocumentCard from './DocumentCard';
 import * as Haptics from 'expo-haptics';
+import * as FileSystem from 'expo-file-system';
 
 type DocumentManagerProps = {
   userId?: string;
   documentType?: DocumentType;
+  onSuccess?: () => void;
   selectable?: boolean;
   onSelect?: (document: Document) => void;
-  disableScrolling?: boolean; // Add this prop to disable FlatList when inside a ScrollView
+  disableScrolling?: boolean;
 };
+
+const DOCUMENT_TYPE_OPTIONS: BadgeOption[] = [
+  { label: 'CV/Resume', value: DocumentType.CV },
+  { label: 'Cover Letter', value: DocumentType.CoverLetter },
+  { label: 'Certificate', value: DocumentType.Certificate },
+  { label: 'Other', value: DocumentType.Other },
+];
 
 export default function DocumentManager({
   userId,
   documentType,
+  onSuccess,
   selectable = false,
   onSelect,
   disableScrolling = false,
 }: DocumentManagerProps) {
   const { user } = useAuth();
-  const { documents, loading, error, fetchDocuments, addDocument, deleteDocument } = useDocuments(userId || user?.id);
-  const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<DocumentType>(documentType || DocumentType.CV);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(false);
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
 
+  // Fetch documents when component mounts or documentType changes
   useEffect(() => {
-    if (user?.id || userId) {
-      fetchDocuments(documentType);
-    }
-  }, [fetchDocuments, user?.id, userId, documentType]);
+    const fetchDocuments = async () => {
+      if (!userId || !documentType) return;
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchDocuments(documentType);
-    setRefreshing(false);
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('type', documentType)
+          .order('uploaded_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching documents:', error);
+          return;
+        }
+
+        setDocuments(data || []);
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [userId, documentType]);
+
+  const handleDocumentSelect = (document: Document) => {
+    if (selectable && onSelect) {
+      onSelect(document);
+    }
   };
 
   const handleUploadDocument = async () => {
     if (!user) return;
-    
+
     try {
       setUploading(true);
-      
+
       // Pick document
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         copyToCacheDirectory: true,
       });
-      
+
       if (result.canceled) {
         setUploading(false);
         return;
       }
-      
+
       const file = result.assets[0];
-      const fileExt = file.name.split('.').pop() || '';
-      const fileName = `${user.id}_${new Date().getTime()}.${fileExt}`;
-      const filePath = `documents/${fileName}`;
-      
-      // Upload to Supabase Storage
-      // Fetch the file and convert to blob
-      const response = await fetch(file.uri);
-      const blob = await response.blob();
-      
-      const { error: uploadError } = await supabase.storage
+
+      // Validate file exists
+      const fileInfo = await FileSystem.getInfoAsync(file.uri);
+      if (!fileInfo.exists) {
+        throw new Error('Document file does not exist');
+      }
+
+      // Check file size (50MB limit)
+      const maxSize = 50 * 1024 * 1024;
+      if (fileInfo.size && fileInfo.size > maxSize) {
+        throw new Error('Document file is too large (max 50MB)');
+      }
+
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const uniqueFileName = `document_${user.id}_${Date.now()}.${fileExt}`;
+      const filePath = `${uniqueFileName}`;
+
+      // Read file as base64
+      const base64 = await FileSystem.readAsStringAsync(file.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Convert base64 to Uint8Array for React Native compatibility
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+
+      // Upload to Supabase storage
+      const { data, error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKETS.DOCUMENTS)
-        .upload(filePath, blob, {
-          contentType: file.mimeType || 'application/octet-stream',
+        .upload(filePath, byteArray, {
+          contentType: `application/${fileExt}`,
+          cacheControl: '3600',
+          upsert: false
         });
-      
+
       if (uploadError) {
         throw uploadError;
       }
-      
-      // Get public URL using the shared function
+
+      // Get public URL
       const publicUrl = supabase.storage
         .from(STORAGE_BUCKETS.DOCUMENTS)
         .getPublicUrl(filePath).data.publicUrl;
-      
-      // Prompt for document type
-      const docType = documentType || DocumentType.CV; 
-      
+
       // Add document record
-      await addDocument({
-        user_id: user.id,
-        type: docType,
-        name: file.name,
-        file_url: publicUrl,
-      });
-      
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          user_id: user.id,
+          type: selectedDocumentType,
+          name: file.name,
+          file_url: publicUrl,
+        });
+
+      if (dbError) {
+        throw dbError;
+      }
+
       if (process.env.EXPO_OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
+
+      Alert.alert('Success', 'Document uploaded successfully!');
+      onSuccess?.();
     } catch (error: any) {
       console.error('Error uploading document:', error);
-      Alert.alert('Upload Error', error.message);
+      Alert.alert('Upload Error', error.message || 'Failed to upload document');
       if (process.env.EXPO_OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
@@ -114,124 +179,94 @@ export default function DocumentManager({
     }
   };
 
-  const handleDeleteDocument = async (documentId: string) => {
-    try {
-      Alert.alert(
-        'Delete Document',
-        'Are you sure you want to delete this document?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Delete', 
-            style: 'destructive',
-            onPress: async () => {
-              await deleteDocument(documentId);
-              if (process.env.EXPO_OS === 'ios') {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              }
-            }
-          },
-        ]
-      );
-    } catch (error: any) {
-      console.error('Error deleting document:', error);
-      Alert.alert('Delete Error', error.message);
-    }
-  };
-
-  const handleSelectDocument = (document: Document) => {
-    if (selectable && onSelect) {
-      onSelect(document);
-      if (process.env.EXPO_OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    }
-  };
-
-  const renderDocument = ({ item }: { item: Document }) => {
-    return (
-      <DocumentCard
-        document={item}
-        onPress={() => handleSelectDocument(item)}
-        onDelete={() => handleDeleteDocument(item.id)}
-        selectable={selectable}
-      />
-    );
-  };
-
-  if (loading && !refreshing && !uploading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor }]}>
-        <ActivityIndicator size="large" color={textColor} />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.errorContainer, { backgroundColor }]}>
-        <ThemedText style={styles.errorText}>Error: {error}</ThemedText>
-      </View>
-    );
-  }
-
   return (
-    <ThemedView style={styles.container}>
-      <View style={styles.header}>
-        <ThemedText style={styles.title} type="defaultSemiBold">
-          {documentType ? `${documentType.replace('_', ' ')}s` : 'Documents'}
-        </ThemedText>
-        <Pressable
-          style={[styles.uploadButton, { borderColor }]}
-          onPress={handleUploadDocument}
-          disabled={uploading}
-        >
-          {uploading ? (
-            <ActivityIndicator size="small" color={textColor} />
-          ) : (
-            <>
-              <Feather name="upload" size={16} color={textColor} />
-              <ThemedText style={styles.uploadButtonText}>Upload</ThemedText>
-            </>
-          )}
-        </Pressable>
-      </View>
-      
-      {disableScrolling ? (
-        <View style={styles.listContent}>
-          {documents.length > 0 ? (
-            documents.map(item => (
-              <View key={item.id} style={{ marginBottom: 12 }}>
-                {renderDocument({ item })}
-              </View>
-            ))
-          ) : (
-            <View style={styles.emptyContainer}>
-              <ThemedText>No documents found</ThemedText>
+    <View style={styles.container}>
+      {selectable ? (
+        // Selection mode
+        <>
+          <View style={styles.header}>
+            <ThemedText style={styles.title} type="defaultSemiBold">
+              Select Document
+            </ThemedText>
+          </View>
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={textColor} />
+              <ThemedText style={[styles.loadingText, { color: textColor }]}>
+                Loading documents...
+              </ThemedText>
             </View>
+          ) : documents.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={[styles.emptyText, { color: textColor }]}>
+                No documents found
+              </ThemedText>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.documentsList}
+              showsVerticalScrollIndicator={!disableScrolling}
+              scrollEnabled={!disableScrolling}
+            >
+              {documents.map((document) => (
+                <DocumentCard
+                  key={document.id}
+                  document={document}
+                  onPress={() => handleDocumentSelect(document)}
+                  showMenu={false}
+                  selectable={true}
+                />
+              ))}
+            </ScrollView>
           )}
-        </View>
+        </>
       ) : (
-        <FlatList
-          data={documents}
-          keyExtractor={(item) => item.id}
-          renderItem={renderDocument}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={textColor}
-            />
-          }
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <ThemedText>No documents found</ThemedText>
+        // Upload mode
+        <>
+          <View style={styles.header}>
+            <ThemedText style={styles.title} type="defaultSemiBold">
+              Upload Document
+            </ThemedText>
+          </View>
+
+          {/* Document Type Selector */}
+          {!documentType && (
+            <View style={styles.selectorContainer}>
+              <BadgeSelector
+                options={DOCUMENT_TYPE_OPTIONS}
+                selectedValue={selectedDocumentType}
+                onValueChange={(value) => setSelectedDocumentType(value as DocumentType)}
+                title="Select Document Type"
+              />
             </View>
-          }
-        />
+          )}
+
+          {/* Upload Button */}
+          <View style={styles.uploadContainer}>
+            <Pressable
+              style={[styles.uploadButton, { borderColor }, uploading && styles.uploadButtonDisabled]}
+              onPress={handleUploadDocument}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color={textColor} />
+              ) : (
+                <>
+                  <Feather name="upload" size={20} color={textColor} />
+                  <ThemedText style={styles.uploadButtonText}>Choose Document</ThemedText>
+                </>
+              )}
+            </Pressable>
+            {uploading && (
+              <ThemedText style={[styles.uploadingText, { color: textColor }]}>
+                Uploading document...
+              </ThemedText>
+            )}
+          </View>
+        </>
       )}
-    </ThemedView>
+    </View>
   );
 }
 
@@ -240,50 +275,67 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    textAlign: 'center',
-  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    marginBottom: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  selectorContainer: {
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  uploadContainer: {
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
   },
   uploadButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    minWidth: 200,
+    justifyContent: 'center',
+  },
+  uploadButtonDisabled: {
+    opacity: 0.6,
   },
   uploadButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
-  listContent: {
-    padding: 16,
-    gap: 12,
+  uploadingText: {
+    fontSize: 14,
+    fontStyle: 'italic',
   },
-  emptyContainer: {
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+  },
+  documentsList: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
 });

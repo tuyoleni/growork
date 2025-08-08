@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  Alert,
-  Pressable,
-  StatusBar,
-  ScrollView,
-  TouchableOpacity,
-  useColorScheme,
-} from 'react-native';
+import { View, StyleSheet, Alert, Pressable, StatusBar, TouchableOpacity, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'expo-image';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { ThemedInput } from '@/components/ThemedInput';
+// import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import SettingsList from '@/components/ui/SettingsList';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -26,20 +16,9 @@ import { supabase, STORAGE_BUCKETS } from '@/utils/superbase';
 import { uploadImage } from '@/utils/uploadUtils';
 import { Feather } from '@expo/vector-icons';
 
-interface EditedProfile {
-  name: string;
-  surname: string;
-  username: string;
-  bio: string;
-  user_type: UserType;
-  website: string;
-  phone: string;
-  location: string;
-  profession: string;
-  experience_years: string;
-  education: string;
-  skills: string;
-}
+import { ProfileFormData } from '@/types';
+import { checkProfileCompleteness } from '@/hooks/useProfileCompleteness';
+import { useFlashToast } from '@/components/ui/Flash';
 
 export default function EditProfileNative() {
   const router = useRouter();
@@ -47,13 +26,14 @@ export default function EditProfileNative() {
   const colorScheme = useColorScheme();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
-  const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
+  // const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
   const borderColor = useThemeColor({}, 'border');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
+  // const mutedTextColor = useThemeColor({}, 'mutedText');
   const tintColor = useThemeColor({}, 'tint');
   const [error, setError] = useState<string | null>(null);
+  const toast = useFlashToast();
 
-  const [editedProfile, setEditedProfile] = useState<EditedProfile>({
+  const [editedProfile, setEditedProfile] = useState<ProfileFormData>({
     name: '',
     surname: '',
     username: '',
@@ -74,43 +54,114 @@ export default function EditProfileNative() {
       data: [
         {
           title: 'First Name',
-          subtitle: editedProfile.name || 'Enter your first name',
+          subtitle: 'Enter your first name',
           icon: 'user',
-          onPress: () => { },
-          showArrow: false,
+          showTextInput: true,
+          textInputValue: editedProfile.name,
+          textInputPlaceholder: 'Enter your first name',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, name: text })),
+          textInputProps: {
+            autoCapitalize: 'words',
+            maxLength: 50,
+          },
         },
         {
           title: 'Last Name',
-          subtitle: editedProfile.surname || 'Enter your last name',
+          subtitle: 'Enter your last name',
           icon: 'user',
-          onPress: () => { },
-          showArrow: false,
+          showTextInput: true,
+          textInputValue: editedProfile.surname,
+          textInputPlaceholder: 'Enter your last name',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, surname: text })),
+          textInputProps: {
+            autoCapitalize: 'words',
+            maxLength: 50,
+          },
         },
         {
           title: 'Username',
-          subtitle: editedProfile.username || 'Enter your username',
+          subtitle: 'Enter your username',
           icon: 'at-sign',
-          onPress: () => { },
-          showArrow: false,
+          showTextInput: true,
+          textInputValue: editedProfile.username,
+          textInputPlaceholder: 'Enter your username',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, username: text })),
+          textInputProps: {
+            autoCapitalize: 'none',
+            maxLength: 30,
+          },
         },
         {
           title: 'Bio',
-          subtitle: editedProfile.bio || 'Tell us about yourself',
+          subtitle: 'Tell us about yourself',
           icon: 'file-text',
-          onPress: () => { },
-          showArrow: false,
+          showTextInput: true,
+          textInputValue: editedProfile.bio,
+          textInputPlaceholder: 'Write a short bio about yourself...',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, bio: text })),
+          textInputProps: {
+            multiline: true,
+            numberOfLines: 2,
+            maxLength: 200,
+          },
         },
       ]
     },
+
     {
-      title: 'Account Type',
+      title: 'Professional Information',
       data: [
         {
-          title: 'Account Type',
-          subtitle: editedProfile.user_type.charAt(0).toUpperCase() + editedProfile.user_type.slice(1),
+          title: 'Profession',
+          subtitle: 'Enter your profession',
           icon: 'briefcase',
-          onPress: () => { },
-          showArrow: false,
+          showTextInput: true,
+          textInputValue: editedProfile.profession,
+          textInputPlaceholder: 'e.g., Software Engineer',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, profession: text })),
+          textInputProps: {
+            autoCapitalize: 'words',
+            maxLength: 100,
+          },
+        },
+        {
+          title: 'Experience Years',
+          subtitle: 'Enter years of experience',
+          icon: 'clock',
+          showTextInput: true,
+          textInputValue: editedProfile.experience_years,
+          textInputPlaceholder: 'e.g., 5',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, experience_years: text })),
+          textInputProps: {
+            keyboardType: 'numeric',
+            maxLength: 2,
+          },
+        },
+        {
+          title: 'Education',
+          subtitle: 'Enter your education',
+          icon: 'book',
+          showTextInput: true,
+          textInputValue: editedProfile.education,
+          textInputPlaceholder: 'e.g., Bachelor of Computer Science',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, education: text })),
+          textInputProps: {
+            autoCapitalize: 'words',
+            maxLength: 200,
+          },
+        },
+        {
+          title: 'Skills',
+          subtitle: 'Enter your skills',
+          icon: 'award',
+          showTextInput: true,
+          textInputValue: editedProfile.skills,
+          textInputPlaceholder: 'e.g., JavaScript, React, Node.js',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, skills: text })),
+          textInputProps: {
+            autoCapitalize: 'words',
+            maxLength: 300,
+          },
         },
       ]
     },
@@ -119,80 +170,101 @@ export default function EditProfileNative() {
       data: [
         {
           title: 'Website',
-          subtitle: editedProfile.website || 'Enter your website',
+          subtitle: 'Enter your website',
           icon: 'globe',
-          onPress: () => { },
-          showArrow: false,
+          showTextInput: true,
+          textInputValue: editedProfile.website,
+          textInputPlaceholder: 'https://yourwebsite.com',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, website: text })),
+          textInputProps: {
+            autoCapitalize: 'none',
+            keyboardType: 'url',
+            maxLength: 100,
+          },
         },
         {
           title: 'Phone',
-          subtitle: editedProfile.phone || 'Enter your phone number',
+          subtitle: 'Enter your phone number',
           icon: 'phone',
-          onPress: () => { },
-          showArrow: false,
+          showTextInput: true,
+          textInputValue: editedProfile.phone,
+          textInputPlaceholder: '+1 (555) 123-4567',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, phone: text })),
+          textInputProps: {
+            keyboardType: 'phone-pad',
+            maxLength: 20,
+          },
         },
         {
           title: 'Location',
-          subtitle: editedProfile.location || 'Enter your location',
+          subtitle: 'Enter your location',
           icon: 'map-pin',
-          onPress: () => { },
-          showArrow: false,
+          showTextInput: true,
+          textInputValue: editedProfile.location,
+          textInputPlaceholder: 'City, Country',
+          onTextInputChange: (text: string) => setEditedProfile(prev => ({ ...prev, location: text })),
+          textInputProps: {
+            autoCapitalize: 'words',
+            maxLength: 100,
+          },
+        },
+      ]
+    },
+    {
+      title: 'Account Settings',
+      data: [
+        {
+          title: 'Switch to Business Account',
+          subtitle: editedProfile.user_type === UserType.Business ? 'Currently a business account' : 'Convert to business account',
+          icon: 'briefcase',
+          showSwitch: true,
+          switchValue: editedProfile.user_type === UserType.Business,
+          onSwitchChange: async (value: boolean) => {
+            const newUserType = value ? UserType.Business : UserType.User;
+
+            // Update local state
+            setEditedProfile(prev => ({
+              ...prev,
+              user_type: newUserType
+            }));
+
+            // Auto-update the profile in database
+            if (profile) {
+              try {
+                const { error: updateError } = await supabase
+                  .from('profiles')
+                  .update({ user_type: newUserType })
+                  .eq('id', profile.id);
+
+                if (updateError) {
+                  console.error('Error updating user type:', updateError);
+                  // Revert local state if database update fails
+                  setEditedProfile(prev => ({
+                    ...prev,
+                    user_type: value ? UserType.User : UserType.Business
+                  }));
+                } else {
+                  console.log('User type updated successfully');
+                }
+              } catch (e) {
+                console.error('Error updating user type:', e);
+                // Revert local state if database update fails
+                setEditedProfile(prev => ({
+                  ...prev,
+                  user_type: value ? UserType.User : UserType.Business
+                }));
+              }
+            }
+          },
         },
       ]
     },
 
   ];
 
-  if (editedProfile.user_type === UserType.Professional) {
-    settingsData.splice(2, 0, {
-      title: 'Professional Information',
-      data: [
-        {
-          title: 'Profession',
-          subtitle: editedProfile.profession || 'Enter your profession',
-          icon: 'briefcase',
-          onPress: () => { },
-          showArrow: false,
-        },
-        {
-          title: 'Experience Years',
-          subtitle: editedProfile.experience_years || 'Enter years of experience',
-          icon: 'clock',
-          onPress: () => { },
-          showArrow: false,
-        },
-        {
-          title: 'Education',
-          subtitle: editedProfile.education || 'Enter your education',
-          icon: 'book',
-          onPress: () => { },
-          showArrow: false,
-        },
-        {
-          title: 'Skills',
-          subtitle: editedProfile.skills || 'Enter your skills',
-          icon: 'award',
-          onPress: () => { },
-          showArrow: false,
-        },
-      ]
-    });
-  }
 
-  if (editedProfile.user_type === UserType.Company) {
-    settingsData.splice(2, 0, {
-      title: 'Company Information',
-      data: [
-        {
-          title: 'Company Name',
-          subtitle: editedProfile.profession || 'Enter company name',
-          icon: 'building',
-          onPress: () => { },
-          showArrow: false,
-        },
-      ]
-    });
-  }
+
+
 
   useEffect(() => {
     if (profile) {
@@ -210,7 +282,19 @@ export default function EditProfileNative() {
         education: profile.education || '',
         skills: profile.skills?.join(', ') || '',
       });
+
+      // Notify about completeness when opening edit screen
+      const completeness = checkProfileCompleteness(profile);
+      if (!completeness.isComplete) {
+        const required = completeness.missingRequired.map((k) => String(k)).join(', ');
+        toast.show({
+          type: 'info',
+          title: 'Complete your profile',
+          message: required ? `Missing required: ${required}` : 'Add more details to improve your profile.',
+        });
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
   const handleSave = async () => {
@@ -222,20 +306,47 @@ export default function EditProfileNative() {
     setError(null);
 
     try {
+      // First, let's see what's actually in the database
+      const { data: existingProfiles, error: queryError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .limit(3);
+
+      if (queryError) {
+        console.log('Query error:', queryError);
+      } else {
+        console.log('Existing user_type values:', existingProfiles?.map(p => p.user_type));
+      }
+
+      const updateData = {
+        name: editedProfile.name.trim(),
+        surname: editedProfile.surname.trim(),
+        username: editedProfile.username.trim(),
+        bio: editedProfile.bio.trim(),
+        user_type: editedProfile.user_type,
+        website: editedProfile.website.trim(),
+        phone: editedProfile.phone.trim(),
+        location: editedProfile.location.trim(),
+        profession: editedProfile.profession.trim(),
+        experience_years: editedProfile.experience_years
+          ? parseInt(editedProfile.experience_years)
+          : null,
+        education: editedProfile.education.trim(),
+        skills: editedProfile.skills
+          ? editedProfile.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : null,
+      };
+
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({
-          ...editedProfile,
-          experience_years: editedProfile.experience_years
-            ? parseInt(editedProfile.experience_years)
-            : null,
-          skills: editedProfile.skills
-            ? editedProfile.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
-            : null,
-        })
+        .update(updateData)
         .eq('id', profile.id);
-      if (updateError) throw updateError;
-      await refresh();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Profile will be updated automatically via real-time subscription
       Alert.alert('Success', 'Profile updated successfully!', [
         { text: 'OK', onPress: () => router.back() }
       ]);
@@ -268,7 +379,7 @@ export default function EditProfileNative() {
         .update({ avatar_url: publicUrl })
         .eq('id', profile.id);
       if (updateError) throw updateError;
-      await refresh();
+      // Profile will be updated automatically via real-time subscription
       Alert.alert('Success', 'Avatar updated!');
     } catch (e: any) {
       setError(e.message || 'Failed to upload avatar');

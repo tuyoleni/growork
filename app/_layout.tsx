@@ -1,8 +1,10 @@
 import FlashBar from '@/components/ui/Flash';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppProvider } from '@/utils/AppContext';
+import { NotificationProvider } from '@/components/NotificationProvider';
 import { supabase } from '@/utils/superbase';
 import { setOpenGlobalSheet } from '@/utils/globalSheet';
+
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { BottomSheetModalProvider, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -10,12 +12,11 @@ import { Session } from '@supabase/supabase-js';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState, createContext, useContext, useRef } from 'react';
-import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import SimpleBottomSheet from '@/components/GlobalBottomSheet';
-import { Skeleton } from '@/components/ui/Skeleton';
 import CommentsBottomSheet from '@/components/content/comments/CommentsBottomSheet';
 import { CommentsBottomSheetProvider, useCustomCommentsBottomSheet } from '@/hooks/useCustomCommentsBottomSheet';
 
@@ -53,6 +54,7 @@ function AuthGate() {
       <Stack.Screen name="auth" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="post" />
+      <Stack.Screen name="notifications" />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -63,8 +65,22 @@ function AppContent() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+
+  console.log('Font loading status:', loaded);
   const [session, setSession] = useState<Session | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Keep the splash screen visible while we fetch resources
+  useEffect(() => {
+    const preventAutoHide = async () => {
+      try {
+        await SplashScreen.preventAutoHideAsync();
+      } catch (error) {
+        console.error('Error preventing auto hide:', error);
+      }
+    };
+    preventAutoHide();
+  }, []);
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const [sheetProps, setSheetProps] = useState<{
@@ -74,7 +90,7 @@ function AppContent() {
   } | null>(null);
 
   // Comments bottom sheet state
-  const { isVisible, currentPostId, closeCommentsSheet } = useCustomCommentsBottomSheet();
+  const { isVisible, currentPostId, currentPostOwnerId, closeCommentsSheet } = useCustomCommentsBottomSheet();
 
   // Expose openGlobalSheet globally
   const openGlobalSheet = (props: {
@@ -132,6 +148,7 @@ function AppContent() {
             if (isMounted) setSession(null);
           } else if (user) {
             if (isMounted) setSession(currentSession);
+
           }
         } else {
           if (isMounted) setSession(null);
@@ -139,7 +156,10 @@ function AppContent() {
       } catch {
         if (isMounted) setSession(null);
       } finally {
-        if (isMounted) setInitialLoading(false);
+        if (isMounted) {
+          setInitialLoading(false);
+          console.log('Session loading completed');
+        }
       }
     };
 
@@ -154,17 +174,43 @@ function AppContent() {
     };
   }, []);
 
+  // Hide splash screen once everything is ready
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+
+    const hideSplashScreen = async () => {
+      if (loaded && !initialLoading) {
+        try {
+          await SplashScreen.hideAsync();
+          console.log('Splash screen hidden successfully');
+        } catch (error) {
+          console.error('Error hiding splash screen:', error);
+        }
+      } else {
+        // Set a timeout to hide splash screen after 3 seconds if loading takes too long
+        timeout = setTimeout(async () => {
+          try {
+            await SplashScreen.hideAsync();
+            console.log('Splash screen hidden after timeout');
+          } catch (error) {
+            console.error('Error hiding splash screen:', error);
+          }
+        }, 3000);
+      }
+    };
+
+    hideSplashScreen();
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [loaded, initialLoading]);
+
   if (!loaded || initialLoading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#fff', padding: 20 }}>
-        <View style={{ alignItems: 'center', marginTop: 100 }}>
-          <Skeleton width={80} height={80} borderRadius={40} style={{ marginBottom: 20 }} />
-          <Skeleton width={200} height={24} style={{ marginBottom: 12 }} />
-          <Skeleton width={150} height={16} style={{ marginBottom: 8 }} />
-          <Skeleton width={120} height={16} />
-        </View>
-      </View>
-    );
+    console.log('App still loading - loaded:', loaded, 'initialLoading:', initialLoading);
+    return null; // Return null to keep splash screen visible
   }
 
   return (
@@ -173,29 +219,32 @@ function AppContent() {
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AuthContext.Provider value={{ session, initialLoading }}>
             <AppProvider>
-              <BottomSheetModalProvider>
-                <AuthGate />
-                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-                <FlashBar />
+              <NotificationProvider>
+                <BottomSheetModalProvider>
+                  <AuthGate />
+                  <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                  <FlashBar />
 
-                {sheetProps && (
-                  <SimpleBottomSheet
-                    ref={sheetRef}
-                    snapPoints={sheetProps.snapPoints}
-                    onDismiss={() => setSheetProps(null)}
-                  >
-                    {sheetProps.children}
-                  </SimpleBottomSheet>
-                )}
+                  {sheetProps && (
+                    <SimpleBottomSheet
+                      ref={sheetRef}
+                      snapPoints={sheetProps.snapPoints}
+                      onDismiss={() => setSheetProps(null)}
+                    >
+                      {sheetProps.children}
+                    </SimpleBottomSheet>
+                  )}
 
-                {/* Comments Bottom Sheet */}
-                <CommentsBottomSheet
-                  postId={currentPostId || ''}
-                  visible={isVisible}
-                  onClose={closeCommentsSheet}
-                />
+                  {/* Comments Bottom Sheet */}
+                  <CommentsBottomSheet
+                    postId={currentPostId || ''}
+                    postOwnerId={currentPostOwnerId || undefined}
+                    visible={isVisible}
+                    onClose={closeCommentsSheet}
+                  />
 
-              </BottomSheetModalProvider>
+                </BottomSheetModalProvider>
+              </NotificationProvider>
             </AppProvider>
           </AuthContext.Provider>
         </ThemeProvider>

@@ -40,7 +40,7 @@ export default function ProfileDetails({
   const updateProfile = async () => {
     try {
       setLoading(true);
-      
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -50,12 +50,12 @@ export default function ProfileDetails({
           bio: editedProfile.bio,
         })
         .eq('id', profile.id);
-      
+
       if (error) {
         throw error;
       }
-      
-      await refresh();
+
+      // Profile will be updated automatically via real-time subscription
       setIsEditing(false);
     } catch (error: any) {
       Alert.alert('Error', error.message);
@@ -72,14 +72,14 @@ export default function ProfileDetails({
         aspect: [1, 1],
         quality: 0.8,
       });
-      
+
       if (result.canceled) {
         return;
       }
-      
+
       const uri = result.assets[0].uri;
       setLoading(true);
-      
+
       // Use the shared uploadImage function
       const publicUrl = await uploadImage({
         bucket: STORAGE_BUCKETS.AVATARS,
@@ -87,22 +87,22 @@ export default function ProfileDetails({
         uri,
         fileNamePrefix: 'avatar'
       });
-      
+
       if (!publicUrl) {
         throw new Error('Failed to upload avatar');
       }
-      
+
       // Update profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
         .eq('id', profile.id);
-      
+
       if (updateError) {
         throw updateError;
       }
-      
-      await refresh();
+
+      // Profile will be updated automatically via real-time subscription
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -120,9 +120,9 @@ export default function ProfileDetails({
             contentFit="cover"
           />
           {editable && (
-            <Pressable 
-              style={[styles.avatarEditButton, { borderColor }]} 
-              onPress={uploadAvatar} 
+            <Pressable
+              style={[styles.avatarEditButton, { borderColor }]}
+              onPress={uploadAvatar}
               disabled={loading}
             >
               <Feather name="camera" size={16} color={textColor} />

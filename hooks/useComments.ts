@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/utils/superbase';
+import { useInteractionNotifications } from './notifications/useInteractionNotifications';
+
 
 export interface Comment {
   id: string;
@@ -20,6 +22,7 @@ export function useComments() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { notifyPostComment } = useInteractionNotifications();
 
   const isFetchingRef = useRef(false);
   const lastFetchedPostId = useRef<string | null>(null);
@@ -90,7 +93,8 @@ export function useComments() {
       name: string;
       surname: string;
       username: string | null;
-    }
+    },
+    postOwnerId?: string
   ) => {
     try {
       const { data, error } = await supabase
@@ -116,6 +120,15 @@ export function useComments() {
           profiles: userProfile || null
         };
         setComments(prev => [newComment, ...prev]);
+
+        // Send notification if post owner is different from commenter
+        if (postOwnerId && postOwnerId !== userId && userProfile) {
+          const commenterName = userProfile.name && userProfile.surname
+            ? `${userProfile.name} ${userProfile.surname}`
+            : userProfile.username || 'Someone';
+
+          await notifyPostComment(postId, postOwnerId, commenterName, content.trim());
+        }
       }
 
       return { data, error: null };
@@ -124,7 +137,7 @@ export function useComments() {
       setError(err.message);
       return { data: null, error: err.message };
     }
-  }, []);
+  }, [notifyPostComment]);
 
   const deleteComment = useCallback(async (commentId: string) => {
     try {

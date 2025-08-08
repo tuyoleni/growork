@@ -3,7 +3,8 @@ import { useState, useCallback, createContext, useContext, ReactNode } from 'rea
 interface CommentsBottomSheetContextType {
     isVisible: boolean;
     currentPostId: string | null;
-    openCommentsSheet: (postId: string) => void;
+    currentPostOwnerId: string | null;
+    openCommentsSheet: (postId: string, postOwnerId?: string) => void;
     closeCommentsSheet: () => void;
 }
 
@@ -12,15 +13,18 @@ const CommentsBottomSheetContext = createContext<CommentsBottomSheetContextType 
 export function CommentsBottomSheetProvider({ children }: { children: ReactNode }) {
     const [isVisible, setIsVisible] = useState(false);
     const [currentPostId, setCurrentPostId] = useState<string | null>(null);
+    const [currentPostOwnerId, setCurrentPostOwnerId] = useState<string | null>(null);
 
-    const openCommentsSheet = useCallback((postId: string) => {
+    const openCommentsSheet = useCallback((postId: string, postOwnerId?: string) => {
         setCurrentPostId(postId);
+        setCurrentPostOwnerId(postOwnerId || null);
         setIsVisible(true);
     }, []);
 
     const closeCommentsSheet = useCallback(() => {
         setIsVisible(false);
         setCurrentPostId(null);
+        setCurrentPostOwnerId(null);
     }, []);
 
     return (
@@ -28,6 +32,7 @@ export function CommentsBottomSheetProvider({ children }: { children: ReactNode 
             value={{
                 isVisible,
                 currentPostId,
+                currentPostOwnerId,
                 openCommentsSheet,
                 closeCommentsSheet,
             }}

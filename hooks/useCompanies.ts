@@ -97,8 +97,8 @@ export function useCompanies() {
       }
 
       // Update local state
-      setCompanies(prev => 
-        prev.map(company => 
+      setCompanies(prev =>
+        prev.map(company =>
           company.id === companyId ? updatedCompany : company
         )
       );
@@ -179,6 +179,48 @@ export function useCompanies() {
     }
   }, [user]);
 
+  // Get a single company by ID (without user ownership requirement)
+  const getCompanyByIdPublic = useCallback(async (companyId: string) => {
+    if (!companyId || typeof companyId !== 'string' || companyId.trim() === '') {
+      return { error: 'Invalid company ID provided' };
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data: companies, error: fetchError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId.trim());
+
+      if (fetchError) {
+        console.error('Supabase error fetching company:', fetchError);
+        throw fetchError;
+      }
+
+      // Check if we got any results
+      if (!companies || companies.length === 0) {
+        console.warn(`Company not found with ID: ${companyId}`);
+        return { error: 'Company not found' };
+      }
+
+      // If multiple companies found, return the first one (shouldn't happen with unique IDs)
+      if (companies.length > 1) {
+        console.warn(`Multiple companies found with ID: ${companyId}, returning first one`);
+      }
+
+      const company = companies[0];
+      return { company };
+    } catch (err: any) {
+      console.error('Error fetching company:', err.message);
+      setError(err.message);
+      return { error: err };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Update company logo
   const updateCompanyLogo = useCallback(async (companyId: string, logoUrl: string) => {
     if (!user) {
@@ -203,8 +245,8 @@ export function useCompanies() {
       }
 
       // Update local state
-      setCompanies(prev => 
-        prev.map(company => 
+      setCompanies(prev =>
+        prev.map(company =>
           company.id === companyId ? updatedCompany : company
         )
       );
@@ -237,6 +279,7 @@ export function useCompanies() {
     updateCompany,
     deleteCompany,
     getCompanyById,
+    getCompanyByIdPublic,
     updateCompanyLogo,
   };
 } 

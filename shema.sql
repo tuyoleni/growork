@@ -3,7 +3,7 @@ CREATE TYPE post_type AS ENUM ('news', 'job');
 CREATE TYPE ad_status AS ENUM ('active', 'paused', 'completed');
 CREATE TYPE application_status AS ENUM ('pending', 'reviewed', 'accepted', 'rejected');
 CREATE TYPE document_type AS ENUM ('cv', 'cover_letter', 'certificate', 'other');
-CREATE TYPE user_type AS ENUM ('user', 'professional', 'company');
+CREATE TYPE user_type AS ENUM ('user', 'business');
 
 -- Create a function to update the updated_at timestamp automatically
 CREATE OR REPLACE FUNCTION update_modified_column()
@@ -178,3 +178,19 @@ CREATE TABLE public.comment_likes (
   CONSTRAINT comment_likes_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
   CONSTRAINT comment_likes_unique UNIQUE (user_id, comment_id)
 );
+
+-- Link table: profiles follow companies
+CREATE TABLE public.company_follows (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  profile_id uuid NOT NULL,
+  company_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT company_follows_pkey PRIMARY KEY (id),
+  CONSTRAINT company_follows_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT company_follows_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE,
+  CONSTRAINT company_follows_unique UNIQUE (profile_id, company_id)
+);
+
+-- Helpful indexes
+CREATE INDEX IF NOT EXISTS idx_company_follows_profile ON public.company_follows(profile_id);
+CREATE INDEX IF NOT EXISTS idx_company_follows_company ON public.company_follows(company_id);

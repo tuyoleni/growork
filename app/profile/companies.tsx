@@ -19,11 +19,15 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
 import { supabase } from '@/utils/superbase';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useCompanyFollows } from '@/hooks/useCompanyFollows';
+import { UserType } from '@/types/enums';
 import { Company } from '@/types';
 
 export default function CompaniesManagement() {
   const router = useRouter();
   const { user, profile } = useAuth();
+  const { isBusinessUser } = usePermissions();
   const colorScheme = useColorScheme();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
@@ -32,13 +36,12 @@ export default function CompaniesManagement() {
   const tintColor = useThemeColor({}, 'tint');
   const cardBg = useThemeColor({}, 'backgroundSecondary');
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [followedCompanies, setFollowedCompanies] = useState<Company[]>([]);
+  const { companies: followedCompanies, loading: followsLoading } = useCompanyFollows();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchCompanies();
-      fetchFollowedCompanies();
     }
   }, [user]);
 
@@ -63,19 +66,13 @@ export default function CompaniesManagement() {
     }
   };
 
-  const fetchFollowedCompanies = async () => {
-    if (!user) return;
-
-    try {
-      // This would need a company_follows table in the database
-      // For now, we'll use a placeholder
-      setFollowedCompanies([]);
-    } catch (error: any) {
-      console.error('Error fetching followed companies:', error);
-    }
-  };
+  // Followed companies are handled by useCompanyFollows
 
   const handleCreateCompany = () => {
+    if (!isBusinessUser) {
+      Alert.alert('Restricted', 'Only business accounts can create and manage companies.');
+      return;
+    }
     router.push('/profile/CompanyManagement');
   };
 
@@ -120,79 +117,61 @@ export default function CompaniesManagement() {
       </ThemedView>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* My Companies Section */}
+        {/* My Companies Section (Business only) */}
         <ThemedView style={styles.section}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>My Companies</ThemedText>
-            <TouchableOpacity
-              style={[styles.addButton, { borderColor }]}
-              onPress={handleCreateCompany}
-            >
-              <Feather name="plus" size={16} color={textColor} />
-              <ThemedText style={[styles.addButtonText, { color: textColor }]}>
-                Create
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
-
-          {companies.length === 0 ? (
-            <ThemedView style={styles.emptyState}>
-              <Feather name="briefcase" size={48} color={mutedTextColor} />
-              <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
-                No Companies Yet
-              </ThemedText>
-              <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }]}>
-                Create your first company profile to start posting jobs and content.
-              </ThemedText>
+            {isBusinessUser && (
               <TouchableOpacity
-                style={[styles.createButton, { borderColor }]}
+                style={[styles.addButton, { borderColor }]}
                 onPress={handleCreateCompany}
               >
-                <ThemedText style={[styles.createButtonText, { color: textColor }]}>
-                  Create Company
-                </ThemedText>
+                <Feather name="plus" size={16} color={textColor} />
+                <ThemedText style={[styles.addButtonText, { color: textColor }]}>Create</ThemedText>
               </TouchableOpacity>
-            </ThemedView>
-          ) : (
-            <View style={styles.companiesList}>
-              {companies.map((company) => (
-                <TouchableOpacity
-                  key={company.id}
-                  style={[styles.companyCard, { borderColor }]}
-                  onPress={() => handleEditCompany(company.id)}
-                >
-                  <Image
-                    source={{
-                      uri: company.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&size=64`
-                    }}
-                    style={styles.companyLogo}
-                  />
-                  <View style={styles.companyInfo}>
-                    <ThemedText style={[styles.companyName, { color: textColor }]}>
-                      {company.name}
-                    </ThemedText>
-                    {company.description && (
-                      <ThemedText style={[styles.companyDescription, { color: mutedTextColor }]}>
-                        {company.description}
-                      </ThemedText>
-                    )}
-                    <View style={styles.companyMeta}>
-                      {company.industry && (
-                        <ThemedText style={[styles.companyMetaText, { color: mutedTextColor }]}>
-                          {company.industry}
-                        </ThemedText>
-                      )}
-                      {company.location && (
-                        <ThemedText style={[styles.companyMetaText, { color: mutedTextColor }]}>
-                          {company.location}
-                        </ThemedText>
-                      )}
-                    </View>
-                  </View>
-                  <Feather name="chevron-right" size={16} color={mutedTextColor} />
+            )}
+          </View>
+
+          {isBusinessUser ? (
+            companies.length === 0 ? (
+              <ThemedView style={styles.emptyState}>
+                <Feather name="briefcase" size={48} color={mutedTextColor} />
+                <ThemedText style={[styles.emptyTitle, { color: textColor }]}>No Companies Yet</ThemedText>
+                <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }]}>Create your first company profile to start posting jobs and content.</ThemedText>
+                <TouchableOpacity style={[styles.createButton, { borderColor }]} onPress={handleCreateCompany}>
+                  <ThemedText style={[styles.createButtonText, { color: textColor }]}>Create Company</ThemedText>
                 </TouchableOpacity>
-              ))}
-            </View>
+              </ThemedView>
+            ) : (
+              <View style={styles.companiesList}>
+                {companies.map((company) => (
+                  <TouchableOpacity key={company.id} style={[styles.companyCard, { borderColor }]} onPress={() => handleEditCompany(company.id)}>
+                    <Image source={{ uri: company.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&size=64` }} style={styles.companyLogo} />
+                    <View style={styles.companyInfo}>
+                      <ThemedText style={[styles.companyName, { color: textColor }]}>{company.name}</ThemedText>
+                      {company.description && (
+                        <ThemedText style={[styles.companyDescription, { color: mutedTextColor }]}>{company.description}</ThemedText>
+                      )}
+                      <View style={styles.companyMeta}>
+                        {company.industry && (
+                          <ThemedText style={[styles.companyMetaText, { color: mutedTextColor }]}>{company.industry}</ThemedText>
+                        )}
+                        {company.location && (
+                          <ThemedText style={[styles.companyMetaText, { color: mutedTextColor }]}>{company.location}</ThemedText>
+                        )}
+                      </View>
+                    </View>
+                    <Feather name="chevron-right" size={16} color={mutedTextColor} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )
+          ) : (
+            <ThemedView style={styles.emptyState}>
+              <Feather name="lock" size={48} color={mutedTextColor} />
+              <ThemedText style={[styles.emptyTitle, { color: textColor }]}>Business Feature</ThemedText>
+              <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }]}>Only business accounts can create and manage companies.</ThemedText>
+            </ThemedView>
           )}
         </ThemedView>
 
@@ -211,14 +190,18 @@ export default function CompaniesManagement() {
             </TouchableOpacity>
           </View>
 
-          {followedCompanies.length === 0 ? (
+          {followsLoading ? (
+            <ThemedView style={styles.emptyState}>
+              <ThemedText style={[styles.emptyTitle, { color: textColor }]}>Loading...</ThemedText>
+            </ThemedView>
+          ) : followedCompanies.length === 0 ? (
             <ThemedView style={styles.emptyState}>
               <Feather name="heart" size={48} color={mutedTextColor} />
               <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
                 No Followed Companies
               </ThemedText>
               <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }]}>
-                Follow companies you're interested in to see their latest updates and job postings.
+                Follow companies you&apos;re interested in to see their latest updates and job postings.
               </ThemedText>
               <TouchableOpacity
                 style={[styles.createButton, { borderColor }]}

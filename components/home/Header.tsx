@@ -1,19 +1,22 @@
 import CategorySelector from '@/components/ui/CategorySelector';
 import { Colors } from '@/constants/Colors';
 import { INDUSTRIES } from '@/dataset/industries';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import { Feather } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import React from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import CustomOptionStrip from '../ui/CustomOptionStrip';
+import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
+import { NotificationBadge } from '@/components/ui/NotificationBadge';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface HeaderProps {
   selectedContentType: number;
   onContentTypeChange: (index: number) => void;
   selectedIndustry: number;
   onIndustryChange: (index: number) => void;
-  onAddPost: () => void; // <-- new
+  onAddPost: () => void;
+  isBusinessUser?: boolean;
 }
 
 const Header = ({
@@ -22,12 +25,14 @@ const Header = ({
   selectedIndustry,
   onIndustryChange,
   onAddPost,
+  isBusinessUser = false,
 }: HeaderProps) => {
-  const [visibleIndustries, setVisibleIndustries] = useState(INDUSTRIES);
-  const textColor = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
+  const visibleIndustries = INDUSTRIES;
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const router = useRouter();
+  const permissions = usePermissions();
+  const showAdd = isBusinessUser || permissions.isBusinessUser;
 
   return (
     <View
@@ -45,11 +50,20 @@ const Header = ({
           Growork
         </ThemedText>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Pressable style={styles.iconButton} onPress={onAddPost} hitSlop={8}>
-            <Feather name="plus" size={22} color={theme.icon} />
-          </Pressable>
-          <Pressable style={styles.iconButton} onPress={() => {}} hitSlop={8}>
-            <Feather name="bell" size={22} color={theme.icon} />
+          {showAdd && (
+            <Pressable style={styles.iconButton} onPress={onAddPost} hitSlop={8}>
+              <Feather name="plus" size={22} color={theme.icon} />
+            </Pressable>
+          )}
+          <Pressable
+            style={styles.iconButton}
+            onPress={() => router.push('/notifications')}
+            hitSlop={8}
+          >
+            <View style={styles.bellContainer}>
+              <Feather name="bell" size={22} color={theme.icon} />
+              <NotificationBadge size={16} />
+            </View>
           </Pressable>
         </View>
       </View>
@@ -87,6 +101,9 @@ const styles = StyleSheet.create({
   iconButton: {
     marginLeft: 12,
     padding: 4,
+  },
+  bellContainer: {
+    position: 'relative',
   },
   header: {
     paddingTop: 10,

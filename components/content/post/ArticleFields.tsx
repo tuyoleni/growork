@@ -2,11 +2,14 @@ import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { ThemedInput } from '@/components/ThemedInput';
 import IndustrySelector from './IndustrySelector';
+import CompanySelector, { CompanySelectorData } from './CompanySelector';
 import { INDUSTRIES } from '@/dataset/industries';
 
 export interface ArticleFieldsData {
   source: string;
   industry: string;
+  company: string;
+  companyId?: string;
 }
 
 interface ArticleFieldsProps {
@@ -20,8 +23,20 @@ export default function ArticleFields({ values, onChange, style }: ArticleFields
     onChange({ ...values, [field]: value });
   };
 
+  const handleCompanyChange = (companyData: CompanySelectorData) => {
+    onChange({
+      ...values,
+      company: companyData.company,
+      companyId: companyData.companyId,
+    });
+  };
+
   return (
     <View style={[styles.container, style]}>
+      <CompanySelector
+        values={{ company: values.company, companyId: values.companyId }}
+        onChange={handleCompanyChange}
+      />
       <IndustrySelector
         selectedIndustry={values.industry}
         onIndustryChange={(v) => handleChange('industry', v)}

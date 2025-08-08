@@ -3,6 +3,9 @@ import { supabase } from '@/utils/superbase';
 import { useAuth } from './useAuth';
 import { Post } from '@/types/posts';
 import { Application } from '@/types/applications';
+// import { useInteractionNotifications } from './notifications/useInteractionNotifications';
+import { useNotifications } from './useNotifications';
+
 
 export interface BookmarkedItem {
   id: string;
@@ -16,7 +19,8 @@ export function useBookmarks() {
   const [bookmarkedItems, setBookmarkedItems] = useState<BookmarkedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { notifyPostBookmark } = useNotifications();
 
   // Fetch user's bookmarks with full data
   const fetchBookmarkedContent = useCallback(async () => {
@@ -160,7 +164,7 @@ export function useBookmarks() {
   }, [bookmarks]);
 
   // Add a bookmark
-  const addBookmark = useCallback(async (postId: string) => {
+  const addBookmark = useCallback(async (postId: string, postOwnerId?: string) => {
     if (!user) {
       setError('You must be logged in to bookmark a post');
       return { success: false, error: 'Authentication required' };
@@ -193,6 +197,15 @@ export function useBookmarks() {
       // Refresh bookmarked content
       await fetchBookmarkedContent();
 
+      // Send notification if post owner is different from current user
+      if (postOwnerId && postOwnerId !== user.id && profile) {
+        const bookmarkerName = profile.name && profile.surname
+          ? `${profile.name} ${profile.surname}`
+          : profile.username || 'Someone';
+
+        await notifyPostBookmark(postId, postOwnerId, bookmarkerName);
+      }
+
       return { success: true, error: null };
     } catch (err: any) {
       console.error('Error adding bookmark:', err);
@@ -201,7 +214,7 @@ export function useBookmarks() {
     } finally {
       setLoading(false);
     }
-  }, [user, bookmarks, fetchBookmarkedContent]);
+  }, [user, bookmarks, fetchBookmarkedContent, profile, notifyPostBookmark]);
 
   // Remove a bookmark
   const removeBookmark = useCallback(async (postId: string) => {
@@ -245,11 +258,11 @@ export function useBookmarks() {
   }, [user, bookmarks]);
 
   // Toggle bookmark status
-  const toggleBookmark = useCallback(async (postId: string) => {
+  const toggleBookmark = useCallback(async (postId: string, postOwnerId?: string) => {
     if (isBookmarked(postId)) {
       return removeBookmark(postId);
     } else {
-      return addBookmark(postId);
+      return addBookmark(postId, postOwnerId);
     }
   }, [isBookmarked, addBookmark, removeBookmark]);
 

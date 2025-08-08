@@ -11,6 +11,7 @@ export interface Post {
   criteria: {
     // Job fields
     company?: string;
+    companyId?: string; // Link to company profile
     location?: string;
     salary?: string;
     jobType?: string;

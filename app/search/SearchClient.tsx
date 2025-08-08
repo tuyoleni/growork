@@ -194,49 +194,7 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
   const cardVariant =
     post.type === PostType.Job ? 'job' : 'news';
 
-  // Profile fields (may be undefined/null)
-  const profile = post.profiles;
-  const username = profile?.username || 'user';
-  const name = [profile?.name, profile?.surname].filter(Boolean).join(' ') || 'User';
-
-  // Generate avatar image with better fallbacks
-  const getAvatarImage = () => {
-    if (profile?.avatar_url) {
-      return profile.avatar_url;
-    }
-
-    // Generate avatar based on company name for jobs
-    if (cardVariant === 'job' && post.criteria?.company) {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(post.criteria.company)}&background=random&size=40`;
-    }
-
-    // Generate avatar based on user name
-    if (name && name !== 'User') {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=40`;
-    }
-
-    // Fallback to generic avatar
-    return 'https://ui-avatars.com/api/?name=U&background=random&size=40';
-  };
-
-  const avatarImage = getAvatarImage();
-
-  // Title for the company/user/author/publisher
-  const displayTitle =
-    cardVariant === 'job'
-      ? post.criteria?.company || post.title || 'Company'
-      : profile?.name ||
-      post.criteria?.author ||
-      post.criteria?.source ||
-      'Publisher';
-
-  // Main post title/headline
-  const postTitle = post.title || '';
   const description = post.content || '';
-
-  // Enhanced data
-  const likesCount = post.likes?.length || 0;
-  const commentsCount = post.comments?.length || 0;
 
   // Validate and get main image
   const getMainImage = () => {
@@ -269,32 +227,13 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
     <ContentCard
       variant={cardVariant}
       id={post.id}
-      title={displayTitle}
-      postTitle={postTitle}
-      username={username}
-      name={name}
-      avatarImage={avatarImage}
-      mainImage={mainImage}
+      title={post.title || ''}
       description={description}
-      badgeText={
-        cardVariant === 'job'
-          ? post.criteria?.location || 'Remote'
-          : cardVariant === 'news'
-            ? post.criteria?.source || 'News'
-            : undefined
-      }
-      badgeVariant={cardVariant === 'news' ? 'error' : undefined}
-      isVerified={false}
-      industry={post.industry || undefined}
+      mainImage={mainImage}
+      createdAt={post.created_at}
+      criteria={post.criteria || undefined}
       onPressApply={handleApplyToJob}
       user_id={post.user_id}
-      jobId={post.id}
-      // Enhanced data fields
-      likesCount={likesCount}
-      commentsCount={commentsCount}
-      createdAt={post.created_at}
-      criteria={post.criteria}
-      isSponsored={post.is_sponsored}
     />
   );
 }

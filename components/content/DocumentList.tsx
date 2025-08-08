@@ -63,10 +63,12 @@ export default function DocumentList({
 
     const grouped = documents.reduce((acc, doc) => {
       const category = doc.type || 'Other';
-      if (!acc[category]) {
-        acc[category] = [];
+      // Map document types to display names
+      const categoryDisplayName = category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      if (!acc[categoryDisplayName]) {
+        acc[categoryDisplayName] = [];
       }
-      acc[category].push(doc);
+      acc[categoryDisplayName].push(doc);
       return acc;
     }, {} as Record<string, Document[]>);
 

@@ -141,7 +141,7 @@ export function SearchResultsSkeleton() {
   return (
     <View style={styles.searchResultsContainer}>
       {[1, 2, 3].map((index) => (
-        <View key={index} style={styles.searchResultItem}>
+        <View key={`search-result-${index}`} style={styles.searchResultItem}>
           <ContentCardSkeleton />
         </View>
       ))}

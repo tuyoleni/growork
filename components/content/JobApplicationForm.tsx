@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, TouchableOpacity, View, Pressable, ActivityIndicator } from 'react-native';
+import { Animated, TouchableOpacity, View, Pressable, ActivityIndicator } from 'react-native';
 import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -8,6 +8,7 @@ import { Post, Document, DocumentType } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { useApplications } from '@/hooks/useApplications';
 import { useDocuments } from '@/hooks/useDocuments';
+import { useApplicationNotifications } from '@/hooks/useApplicationNotifications';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import DocumentCard from './DocumentCard';
 import DocumentManager from './DocumentManager';
@@ -29,9 +30,10 @@ interface JobApplicationFormProps {
 
 export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicationFormProps) {
   const toast = useFlashToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { addApplication, checkIfApplied } = useApplications();
   const { loading: documentsLoading, fetchDocuments } = useDocuments(user?.id);
+  const { notifyNewApplication } = useApplicationNotifications();
 
   const [currentStep, setCurrentStep] = useState<ApplicationStep>(ApplicationStep.ResumeSelection);
   const [loading, setLoading] = useState(false);
@@ -129,6 +131,21 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
         cover_letter_id: selectedCoverLetter?.id || null
       });
       if (error) throw error;
+
+      // Send notification to job poster
+      if (profile && jobPost.user_id && jobPost.user_id !== user.id) {
+        const applicantName = profile.name && profile.surname
+          ? `${profile.name} ${profile.surname}`
+          : profile.username || 'Someone';
+
+        await notifyNewApplication(
+          jobPost.id, // Using post ID as application ID for now
+          jobPost.user_id,
+          applicantName,
+          jobPost.title || 'your job'
+        );
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSuccess?.();
     } catch (error: any) {

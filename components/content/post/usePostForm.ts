@@ -10,7 +10,7 @@ import { JobFieldsData } from './JobFields';
 
 export function usePostForm(onSuccess?: () => void) {
   const { user, addPost } = useAppContext();
-  
+
   // Form state
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -25,12 +25,15 @@ export function usePostForm(onSuccess?: () => void) {
     jobType: '',
     industry: '',
     company: '',
+    companyId: undefined,
   });
 
   // Article-specific fields
   const [articleFields, setArticleFields] = useState<ArticleFieldsData>({
     source: '',
     industry: '',
+    company: '',
+    companyId: undefined,
   });
 
   const handleImageSelected = (imageUrl: string | null) => {
@@ -48,10 +51,13 @@ export function usePostForm(onSuccess?: () => void) {
       jobType: '',
       industry: '',
       company: '',
+      companyId: undefined,
     });
     setArticleFields({
       source: '',
       industry: '',
+      company: '',
+      companyId: undefined,
     });
   };
 
@@ -78,6 +84,7 @@ export function usePostForm(onSuccess?: () => void) {
     if (postType === PostType.Job) {
       criteria = {
         company: jobFields.company,
+        companyId: jobFields.companyId, // Use company data from jobFields
         location: jobFields.location,
         salary: jobFields.salary,
         jobType: jobFields.jobType,
@@ -85,6 +92,8 @@ export function usePostForm(onSuccess?: () => void) {
       industry = jobFields.industry;
     } else if (postType === PostType.News) {
       criteria = {
+        company: articleFields.company,
+        companyId: articleFields.companyId, // Use company data from articleFields
         source: articleFields.source,
       };
       industry = articleFields.industry;
@@ -102,9 +111,9 @@ export function usePostForm(onSuccess?: () => void) {
         is_sponsored: false,
         criteria,
       });
-      
+
       if (error) throw error;
-      
+
       if (Platform.OS === 'ios') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       clearForm();
       onSuccess?.();

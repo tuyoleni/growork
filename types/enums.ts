@@ -25,6 +25,11 @@ export enum DocumentType {
 
 export enum UserType {
   User = 'user',
-  Professional = 'professional',
-  Company = 'company',
+  Business = 'business',
+}
+
+export enum NotificationType {
+  APPLICATION_STATUS = 'application_status',
+  NEW_APPLICATION = 'new_application',
+  INTERACTION = 'interaction',
 } 

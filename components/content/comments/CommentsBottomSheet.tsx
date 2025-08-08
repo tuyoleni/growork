@@ -29,12 +29,13 @@ type CountMap = Record<string, number>;
 
 interface CommentsBottomSheetProps {
     postId: string;
+    postOwnerId?: string;
     visible: boolean;
     onClose?: () => void;
 }
 
-export default function CommentsBottomSheet({ postId, visible, onClose }: CommentsBottomSheetProps) {
-    const { user, profile } = useAuth();
+export default function CommentsBottomSheet({ postId, postOwnerId, visible, onClose }: CommentsBottomSheetProps) {
+    const { profile } = useAuth();
     const {
         comments,
         loading,
@@ -56,7 +57,7 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
     const [isSending, setIsSending] = useState(false);
     const [likedComments, setLikedComments] = useState<LikeMap>({});
     const [likeCounts, setLikeCounts] = useState<CountMap>({});
-    const [keyboardVisible, setKeyboardVisible] = useState(false);
+
     const inputRef = useRef<any>(null);
 
     // Animation values
@@ -70,19 +71,7 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
     const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
 
     // Keyboard listeners
-    useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-            setKeyboardVisible(true);
-        });
-        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-            setKeyboardVisible(false);
-        });
 
-        return () => {
-            keyboardDidShowListener?.remove();
-            keyboardDidHideListener?.remove();
-        };
-    }, []);
 
     useEffect(() => {
         if (visible) {
@@ -121,7 +110,7 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
             fetchComments(postId);
             setCommentText("");
         }
-    }, [postId, visible]);
+    }, [postId, visible, fetchComments]);
 
     useEffect(() => {
         const loadLikeData = async () => {
@@ -156,7 +145,8 @@ export default function CommentsBottomSheet({ postId, visible, onClose }: Commen
                 name: profile.name,
                 surname: profile.surname,
                 username: profile.username,
-            }
+            },
+            postOwnerId
         );
         setCommentText("");
         setIsSending(false);

@@ -73,19 +73,22 @@ export function useHomePosts() {
           variant = 'news';
         }
 
+        const companyName = post.type === 'job' && (post as any).criteria?.company
+          ? (post as any).criteria.company
+          : undefined;
+        const headerAvatar = companyName
+          ? `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&size=128`
+          : avatarUrl;
+
         return {
           id: post.id,
           user_id: post.user_id,
           variant,
-          title: profile ? `${profile.name || ''} ${profile.surname || ''}`.trim() : 'Anonymous',
-          postTitle: post.title || '',
-          username: profile?.username || '',
-          name: profile ? `${profile.name || ''} ${profile.surname || ''}`.trim() : 'Anonymous',
-          avatarImage: avatarUrl,
+          title: post.title || '',
+          description: post.content || '',
           mainImage: post.image_url || undefined,
-          description: post.content || post.title || '',
-          badgeText: variant === 'job' ? 'JOB' : 'NEWS',
-          badgeVariant: (variant === 'job' ? 'success' : 'info') as 'success' | 'info',
+          createdAt: post.created_at,
+          criteria: (post as any).criteria || null,
           isVerified: true,
           industry,
         };
