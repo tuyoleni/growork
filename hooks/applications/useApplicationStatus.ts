@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import { Application } from '@/types';
+import { useAuth } from '@/hooks/auth';
 
 export interface ApplicationStatusConfig {
   postIds?: string[];
@@ -13,36 +14,45 @@ export function useApplicationStatus(config: ApplicationStatusConfig = {}) {
   const [statuses, setStatuses] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const fetchStatuses = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
+      if (!user?.id) {
+        setStatuses([]);
+        return;
+      }
+
       if (config.single && config.postIds && config.postIds.length === 1) {
-        // Single application status
+        // Single application status for current user
         const { data, error: fetchError } = await supabase
           .from('applications')
           .select('*')
           .eq('post_id', config.postIds[0])
-          .single();
+          .eq('user_id', user.id)
+          .maybeSingle(); // Use maybeSingle instead of single to avoid errors
 
         if (fetchError) throw fetchError;
         setStatuses(data ? [data] : []);
       } else if (config.postIds && config.postIds.length > 0) {
-        // Multiple application statuses
+        // Multiple application statuses for current user
         const { data, error: fetchError } = await supabase
           .from('applications')
           .select('*')
-          .in('post_id', config.postIds);
+          .in('post_id', config.postIds)
+          .eq('user_id', user.id);
 
         if (fetchError) throw fetchError;
         setStatuses(data || []);
       } else {
-        // All application statuses
+        // All application statuses for current user
         const { data, error: fetchError } = await supabase
           .from('applications')
           .select('*')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (fetchError) throw fetchError;
@@ -51,16 +61,17 @@ export function useApplicationStatus(config: ApplicationStatusConfig = {}) {
     } catch (err: any) {
       console.error('Error fetching application statuses:', err);
       setError(err.message);
+      setStatuses([]); // Ensure statuses is empty on error
     } finally {
       setLoading(false);
     }
-  }, [config.single, config.postIds]);
+  }, [config.single, config.postIds, user?.id]);
 
   useEffect(() => {
     if (config.autoFetch !== false) {
       fetchStatuses();
     }
-  }, [fetchStatuses, config.autoFetch]);
+  }, [config.autoFetch, fetchStatuses]);
 
   const refresh = useCallback(() => {
     fetchStatuses();

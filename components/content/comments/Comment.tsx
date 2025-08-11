@@ -73,15 +73,30 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
   useEffect(() => {
     const loadLikeData = async () => {
       if (comments.length > 0) {
+        // Filter out any invalid comments first
+        const validComments = comments.filter(comment => comment && comment.id && typeof comment.id === 'string');
+
+        if (validComments.length !== comments.length) {
+          console.warn(`Filtered out ${comments.length - validComments.length} invalid comments`);
+        }
+
         const likeStates: LikeMap = {};
         const counts: CountMap = {};
-        for (const comment of comments) {
-          const [liked, count] = await Promise.all([
-            isLiked(comment.id),
-            getLikeCount(comment.id),
-          ]);
-          likeStates[comment.id] = liked;
-          counts[comment.id] = count;
+
+        for (const comment of validComments) {
+          try {
+            const [liked, count] = await Promise.all([
+              isLiked(comment.id),
+              getLikeCount(comment.id),
+            ]);
+            likeStates[comment.id] = liked;
+            counts[comment.id] = count;
+          } catch (error) {
+            console.error(`Error loading like data for comment ${comment.id}:`, error);
+            // Set default values on error
+            likeStates[comment.id] = false;
+            counts[comment.id] = 0;
+          }
         }
         setLikedComments(likeStates);
         setLikeCounts(counts);
@@ -163,7 +178,7 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
         {loading && (
           <View style={styles.skeletonContainer}>
             {[1, 2].map((index) => (
-              <View key={index} style={styles.skeletonItem}>
+              <View key={`comment-skeleton-${index}`} style={styles.skeletonItem}>
                 <View style={styles.skeletonHeader}>
                   <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
                   <View style={styles.skeletonText}>
@@ -186,19 +201,21 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
             </ThemedText>
           </View>
         )}
-        {comments.map((item: CommentType) => (
-          <CommentItem
-            key={item.id}
-            item={item}
-            isOwn={profile ? item.user_id === profile.id : false}
-            isAuthor={item.user_id === profile?.id}
-            liked={likedComments[item.id] || false}
-            likeCount={likeCounts[item.id] || 0}
-            onLike={() => handleToggleLike(item.id)}
-            onMenu={() => handleMenu(item.id)}
-            formatDate={formatCommentDate}
-          />
-        ))}
+        {comments && comments.length > 0 && comments
+          .filter(item => item && item.id && typeof item.id === 'string')
+          .map((item: CommentType) => (
+            <CommentItem
+              key={item.id}
+              item={item}
+              isOwn={profile ? item.user_id === profile.id : false}
+              isAuthor={item.user_id === profile?.id}
+              liked={likedComments[item.id] || false}
+              likeCount={likeCounts[item.id] || 0}
+              onLike={() => handleToggleLike(item.id)}
+              onMenu={() => handleMenu(item.id)}
+              formatDate={formatCommentDate}
+            />
+          ))}
       </ScrollView>
       {/* Fixed bottom input bar */}
       <View style={styles.fixedInputContainer}>

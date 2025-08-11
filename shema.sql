@@ -109,7 +109,8 @@ CREATE TABLE public.applications (
   CONSTRAINT applications_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
   CONSTRAINT applications_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE,
   CONSTRAINT applications_cover_letter_id_fkey FOREIGN KEY (cover_letter_id) REFERENCES public.documents(id) ON DELETE SET NULL,
-  CONSTRAINT applications_resume_id_fkey FOREIGN KEY (resume_id) REFERENCES public.documents(id) ON DELETE SET NULL
+  CONSTRAINT applications_resume_id_fkey FOREIGN KEY (resume_id) REFERENCES public.documents(id) ON DELETE SET NULL,
+  CONSTRAINT applications_unique UNIQUE (user_id, post_id)
 );
 CREATE TABLE public.comments (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

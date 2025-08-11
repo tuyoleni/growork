@@ -32,6 +32,12 @@ export function useDataFetching<T>(
 
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMounted = useRef(true);
+  const fetchFunctionRef = useRef(fetchFunction);
+
+  // Update the ref when fetchFunction changes
+  useEffect(() => {
+    fetchFunctionRef.current = fetchFunction;
+  }, [fetchFunction]);
 
   const fetchData = useCallback(async (refresh = false) => {
     if (!isMounted.current) return;
@@ -44,8 +50,8 @@ export function useDataFetching<T>(
       }
       setState(prev => ({ ...prev, error: null }));
 
-      const data = await fetchFunction();
-      
+      const data = await fetchFunctionRef.current();
+
       if (isMounted.current) {
         setState(prev => ({
           ...prev,
@@ -64,13 +70,22 @@ export function useDataFetching<T>(
         }));
       }
     }
-  }, [fetchFunction]);
+  }, []); // Empty dependency array since we use refs
 
-  const refresh = useCallback(() => fetchData(true), [fetchData]);
+  const refresh = useCallback(() => {
+    // Use the ref directly to avoid dependency issues
+    fetchDataRef.current(true);
+  }, []); // Empty dependency array since we use refs
 
   const clearError = useCallback(() => {
     setState(prev => ({ ...prev, error: null }));
   }, []);
+
+  // Create a ref for the fetchData function to avoid circular dependencies
+  const fetchDataRef = useRef(fetchData);
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
 
   // Setup polling if interval is provided
   const setupPolling = useCallback(() => {
@@ -93,7 +108,7 @@ export function useDataFetching<T>(
     if (autoFetch && refreshOnMount) {
       fetchData();
     }
-    
+
     if (pollingInterval) {
       setupPolling();
     }
@@ -105,7 +120,7 @@ export function useDataFetching<T>(
         pollingIntervalRef.current = null;
       }
     };
-  }, [fetchData, setupPolling, autoFetch, refreshOnMount, pollingInterval]);
+  }, [autoFetch, refreshOnMount, pollingInterval, fetchData, setupPolling]);
 
   // Cleanup on unmount
   useEffect(() => {

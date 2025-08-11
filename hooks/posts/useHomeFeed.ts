@@ -13,14 +13,14 @@ export function useHomeFeed() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const postsData = await fetchPostsWithData();
-      
+
       // Convert each post to the correct format
       const convertedPosts = await Promise.all(
         postsData.map(post => convertDbPostToContentCard(post))
       );
-      
+
       setPosts(convertedPosts);
     } catch (err: any) {
       console.error('Error fetching home feed posts:', err);

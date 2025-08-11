@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '../auth/useAuth';
 import { Notification } from '@/types/notifications';
@@ -25,6 +25,16 @@ export function useNotifications(config: NotificationConfig = {}) {
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
+
+  // Use refs to avoid circular dependencies
+  const fetchNotificationsRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  const notificationsRef = useRef(notifications);
+
+  // Update refs when values change
+  useEffect(() => {
+    fetchNotificationsRef.current = fetchNotifications;
+    notificationsRef.current = notifications;
+  });
 
   // Fetch notifications based on config
   const fetchNotifications = useCallback(async () => {
@@ -53,7 +63,7 @@ export function useNotifications(config: NotificationConfig = {}) {
       const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
-      
+
       const notificationsData = data || [];
       setNotifications(notificationsData);
       setUnreadCount(notificationsData.filter(n => !n.read).length);
@@ -86,7 +96,7 @@ export function useNotifications(config: NotificationConfig = {}) {
             : notification
         )
       );
-      
+
       // Update unread count
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err: any) {
@@ -111,7 +121,7 @@ export function useNotifications(config: NotificationConfig = {}) {
       setNotifications(prev =>
         prev.map(notification => ({ ...notification, read: true }))
       );
-      
+
       // Reset unread count
       setUnreadCount(0);
     } catch (err: any) {
@@ -132,10 +142,10 @@ export function useNotifications(config: NotificationConfig = {}) {
 
       if (error) throw error;
 
-      // Update local state
-      const deletedNotification = notifications.find(n => n.id === notificationId);
+      // Update local state using the ref to avoid dependency issues
+      const deletedNotification = notificationsRef.current.find(n => n.id === notificationId);
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      
+
       // Update unread count if deleted notification was unread
       if (deletedNotification && !deletedNotification.read) {
         setUnreadCount(prev => Math.max(0, prev - 1));
@@ -143,7 +153,7 @@ export function useNotifications(config: NotificationConfig = {}) {
     } catch (err: any) {
       console.error('Error deleting notification:', err);
     }
-  }, [user, notifications]);
+  }, [user]);
 
   // Send a notification to another user
   const sendNotification = useCallback(async (recipientId: string, type: string, data: any) => {
@@ -196,7 +206,7 @@ export function useNotifications(config: NotificationConfig = {}) {
             n.id === updatedNotification.id ? updatedNotification : n
           )
         );
-        
+
         // Update unread count
         setUnreadCount(prev => {
           const wasRead = (payload.old as Notification)?.read;
@@ -215,10 +225,10 @@ export function useNotifications(config: NotificationConfig = {}) {
 
   // Auto-fetch notifications
   useEffect(() => {
-    if (config.autoFetch !== false) {
+    if (config.autoFetch !== false && user?.id) {
       fetchNotifications();
     }
-  }, [fetchNotifications, config.autoFetch]);
+  }, [config.autoFetch, user?.id, fetchNotifications]);
 
   // Return operations if requested
   if (config.operations) {

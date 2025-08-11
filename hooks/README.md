@@ -74,7 +74,6 @@ We use a **unified base + specialized variants** approach:
 ### 📁 `data/` - Data & Network
 
 - `useDataFetching` - Data fetching utilities
-- `useNetworkMonitor` - Network status monitoring
 
 ## 🚀 **Usage Examples**
 

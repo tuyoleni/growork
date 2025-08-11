@@ -13,18 +13,14 @@ export const supabase = createClient(
             detectSessionInUrl: false,
         },
         global: {
-            fetch: (...args) => {
-                const [url, options = {}] = args;
-                return fetch(url, {
-                    ...options,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        ...options.headers,
-                    },
-                });
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
             },
-        }
+        },
+        db: {
+            schema: 'public',
+        },
     })
 
 export const clearAllSupabaseData = async () => {
@@ -43,4 +39,38 @@ export const clearAllSupabaseData = async () => {
     } catch (error) {
         console.error('Error clearing Supabase data:', error);
     }
+};
+
+// Simple retry utility for non-406 errors
+export const withRetry = async <T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 2,
+    baseDelay: number = 1000
+): Promise<T> => {
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (error: any) {
+            lastError = error;
+
+            // Don't retry 406 errors (they're usually permanent)
+            if (error.code === '406' || error.code === '400') {
+                throw error;
+            }
+
+            console.warn(`Attempt ${attempt} failed:`, error.message);
+
+            if (attempt === maxRetries) {
+                throw error;
+            }
+
+            // Exponential backoff
+            const delay = baseDelay * Math.pow(2, attempt - 1);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
+    throw lastError;
 };

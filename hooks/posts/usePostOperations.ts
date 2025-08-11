@@ -20,13 +20,6 @@ export interface DbPost {
   updated_at: string | null;
   is_sponsored: boolean;
   industry?: string | null;
-  profiles?: {
-    id: string;
-    avatar_url: string | null;
-    username: string | null;
-    name: string;
-    surname: string;
-  };
   likes?: { id: string; user_id: string; post_id: string }[];
   comments?: { id: string; user_id: string; post_id: string; content: string }[];
 }
@@ -34,7 +27,26 @@ export interface DbPost {
 export function usePostOperations() {
   // Convert database posts to ContentCard format
   const convertDbPostToContentCard = useCallback(async (post: DbPost): Promise<ExtendedContentCardProps> => {
-    const postProfile = post.profiles || { avatar_url: null, name: 'Anonymous', surname: '' };
+    // Fetch profile data separately since we can't join directly
+    let postProfile: { avatar_url: string | null; name: string; surname: string; username?: string | null } = {
+      avatar_url: null,
+      name: 'Anonymous',
+      surname: ''
+    };
+
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, avatar_url, username, name, surname')
+        .eq('id', post.user_id)
+        .maybeSingle();
+
+      if (!profileError && profileData) {
+        postProfile = profileData;
+      }
+    } catch (error) {
+      console.warn('Error fetching profile data:', error);
+    }
 
     // Get criteria and company info
     const criteria = (post as any).criteria || {};
@@ -132,10 +144,8 @@ export function usePostOperations() {
         .from('posts')
         .select(`
           *,
-          profiles:user_id(id, avatar_url, username, name, surname),
-          likes:post_id(id, user_id),
-          comments:post_id(id, user_id, content, created_at),
-          criteria:post_id(*)
+          likes(id, user_id),
+          comments(id, user_id, content, created_at)
         `)
         .order('created_at', { ascending: false });
 

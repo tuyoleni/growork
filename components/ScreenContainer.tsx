@@ -1,18 +1,27 @@
 import { Colors } from '@/constants/Colors';
 import React from 'react';
-import { KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, useColorScheme, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, useColorScheme, ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
   style?: ViewStyle | ViewStyle[];
+  edges?: ('top' | 'bottom' | 'left' | 'right')[];
 }
 
-const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, style }) => {
+const ScreenContainer: React.FC<ScreenContainerProps> = ({
+  children,
+  style,
+  edges = ['top', 'bottom', 'left', 'right']
+}) => {
   const colorScheme = useColorScheme() ?? 'light';
   const backgroundColor = Colors[colorScheme].background;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor }]}> 
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor }]}
+      edges={edges}
+    >
       <KeyboardAvoidingView
         style={[styles.flex, style]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

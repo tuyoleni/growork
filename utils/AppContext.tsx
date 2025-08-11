@@ -3,7 +3,7 @@ import { useAds } from '../hooks/search';
 import { useApplications } from '../hooks/applications';
 import { useBookmarks, useCommentLikes, usePosts } from '../hooks/posts';
 import { Ad, Application, Post, Profile } from '../types';
-import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 
 // Import the BookmarkState type from useInteractions
@@ -84,16 +84,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Local state for auth errors
   const [authError, setAuthError] = React.useState<string | null>(null);
 
-  // Initialize state when user changes
-  useEffect(() => {
+  // Memoize the initialization function to prevent infinite loops
+  const initializeData = useCallback(async () => {
     if (auth.user) {
-      postsHook.refresh();
-      applicationsHook.fetchApplications();
-      adsHook.fetchAds();
-      // Note: bookmarks are now managed per-post through useInteractions
-      setAuthError(null); // Clear any previous auth errors
+      try {
+        await Promise.all([
+          postsHook.refresh(),
+          applicationsHook.fetchApplications(),
+          adsHook.fetchAds()
+        ]);
+        setAuthError(null);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+      }
     }
-  }, [auth.user, postsHook, applicationsHook, adsHook]);
+  }, [auth.user]);
+
+  // Initialize state when user changes - only depend on user ID, not hook functions
+  useEffect(() => {
+    if (auth.user?.id) {
+      initializeData();
+    }
+  }, [auth.user?.id, initializeData]);
 
   const value: AppContextType = {
     // Auth state and methods
@@ -161,7 +173,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     postsLoading: postsHook.loading,
     postsError: postsHook.error,
     postsRefreshing: postsHook.refreshing,
-    refreshPosts: postsHook.refresh,
+    refreshPosts: async () => postsHook.refresh(),
     clearPostsError: postsHook.clearError,
 
     // Applications state and methods
@@ -191,11 +203,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Comment Likes state and methods
     commentLikesLoading: commentLikesHook.loading,
     commentLikesError: commentLikesHook.error,
-    isCommentLiked: async (commentId: string) => commentLikesHook.isLiked(),
+    isCommentLiked: async (commentId: string) => commentLikesHook.isLiked(commentId),
     likeComment: commentLikesHook.likeComment,
     unlikeComment: commentLikesHook.unlikeComment,
     toggleCommentLike: commentLikesHook.toggleCommentLike,
-    getCommentLikeCount: async () => 0, // Not implemented in current hook
+    getCommentLikeCount: async (commentId: string) => commentLikesHook.getCommentLikeCount(commentId),
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

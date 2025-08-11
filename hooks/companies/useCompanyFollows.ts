@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '../auth';
 import { Company } from '@/types';
@@ -8,6 +8,16 @@ export function useCompanyFollows() {
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Use refs to avoid circular dependencies
+    const fetchFollowedCompaniesRef = useRef<(() => Promise<void>) | undefined>(undefined);
+    const profileRef = useRef(profile);
+
+    // Update refs when values change
+    useEffect(() => {
+        fetchFollowedCompaniesRef.current = fetchFollowedCompanies;
+        profileRef.current = profile;
+    });
 
     const fetchFollowedCompanies = useCallback(async () => {
         if (!profile?.id) return;
@@ -41,12 +51,16 @@ export function useCompanyFollows() {
                 .from('company_follows')
                 .insert({ profile_id: profile.id, company_id: companyId });
             if (insertError) return { error: insertError.message };
-            await fetchFollowedCompanies();
+
+            // Call the ref function directly to avoid dependency issues
+            if (fetchFollowedCompaniesRef.current) {
+                await fetchFollowedCompaniesRef.current();
+            }
             return { success: true };
         } catch (err: any) {
             return { error: err.message };
         }
-    }, [profile?.id, fetchFollowedCompanies]);
+    }, [profile?.id]);
 
     const unfollowCompany = useCallback(async (companyId: string) => {
         if (!profile?.id) return { error: 'Not authenticated' };
@@ -57,12 +71,16 @@ export function useCompanyFollows() {
                 .eq('profile_id', profile.id)
                 .eq('company_id', companyId);
             if (delError) return { error: delError.message };
-            await fetchFollowedCompanies();
+
+            // Call the ref function directly to avoid dependency issues
+            if (fetchFollowedCompaniesRef.current) {
+                await fetchFollowedCompaniesRef.current();
+            }
             return { success: true };
         } catch (err: any) {
             return { error: err.message };
         }
-    }, [profile?.id, fetchFollowedCompanies]);
+    }, [profile?.id]);
 
     const isFollowingCompany = useCallback(async (companyId: string) => {
         if (!profile?.id) return false;

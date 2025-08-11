@@ -200,7 +200,7 @@ export function CompanyDetailsSkeleton() {
       <View style={styles.postsSection}>
         <Skeleton width={80} height={20} borderRadius={4} style={styles.postsTitle} />
         {[1, 2, 3].map((index) => (
-          <View key={`post-${index}`} style={styles.postItem}>
+          <View key={`company-post-${index}`} style={styles.postItem}>
             <ContentCardSkeleton />
           </View>
         ))}

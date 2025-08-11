@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system';
+import { z } from 'zod';
 import { supabase } from './supabase';
 
 export const STORAGE_BUCKETS = {
@@ -7,38 +8,67 @@ export const STORAGE_BUCKETS = {
   AVATARS: 'avatars',
 } as const;
 
-export const FILE_LIMITS = {
-  IMAGE: 10 * 1024 * 1024, // 10MB
-  DOCUMENT: 50 * 1024 * 1024, // 50MB
-  AVATAR: 5 * 1024 * 1024, // 5MB
-};
+export type StorageBucket = typeof STORAGE_BUCKETS[keyof typeof STORAGE_BUCKETS];
 
-const validateFile = async (uri: string, type: 'IMAGE' | 'DOCUMENT' | 'AVATAR') => {
+export const FILE_TYPES = {
+  IMAGE: 'image',
+  DOCUMENT: 'document',
+  AVATAR: 'avatar',
+} as const;
+
+export type FileType = typeof FILE_TYPES[keyof typeof FILE_TYPES];
+
+export const FILE_LIMITS = {
+  [FILE_TYPES.IMAGE]: 10 * 1024 * 1024, // 10MB
+  [FILE_TYPES.DOCUMENT]: 50 * 1024 * 1024, // 50MB
+  [FILE_TYPES.AVATAR]: 5 * 1024 * 1024, // 5MB
+} as const;
+
+// Enhanced file validation with Zod
+const validateFile = async (
+  uri: string,
+  type: FileType
+): Promise<{ fileInfo: FileSystem.FileInfo; fileExt: string; fileSize?: number }> => {
+  const fileSchema = z.object({
+    exists: z.boolean(),
+    size: z.number().optional(),
+  });
+
   try {
     const fileInfo = await FileSystem.getInfoAsync(uri);
+
+    // Zod validation
+    fileSchema.parse(fileInfo);
+
     if (!fileInfo.exists) {
       throw new Error('File does not exist');
     }
 
+    // Get file size safely
+    let fileSize: number | undefined;
+    if ('size' in fileInfo && typeof fileInfo.size === 'number') {
+      fileSize = fileInfo.size;
+    }
+
     const sizeLimit = FILE_LIMITS[type];
-    if (fileInfo.size && fileInfo.size > sizeLimit) {
+    if (fileSize && fileSize > sizeLimit) {
       throw new Error(`File size exceeds ${sizeLimit / (1024 * 1024)}MB limit`);
     }
 
-    // Get file extension
+    // Get file extension with more robust parsing
     const fileExt = uri.split('.').pop()?.toLowerCase();
     if (!fileExt) {
       throw new Error('Invalid file extension');
     }
 
-    return { fileInfo, fileExt };
+    return { fileInfo, fileExt, fileSize };
   } catch (error) {
     console.error('File validation error:', error);
     throw error;
   }
 };
 
-// Enhanced image upload function
+// Upload function with improved typing
 export const uploadImage = async ({
   bucket = STORAGE_BUCKETS.POSTS,
   userId,
@@ -46,35 +76,32 @@ export const uploadImage = async ({
   fileNamePrefix = 'image',
   onProgress
 }: {
-  bucket: string,
-  userId: string,
-  uri: string,
-  fileNamePrefix?: string,
+  bucket: StorageBucket;
+  userId: string;
+  uri: string;
+  fileNamePrefix?: string;
   onProgress?: (progress: number) => void
 }) => {
   try {
     // Validate file
-    const { fileExt } = await validateFile(uri, 'IMAGE');
+    const { fileExt } = await validateFile(uri, FILE_TYPES.IMAGE);
 
-    // Generate unique filename
+    // Generate unique filename with more robust naming
     const fileName = `${fileNamePrefix}_${userId}_${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const filePath = fileName;
 
-    // Read file as base64 for React Native
+    // Improved base64 conversion
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
 
-    // For React Native, we'll use the base64 string directly
-    // Convert base64 to Uint8Array for React Native compatibility
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
+    // More robust base64 to Uint8Array conversion
+    const byteArray = Uint8Array.from(
+      atob(base64),
+      char => char.charCodeAt(0)
+    );
 
-    // Upload to Supabase using Uint8Array instead of Blob
+    // Upload to Supabase
     const { error } = await supabase.storage
       .from(bucket)
       .upload(filePath, byteArray, {
@@ -83,14 +110,13 @@ export const uploadImage = async ({
         upsert: false
       });
 
-    if (error) {
-      console.error('Supabase upload error:', error);
-      throw new Error(`Upload failed: ${error.message}`);
-    }
+    if (error) throw new Error(`Upload failed: ${error.message}`);
 
     // Return public URL
-    const publicUrl = supabase.storage.from(bucket).getPublicUrl(filePath).data.publicUrl;
-    console.log('Image uploaded successfully:', publicUrl);
+    const publicUrl = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath).data.publicUrl;
+
     return publicUrl;
 
   } catch (error) {
@@ -99,7 +125,7 @@ export const uploadImage = async ({
   }
 };
 
-// Document upload function
+// Similar improvements for uploadDocument and deleteFile
 export const uploadDocument = async ({
   bucket = STORAGE_BUCKETS.DOCUMENTS,
   userId,
@@ -108,35 +134,33 @@ export const uploadDocument = async ({
   documentType = 'other',
   onProgress
 }: {
-  bucket: string,
-  userId: string,
-  uri: string,
-  fileNamePrefix?: string,
-  documentType?: string,
+  bucket: StorageBucket;
+  userId: string;
+  uri: string;
+  fileNamePrefix?: string;
+  documentType?: string;
   onProgress?: (progress: number) => void
 }) => {
   try {
     // Validate file
-    const { fileInfo, fileExt } = await validateFile(uri, 'DOCUMENT');
+    const { fileInfo, fileExt, fileSize } = await validateFile(uri, FILE_TYPES.DOCUMENT);
 
-    // Generate unique filename
+    // Generate unique filename with more robust naming
     const fileName = `${fileNamePrefix}_${userId}_${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const filePath = fileName;
 
-    // Read file as base64
+    // Improved base64 conversion
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
 
-    // Convert base64 to Uint8Array for React Native compatibility
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
+    // More robust base64 to Uint8Array conversion
+    const byteArray = Uint8Array.from(
+      atob(base64),
+      char => char.charCodeAt(0)
+    );
 
-    // Upload to Supabase using Uint8Array instead of Blob
+    // Upload to Supabase
     const { error } = await supabase.storage
       .from(bucket)
       .upload(filePath, byteArray, {
@@ -145,21 +169,17 @@ export const uploadDocument = async ({
         upsert: false
       });
 
-    if (error) {
-      console.error('Document upload error:', error);
-      throw new Error(`Upload failed: ${error.message}`);
-    }
+    if (error) throw new Error(`Upload failed: ${error.message}`);
 
     // Return upload result
     const result = {
       url: supabase.storage.from(bucket).getPublicUrl(filePath).data.publicUrl,
       path: filePath,
-      size: fileInfo.size,
+      size: fileSize,
       type: documentType,
       name: fileName
     };
 
-    console.log('Document uploaded successfully:', result);
     return result;
 
   } catch (error) {
@@ -168,19 +188,17 @@ export const uploadDocument = async ({
   }
 };
 
-// Delete file from storage
-export const deleteFile = async (bucket: string, filePath: string) => {
+export const deleteFile = async (
+  bucket: StorageBucket,
+  filePath: string
+) => {
   try {
     const { error } = await supabase.storage
       .from(bucket)
       .remove([filePath]);
 
-    if (error) {
-      console.error('Delete file error:', error);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log('File deleted successfully:', filePath);
     return true;
   } catch (error) {
     console.error('Delete file error:', error);

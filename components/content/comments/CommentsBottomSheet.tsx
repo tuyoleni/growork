@@ -24,6 +24,7 @@ import { Feather } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Colors } from "@/constants/Colors";
+import { useCustomCommentsBottomSheet } from "@/hooks/ui/useBottomSheet";
 
 type LikeMap = Record<string, boolean>;
 type CountMap = Record<string, number>;
@@ -33,6 +34,24 @@ interface CommentsBottomSheetProps {
     postOwnerId?: string; // Company ID that owns the post (used for other purposes)
     visible: boolean;
     onClose?: () => void;
+}
+
+// Component that uses the context to render the bottom sheet
+export function CommentsBottomSheetWithContext() {
+    const { isVisible, currentPostId, currentPostOwnerId, closeCommentsSheet } = useCustomCommentsBottomSheet();
+
+    if (!isVisible || !currentPostId) {
+        return null;
+    }
+
+    return (
+        <CommentsBottomSheet
+            postId={currentPostId}
+            postOwnerId={currentPostOwnerId || undefined}
+            visible={isVisible}
+            onClose={closeCommentsSheet}
+        />
+    );
 }
 
 export default function CommentsBottomSheet({ postId, postOwnerId, visible, onClose }: CommentsBottomSheetProps) {
@@ -141,15 +160,30 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
     useEffect(() => {
         const loadLikeData = async () => {
             if (comments.length > 0) {
+                // Filter out any invalid comments first
+                const validComments = comments.filter(comment => comment && comment.id && typeof comment.id === 'string');
+
+                if (validComments.length !== comments.length) {
+                    console.warn(`Filtered out ${comments.length - validComments.length} invalid comments`);
+                }
+
                 const likeStates: LikeMap = {};
                 const counts: CountMap = {};
-                for (const comment of comments) {
-                    const [liked, count] = await Promise.all([
-                        isLiked(comment.id),
-                        getLikeCount(comment.id),
-                    ]);
-                    likeStates[comment.id] = liked;
-                    counts[comment.id] = count;
+
+                for (const comment of validComments) {
+                    try {
+                        const [liked, count] = await Promise.all([
+                            isLiked(comment.id),
+                            getLikeCount(comment.id),
+                        ]);
+                        likeStates[comment.id] = liked;
+                        counts[comment.id] = count;
+                    } catch (error) {
+                        console.error(`Error loading like data for comment ${comment.id}:`, error);
+                        // Set default values on error
+                        likeStates[comment.id] = false;
+                        counts[comment.id] = 0;
+                    }
                 }
                 setLikedComments(likeStates);
                 setLikeCounts(counts);
@@ -282,7 +316,7 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
                             {loading && (
                                 <View style={styles.skeletonContainer}>
                                     {[1, 2, 3].map((index) => (
-                                        <View key={index} style={styles.skeletonItem}>
+                                        <View key={`skeleton-${index}`} style={styles.skeletonItem}>
                                             <View style={styles.skeletonHeader}>
                                                 <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
                                                 <View style={styles.skeletonText}>
@@ -309,20 +343,21 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
                                     </ThemedText>
                                 </View>
                             )}
-                            {comments.map((item) => (
-                                <CommentItem
-                                    key={item.id}
-                                    item={item}
-                                    isOwn={profile ? item.user_id === profile.id : false}
-                                    isAuthor={postCreatorId ? item.user_id === postCreatorId : false}
-
-                                    liked={likedComments[item.id] || false}
-                                    likeCount={likeCounts[item.id] || 0}
-                                    onLike={() => handleToggleLike(item.id)}
-                                    onMenu={() => handleMenu(item.id)}
-                                    formatDate={formatCommentDate}
-                                />
-                            ))}
+                            {comments && comments.length > 0 && comments
+                                .filter(item => item && item.id && typeof item.id === 'string')
+                                .map((item) => (
+                                    <CommentItem
+                                        key={item.id}
+                                        item={item}
+                                        isOwn={profile ? item.user_id === profile.id : false}
+                                        isAuthor={postCreatorId ? item.user_id === postCreatorId : false}
+                                        liked={likedComments[item.id] || false}
+                                        likeCount={likeCounts[item.id] || 0}
+                                        onLike={() => handleToggleLike(item.id)}
+                                        onMenu={() => handleMenu(item.id)}
+                                        formatDate={formatCommentDate}
+                                    />
+                                ))}
                         </ScrollView>
 
                         {/* Fixed Input Section - Not Scrollable */}

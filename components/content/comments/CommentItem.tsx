@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks";
 import { Colors } from "@/constants/Colors";
@@ -50,7 +50,7 @@ export function CommentItem({
             </ThemedText>
             {isAuthor && (
               <View style={styles.badge}>
-                <Text style={styles.badgeLabel}>Author</Text>
+                <ThemedText style={styles.badgeLabel}>Author</ThemedText>
               </View>
             )}
 

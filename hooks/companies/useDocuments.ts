@@ -11,26 +11,26 @@ export function useDocuments(userId?: string) {
     try {
       setLoading(true);
       setError(null);
-      
+
       let query = supabase
         .from('documents')
         .select('*')
         .order('uploaded_at', { ascending: false });
-      
+
       if (userId) {
         query = query.eq('user_id', userId);
       }
-      
+
       if (type) {
         query = query.eq('type', type);
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) {
         throw error;
       }
-      
+
       setDocuments(data || []);
     } catch (err: any) {
       console.error('Error fetching documents:', err);
@@ -44,7 +44,7 @@ export function useDocuments(userId?: string) {
     if (userId) {
       fetchDocuments();
     }
-  }, [fetchDocuments, userId]);
+  }, [userId, fetchDocuments]);
 
   const addDocument = useCallback(async (documentData: Partial<Document>) => {
     try {
@@ -53,13 +53,39 @@ export function useDocuments(userId?: string) {
         .from('documents')
         .insert([documentData])
         .select();
-      
+
       if (error) {
         throw error;
       }
-      
-      // Refresh the documents
-      fetchDocuments();
+
+      // Refresh the documents by duplicating the fetch logic to avoid circular dependencies
+      try {
+        setLoading(true);
+        setError(null);
+
+        let query = supabase
+          .from('documents')
+          .select('*')
+          .order('uploaded_at', { ascending: false });
+
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
+        const { data: refreshData, error: refreshError } = await query;
+
+        if (refreshError) {
+          throw refreshError;
+        }
+
+        setDocuments(refreshData || []);
+      } catch (err: any) {
+        console.error('Error refreshing documents:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+
       return { data, error: null };
     } catch (err: any) {
       console.error('Error adding document:', err);
@@ -68,7 +94,7 @@ export function useDocuments(userId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [fetchDocuments]);
+  }, [userId]);
 
   const deleteDocument = useCallback(async (documentId: string) => {
     try {
@@ -76,19 +102,45 @@ export function useDocuments(userId?: string) {
         .from('documents')
         .delete()
         .eq('id', documentId);
-      
+
       if (error) {
         throw error;
       }
-      
-      // Refresh the documents
-      fetchDocuments();
+
+      // Refresh the documents by duplicating the fetch logic to avoid circular dependencies
+      try {
+        setLoading(true);
+        setError(null);
+
+        let query = supabase
+          .from('documents')
+          .select('*')
+          .order('uploaded_at', { ascending: false });
+
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
+        const { data: refreshData, error: refreshError } = await query;
+
+        if (refreshError) {
+          throw refreshError;
+        }
+
+        setDocuments(refreshData || []);
+      } catch (err: any) {
+        console.error('Error refreshing documents:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+
       return { error: null };
     } catch (err: any) {
       console.error('Error deleting document:', err);
       return { error: err };
     }
-  }, [fetchDocuments]);
+  }, [userId]);
 
   return {
     documents,

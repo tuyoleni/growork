@@ -16,7 +16,6 @@ import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
 import { Post } from '@/types';
 import { PostType } from '@/types/enums';
-import { useFlashToast } from '@/components/ui/Flash';
 
 import PostInteractionBar from '@/components/content/PostInteractionBar';
 import ApplyButton from '@/components/content/post/ApplyButton';
@@ -34,7 +33,6 @@ const ICON_SIZE = 20;
 const PostDetail = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const toast = useFlashToast();
 
   const [post, setPost] = useState<Post | null>(null);
 
@@ -290,11 +288,8 @@ const PostDetail = () => {
                     ),
                   });
                 } else if (hasApplied) {
-                  toast.show({
-                    type: 'info',
-                    title: 'Already Applied',
-                    message: 'You have already applied to this position.'
-                  });
+                  // If already applied, just stay on the post details page
+                  // The button will show "Applied" and be disabled
                 }
               }}
               size="medium"

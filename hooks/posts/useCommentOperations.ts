@@ -17,20 +17,46 @@ export function useCommentOperations() {
   // Fetch comments for a specific post
   const fetchComments = useCallback(async (postId: string): Promise<CommentWithProfile[]> => {
     try {
-      const { data, error } = await supabase
+      // First fetch comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select(`
-          *,
-          profiles:user_id(id, name, surname, avatar_url)
-        `)
+        .select('*')
         .eq('post_id', postId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (commentsError) throw commentsError;
 
-      const commentsWithProfiles = data || [];
-      setComments(commentsWithProfiles);
-      return commentsWithProfiles;
+      // Then fetch profiles for the user IDs
+      if (commentsData && commentsData.length > 0) {
+        const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
+
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, surname, avatar_url')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.warn('Error fetching profiles:', profilesError);
+        }
+
+        // Create a map of user profiles
+        const profilesMap = (profilesData || []).reduce((acc: any, profile: any) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {});
+
+        // Combine comments with profiles
+        const commentsWithProfiles = commentsData.map(comment => ({
+          ...comment,
+          profiles: profilesMap[comment.user_id] || null
+        }));
+
+        setComments(commentsWithProfiles);
+        return commentsWithProfiles;
+      } else {
+        setComments([]);
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching comments:', error);
       throw error;
@@ -43,19 +69,36 @@ export function useCommentOperations() {
       const { data, error } = await supabase
         .from('comments')
         .insert([{ post_id: postId, user_id: userId, content }])
-        .select(`
-          *,
-          profiles:user_id(id, name, surname, avatar_url)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
 
-      const newComment = data as CommentWithProfile;
-      
+      // Fetch the user's profile for the new comment
+      let profile = null;
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, name, surname, avatar_url')
+          .eq('id', userId)
+          .single();
+
+        if (!profileError && profileData) {
+          profile = profileData;
+        }
+      } catch (profileErr) {
+        console.warn('Error fetching profile for new comment:', profileErr);
+      }
+
+      // Create comment with profile data
+      const newComment = {
+        ...data,
+        profiles: profile
+      } as CommentWithProfile;
+
       // Add the new comment to the list
       setComments(prev => [newComment, ...prev]);
-      
+
       return newComment;
     } catch (error) {
       console.error('Error adding comment:', error);

@@ -11,7 +11,7 @@ import { ThemedAvatar } from '../../components/ui/ThemedAvatar';
 import ContentCard from '../../components/content/ContentCard';
 import { useCompanies } from '../../hooks/companies';
 import { usePosts } from '../../hooks/posts';
-import { withRetry } from '../../hooks/data/useNetworkMonitor';
+
 
 interface CompanyStats {
     posts: number;
@@ -48,18 +48,13 @@ export default function CompanyDetailsScreen() {
         try {
             setLoading(true);
 
-            // Android-specific: Add retry logic for network issues
-            const companyData = await withRetry(async () => {
-                const { company: companyResult, error } = await functionsRef.current.getCompanyByIdPublic(id);
-                if (companyResult && !error) {
-                    return companyResult;
-                } else {
-                    console.error('Company not found or error:', error);
-                    throw new Error(error || 'Company not found');
-                }
-            });
-
-            setCompany(companyData);
+            const { company: companyResult, error } = await functionsRef.current.getCompanyByIdPublic(id);
+            if (companyResult && !error) {
+                setCompany(companyResult);
+            } else {
+                console.error('Company not found or error:', error);
+                throw new Error(error || 'Company not found');
+            }
 
             // Posts are now fetched automatically by the usePosts hook
 

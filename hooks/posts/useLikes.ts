@@ -18,6 +18,7 @@ export function useLikes() {
     unlikePost,
     toggleLike,
     getLikeCount,
+    likeStates,
     initializePost
   };
 }

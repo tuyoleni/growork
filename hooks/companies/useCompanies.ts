@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../auth';
 import { Company } from '@/types/company';
-import { withRetry, handleAndroidNetworkError } from '../data/useNetworkMonitor';
 import { supabase } from '@/utils/supabase';
 
 export const useCompanies = () => {
@@ -16,23 +15,20 @@ export const useCompanies = () => {
       setLoading(true);
       setError(null);
 
-      const data = await withRetry(async () => {
-        const { data, error: fetchError } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+      const { data, error: fetchError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-        if (fetchError) {
-          throw fetchError;
-        }
-        return data;
-      });
+      if (fetchError) {
+        throw fetchError;
+      }
 
       setCompanies(data || []);
     } catch (err: any) {
       console.error('Error fetching companies:', err.message);
-      const errorMessage = handleAndroidNetworkError(err);
+      const errorMessage = err.message || 'An error occurred';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -147,7 +143,7 @@ export const useCompanies = () => {
       return { company: null };
     } catch (err: any) {
       console.error('Error fetching company by user ID:', err.message);
-      const errorMessage = handleAndroidNetworkError(err);
+      const errorMessage = err.message || 'An error occurred';
       return { error: errorMessage };
     }
   }, []);
@@ -174,8 +170,10 @@ export const useCompanies = () => {
   }, []);
 
   useEffect(() => {
-    fetchCompanies();
-  }, [fetchCompanies]);
+    if (user?.id) {
+      fetchCompanies();
+    }
+  }, [user?.id, fetchCompanies]);
 
   return {
     companies,

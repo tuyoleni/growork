@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../../utils/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 import { useAuthOperations } from './useAuthOperations';
@@ -17,6 +17,18 @@ export function useAuth() {
     isProfileLoaded
   } = useAuthOperations();
 
+  // Use refs to store the latest values to avoid dependency issues
+  const userRef = useRef<User | null>(null);
+  const fetchUserProfileRef = useRef(fetchUserProfile);
+  const clearProfileCacheRef = useRef(clearProfileCache);
+
+  // Update refs when values change
+  useEffect(() => {
+    userRef.current = user;
+    fetchUserProfileRef.current = fetchUserProfile;
+    clearProfileCacheRef.current = clearProfileCache;
+  });
+
   // Handle auth state changes
   const onAuthStateChange = useCallback(async (event: string, newSession: Session | null) => {
     if (event === 'SIGNED_IN' && newSession) {
@@ -25,7 +37,7 @@ export function useAuth() {
 
       // Fetch the user's profile if we have a user
       if (newSession.user) {
-        const userProfile = await fetchUserProfile(newSession.user.id);
+        const userProfile = await fetchUserProfileRef.current(newSession.user.id);
         if (userProfile) {
           setProfile(userProfile);
         }
@@ -36,11 +48,11 @@ export function useAuth() {
       setProfile(null);
 
       // Clear profile cache
-      if (user?.id) {
-        await clearProfileCache(user.id);
+      if (userRef.current?.id) {
+        await clearProfileCacheRef.current(userRef.current.id);
       }
     }
-  }, [fetchUserProfile, clearProfileCache, user?.id]);
+  }, []); // Empty dependency array since we use refs
 
   // Initialize auth state
   useEffect(() => {
@@ -54,7 +66,7 @@ export function useAuth() {
 
         // Fetch profile if we have a user
         if (session.user) {
-          fetchUserProfile(session.user.id).then(userProfile => {
+          fetchUserProfileRef.current(session.user.id).then(userProfile => {
             if (userProfile) {
               setProfile(userProfile);
             }
@@ -70,7 +82,7 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [onAuthStateChange, fetchUserProfile]);
+  }, [onAuthStateChange]);
 
   // Sign out
   const signOut = useCallback(async () => {

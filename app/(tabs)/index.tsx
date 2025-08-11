@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useCallback } from 'react';
 import {
   Animated,
   Easing,
@@ -93,7 +93,9 @@ export default function Home() {
     lastScrollY.current = y;
   };
 
-  const handlePostSuccess = () => fetchPosts();
+  const handlePostSuccess = useCallback(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   // --- SHEET OPENERS ---
   const { openCreatePostSheet, openJobApplicationSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });

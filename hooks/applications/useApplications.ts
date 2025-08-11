@@ -1,6 +1,6 @@
 import { Application, ApplicationStatus } from '@/types';
 import { supabase } from '@/utils/supabase';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { sendApplicationStatusNotification } from '@/utils/notifications';
 
 export function useApplications(userId?: string) {
@@ -101,7 +101,7 @@ export function useApplications(userId?: string) {
     if (userId) {
       fetchApplications();
     }
-  }, [fetchApplications, userId]);
+  }, [userId, fetchApplications]);
 
   const addApplication = useCallback(async (applicationData: Partial<Application>) => {
     try {
@@ -115,8 +115,35 @@ export function useApplications(userId?: string) {
         throw error;
       }
 
-      // Refresh the applications
-      fetchApplications();
+      // Refresh the applications by calling fetchApplications directly
+      // instead of depending on it in the dependency array
+      try {
+        setLoading(true);
+        setError(null);
+
+        let query = supabase
+          .from('applications')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
+        const { data: refreshData, error: refreshError } = await query;
+
+        if (refreshError) {
+          throw refreshError;
+        }
+
+        setApplications(refreshData || []);
+      } catch (err: any) {
+        console.error('Error refreshing applications:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+
       return { data, error: null };
     } catch (err: any) {
       console.error('Error adding application:', err);
@@ -125,30 +152,51 @@ export function useApplications(userId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [fetchApplications]);
+  }, [userId]);
 
   const updateApplicationStatus = useCallback(async (applicationId: string, status: ApplicationStatus) => {
     try {
       // First, get the application details to send notification
       const { data: applicationData, error: fetchError } = await supabase
         .from('applications')
-        .select(`
-          *,
-          posts (
-            id,
-            title
-          ),
-          profiles (
-            id,
-            username,
-            full_name
-          )
-        `)
+        .select('*')
         .eq('id', applicationId)
         .single();
 
       if (fetchError) {
         throw fetchError;
+      }
+
+      // Fetch post and profile data separately
+      let postData = null;
+      let profileData = null;
+
+      if (applicationData) {
+        try {
+          // Fetch post data
+          const { data: post, error: postError } = await supabase
+            .from('posts')
+            .select('id, title')
+            .eq('id', applicationData.post_id)
+            .single();
+
+          if (!postError && post) {
+            postData = post;
+          }
+
+          // Fetch profile data
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, username, name, surname')
+            .eq('id', applicationData.user_id)
+            .single();
+
+          if (!profileError && profile) {
+            profileData = profile;
+          }
+        } catch (err) {
+          console.warn('Error fetching related data:', err);
+        }
       }
 
       // Update the application status
@@ -163,23 +211,52 @@ export function useApplications(userId?: string) {
 
       // Send notification to the applicant
       if (applicationData) {
-        const jobTitle = applicationData.posts?.title || 'a job';
+        const jobTitle = postData?.title || 'a job';
+        const applicantName = `${profileData?.name} ${profileData?.surname}`;
 
         await sendApplicationStatusNotification(
           applicationData.user_id,
           status,
-          jobTitle
+          jobTitle,
+          applicantName
         );
       }
 
-      // Refresh the applications
-      fetchApplications();
+      // Refresh the applications by calling fetchApplications directly
+      // instead of depending on it in the dependency array
+      try {
+        setLoading(true);
+        setError(null);
+
+        let query = supabase
+          .from('applications')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
+        const { data: refreshData, error: refreshError } = await query;
+
+        if (refreshError) {
+          throw refreshError;
+        }
+
+        setApplications(refreshData || []);
+      } catch (err: any) {
+        console.error('Error refreshing applications:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+
       return { error: null };
     } catch (err: any) {
       console.error('Error updating application status:', err);
       return { error: err };
     }
-  }, [fetchApplications]);
+  }, [userId]);
 
   const checkIfApplied = useCallback(async (userId: string, postId: string) => {
     try {

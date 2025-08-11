@@ -16,10 +16,10 @@ import React, { useEffect, useState, createContext, useContext, useRef } from 'r
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import SimpleBottomSheet from '@/components/GlobalBottomSheet';
-import CommentsBottomSheet from '@/components/content/comments/CommentsBottomSheet';
-import { useCustomCommentsBottomSheet } from '@/hooks';
+import { CommentsBottomSheetWithContext } from '@/components/content/comments/CommentsBottomSheet';
 import { useColorScheme } from 'react-native';
 import { CommentsBottomSheetProvider } from '@/hooks/ui/useBottomSheet';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 interface AuthContextType {
   session: Session | null;
@@ -89,9 +89,6 @@ function AppContent() {
     snapPoints: string[];
     onDismiss?: () => void;
   } | null>(null);
-
-  // Comments bottom sheet state
-  const { isVisible, currentPostId, currentPostOwnerId, closeCommentsSheet } = useCustomCommentsBottomSheet();
 
   // Expose openGlobalSheet globally
   const openGlobalSheet = (props: {
@@ -216,40 +213,37 @@ function AppContent() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ActionSheetProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <AuthContext.Provider value={{ session, initialLoading }}>
-            <AppProvider>
-              <NotificationProvider>
-                <BottomSheetModalProvider>
-                  <AuthGate />
-                  <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-                  <FlashBar />
+      <SafeAreaProvider>
+        <ActionSheetProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <AuthContext.Provider value={{ session, initialLoading }}>
+              <AppProvider>
+                <NotificationProvider>
+                  <BottomSheetModalProvider>
+                    <AuthGate />
+                    <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                    <FlashBar />
 
-                  {sheetProps && (
-                    <SimpleBottomSheet
-                      ref={sheetRef}
-                      snapPoints={sheetProps.snapPoints}
-                      onDismiss={() => setSheetProps(null)}
-                    >
-                      {sheetProps.children}
-                    </SimpleBottomSheet>
-                  )}
+                    {sheetProps && (
+                      <SimpleBottomSheet
+                        ref={sheetRef}
+                        snapPoints={sheetProps.snapPoints}
+                        onDismiss={() => setSheetProps(null)}
+                      >
+                        {sheetProps.children}
+                      </SimpleBottomSheet>
+                    )}
 
-                  {/* Comments Bottom Sheet */}
-                  <CommentsBottomSheet
-                    postId={currentPostId || ''}
-                    postOwnerId={currentPostOwnerId || undefined}
-                    visible={isVisible}
-                    onClose={closeCommentsSheet}
-                  />
+                    {/* Comments Bottom Sheet - now managed by context */}
+                    <CommentsBottomSheetWithContext />
 
-                </BottomSheetModalProvider>
-              </NotificationProvider>
-            </AppProvider>
-          </AuthContext.Provider>
-        </ThemeProvider>
-      </ActionSheetProvider>
+                  </BottomSheetModalProvider>
+                </NotificationProvider>
+              </AppProvider>
+            </AuthContext.Provider>
+          </ThemeProvider>
+        </ActionSheetProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
