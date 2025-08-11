@@ -20,13 +20,11 @@ export function useCommentLikes() {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error checking comment like status:', error);
         return false;
       }
 
       return !!data;
     } catch (err) {
-      console.error('Error checking comment like status:', err);
       return false;
     }
   }, [user]);
@@ -40,13 +38,11 @@ export function useCommentLikes() {
         .eq('comment_id', commentId);
 
       if (error) {
-        console.error('Error getting comment like count:', error);
         return 0;
       }
 
       return count || 0;
     } catch (err) {
-      console.error('Error getting comment like count:', err);
       return 0;
     }
   }, []);

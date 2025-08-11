@@ -24,7 +24,6 @@ export interface CommentState {
   error: string | null;
 }
 
-// Utility function for formatting comment dates
 export const formatCommentDate = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
@@ -49,7 +48,6 @@ export function useComments(postId: string) {
   const { user } = useAuth();
   const lastFetchedPostId = useRef<string | null>(null);
 
-  // Fetch comments for a post
   const fetchComments = useCallback(async (targetPostId: string) => {
     if (!targetPostId) return;
 

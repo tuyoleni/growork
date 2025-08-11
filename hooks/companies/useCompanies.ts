@@ -115,48 +115,25 @@ export const useCompanies = () => {
 
   const getCompanyByIdPublic = useCallback(async (id: string) => {
     try {
-      // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(id)) {
-        console.error('Invalid company ID format:', id);
-        return { error: 'Invalid company ID format' };
-      }
+      console.log('🔍 Fetching company by ID:', id);
 
-      // First try to get approved company
       const { data, error } = await supabase
         .from('companies')
         .select('*')
         .eq('id', id)
-        .eq('status', 'approved')
-        .limit(1); // Use limit(1) instead of maybeSingle to avoid multiple rows errorr
+        .maybeSingle();
 
       if (error) throw error;
 
-      // If approved company found, return it
-      if (data && data.length > 0) {
-        return { company: data[0] };
+      if (data) {
+        console.log('✅ Company found:', data);
+        return { company: data };
       }
 
-      // If no approved company found, try to get any company with this ID
-      console.log('No approved company found, trying to get any company with ID:', id);
-      const { data: anyCompany, error: anyCompanyError } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', id)
-        .limit(1); // Use limit(1) to avoid multiple rows error
-
-      if (anyCompanyError) throw anyCompanyError;
-
-      if (anyCompany && anyCompany.length > 0) {
-        console.log('Found company with status:', anyCompany[0].status);
-        return { company: anyCompany[0] };
-      }
-
-      // No company found at all
       return { company: null };
 
     } catch (err: any) {
-      console.error('Error fetching public company:', err.message);
+      console.error('Error fetching company:', err.message);
       return { error: err.message };
     }
   }, []);

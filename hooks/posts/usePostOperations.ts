@@ -32,11 +32,9 @@ export interface DbPost {
 }
 
 export function usePostOperations() {
-  // Convert database posts to ContentCard format
   const convertDbPostToContentCard = useCallback(async (post: DbPost): Promise<ExtendedContentCardProps> => {
-    console.log('🔄 Converting post:', { id: post.id, title: post.title, user_id: post.user_id });
 
-    // Fetch profile data separately since we can't join directly
+
     let postProfile: { avatar_url: string | null; name: string; surname: string; username?: string | null } = {
       avatar_url: null,
       name: 'Anonymous',
@@ -52,7 +50,7 @@ export function usePostOperations() {
 
       if (!profileError && profileData) {
         postProfile = profileData;
-        console.log('👤 Profile fetched for post:', post.id, 'User:', postProfile.name);
+
       } else if (profileError) {
         console.warn('⚠️ Profile fetch error for post:', post.id, profileError);
       }
@@ -60,16 +58,10 @@ export function usePostOperations() {
       console.warn('⚠️ Error fetching profile data for post:', post.id, error);
     }
 
-    // Get criteria and company info
-    const criteria = (post as any).criteria || {};
-    const companyName = (post.type === PostType.Job && criteria?.company)
-      ? criteria.company
-      : undefined;
-    const newsSource = (post.type === PostType.News && (criteria?.source || criteria?.author))
-      ? (criteria.source || criteria.author)
+    const newsSource = (post.type === PostType.News && post.source)
+      ? post.source
       : undefined;
 
-    // Determine post variant based on type
     let variant: 'job' | 'news' | 'sponsored';
     if (post.is_sponsored) {
       variant = 'sponsored';
@@ -79,7 +71,6 @@ export function usePostOperations() {
       variant = 'news';
     }
 
-    // Prepare author profile data
     const authorProfile = postProfile && 'id' in postProfile ? {
       id: postProfile.id,
       name: postProfile.name,
@@ -90,18 +81,10 @@ export function usePostOperations() {
       location: undefined,
     } : undefined;
 
-    // Use the company data directly from the post
-    let company = undefined;
-    if (post.company) {
-      company = {
-        id: post.company_id || 'temp-id',
-        name: post.company,
-        logo_url: undefined,
-        industry: post.industry || undefined,
-        location: post.location || undefined,
-        status: undefined,
-      };
-    }
+    const criteria = (post as any).criteria || {};
+    console.log('📋 Criteria data:', criteria);
+
+
 
     const convertedPost = {
       id: post.id,
@@ -110,19 +93,10 @@ export function usePostOperations() {
       mainImage: post.image_url || undefined,
       createdAt: post.created_at,
       variant,
-      company,
       user_id: post.user_id,
-      // Additional fields for job posts
       ...(post.type === PostType.Job ? {
-        criteria: {
-          companyId: post.company_id || undefined,
-          company: post.company || undefined,
-          location: post.location || undefined,
-          salary: post.salary || undefined,
-          jobType: post.job_type || undefined,
-        }
+        criteria: criteria
       } : {}),
-      // Additional fields for news posts
       ...(post.type === PostType.News ? {
         criteria: {
           source: post.source || undefined,
@@ -134,7 +108,6 @@ export function usePostOperations() {
     return convertedPost;
   }, []);
 
-  // Fetch posts with related data (profiles, likes, comments)
   const fetchPostsWithData = useCallback(async (filters?: {
     type?: PostType;
     industry?: string;
@@ -142,12 +115,8 @@ export function usePostOperations() {
     limit?: number;
   }) => {
     try {
-      console.log('🔍 Fetching posts with filters:', filters);
 
-      // First, let's test a simple query to see if we can access the posts table at all
-      console.log('🧪 Testing basic posts table access...');
 
-      // Check total count of posts
       const { count: totalPosts, error: countError } = await supabase
         .from('posts')
         .select('*', { count: 'exact', head: true });
@@ -155,7 +124,7 @@ export function usePostOperations() {
       if (countError) {
         console.error('❌ Posts count failed:', countError);
       } else {
-        console.log('📊 Total posts in database:', totalPosts);
+
       }
 
       const { data: testData, error: testError } = await supabase
@@ -168,10 +137,7 @@ export function usePostOperations() {
         console.error('❌ Error details:', testError.message, testError.details, testError.hint);
         throw testError;
       } else {
-        console.log('✅ Basic posts table access successful:', testData?.length || 0, 'posts');
-        if (testData && testData.length > 0) {
-          console.log('🧪 Test post found:', testData[0]);
-        }
+
       }
 
       let query = supabase
@@ -183,7 +149,7 @@ export function usePostOperations() {
         `)
         .order('created_at', { ascending: false });
 
-      console.log('🔍 Database query built for posts table');
+
 
       if (filters?.type) {
         query = query.eq('type', filters.type);
@@ -208,20 +174,7 @@ export function usePostOperations() {
         throw postsError;
       }
 
-      console.log('✅ Posts fetched successfully:', postsData?.length || 0, 'posts');
-      if (postsData && postsData.length > 0) {
-        console.log('📝 Sample post:', {
-          id: postsData[0].id,
-          title: postsData[0].id,
-          user_id: postsData[0].user_id,
-          type: postsData[0].type,
-          criteria: (postsData[0] as any).criteria
-        });
 
-        // Log all available fields to debug
-        console.log('🔍 All post fields:', Object.keys(postsData[0]));
-        console.log('🔍 Full post data:', postsData[0]);
-      }
 
       return postsData || [];
     } catch (error) {

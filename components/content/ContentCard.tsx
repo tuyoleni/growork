@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
@@ -12,6 +12,7 @@ import ThemedButton from '../ui/ThemedButton';
 import PostInteractionBar from './PostInteractionBar';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/utils/supabase';
+import { useCompanies } from '@/hooks/companies';
 
 // UserProfileHeader component
 function UserProfileHeader({ userId }: { userId: string }) {
@@ -175,16 +176,7 @@ export interface ContentCardProps {
     hasApplied?: boolean;
     user_id?: string;
     style?: any;
-    compact?: boolean; // New prop to control padding for flat design
-    // Company information (if available)
-    company?: {
-        id: string;
-        name: string;
-        logo_url?: string;
-        industry?: string;
-        location?: string;
-        status?: string;
-    };
+    compact?: boolean;
 }
 
 export default function ContentCard({
@@ -200,13 +192,27 @@ export default function ContentCard({
     hasApplied = false,
     user_id,
     style,
-    company,
     compact = false, // Default to false for backward compatibility
 }: ContentCardProps) {
     const router = useRouter();
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
     const borderColor = useThemeColor({}, 'border');
+    const { getCompanyByIdPublic } = useCompanies();
+    const [company, setCompany] = useState<any>(null);
+
+    // Fetch company data when companyId is available
+    useEffect(() => {
+        if (criteria?.companyId) {
+            getCompanyByIdPublic(criteria.companyId)
+                .then(({ company: companyData, error }) => {
+                    if (companyData && !error) {
+                        setCompany(companyData);
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [criteria?.companyId, getCompanyByIdPublic]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -222,13 +228,12 @@ export default function ContentCard({
     };
 
     const handleCompanyPress = () => {
-        if (company?.id) {
-            router.push(`/company/${company.id}`);
+        if (criteria?.companyId) {
+            router.push(`/company/${criteria.companyId}`);
         }
     };
 
     const handleMenuPress = () => {
-        // Navigate to post detail or show options
         if (id) {
             router.push(`/post/${id}`);
         }
@@ -237,6 +242,33 @@ export default function ContentCard({
     const handleReadMore = () => {
         if (id) {
             router.push(`/post/${id}`);
+        }
+    };
+
+    // Helper functions for company status
+    const getCompanyStatusStyle = (status: string) => {
+        switch (status) {
+            case 'approved':
+                return { backgroundColor: '#10b981', color: '#ffffff' };
+            case 'pending':
+                return { backgroundColor: '#f59e0b', color: '#ffffff' };
+            case 'rejected':
+                return { backgroundColor: '#ef4444', color: '#ffffff' };
+            default:
+                return { backgroundColor: '#6b7280', color: '#ffffff' };
+        }
+    };
+
+    const getCompanyStatusText = (status: string) => {
+        switch (status) {
+            case 'approved':
+                return '✓ Approved';
+            case 'pending':
+                return '⏳ Pending';
+            case 'rejected':
+                return '✗ Rejected';
+            default:
+                return 'Unknown';
         }
     };
 
@@ -309,8 +341,8 @@ export default function ContentCard({
         return <View style={styles.detailsContainer}>{details}</View>;
     };
 
-    // Only show company header if company data exists
-    const shouldShowCompanyHeader = company || criteria?.company;
+    // Show company header if company data exists
+    const shouldShowCompanyHeader = company?.id;
 
     return (
         <ThemedView style={[
@@ -323,30 +355,63 @@ export default function ContentCard({
             style
         ]}>
 
-            {/* Company Header - Show only for company posts */}
+            {/* Company Header - Show when company data is available */}
             {shouldShowCompanyHeader && (
                 <View style={styles.profileHeader}>
                     <Pressable style={styles.profileInfo} onPress={handleCompanyPress}>
                         <ThemedAvatar
                             size={40}
-                            image={company?.logo_url ||
-                                `https://ui-avatars.com/api/?name=${encodeURIComponent(company?.name || criteria?.company || '')}&size=40`}
+                            image={company?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(company?.name || '')}&size=40`}
                             square={true}
                         />
                         <View style={styles.profileText}>
                             <View style={styles.nameRow}>
                                 <ThemedText style={[styles.profileName, { color: textColor }]}>
-                                    {company?.name || criteria?.company}
+                                    {company?.name}
                                 </ThemedText>
                                 {company?.status === 'approved' && (
                                     <BadgeCheck size={16} color={textColor} style={styles.verifiedIcon} />
                                 )}
                             </View>
-                            {(company?.industry || company?.location) && (
-                                <ThemedText style={[styles.profileSubtitle, { color: mutedTextColor }]}>
-                                    {[company?.industry, company?.location].filter(Boolean).join(' • ')}
+                            {/* Website link if available */}
+                            {company?.website && (
+                                <Pressable onPress={() => company.website && Linking.openURL(company.website)}>
+                                    <ThemedText style={[styles.websiteLink, { color: mutedTextColor }]} numberOfLines={1}>
+                                        🌐 {company.website.replace(/^https?:\/\//, '')}
+                                    </ThemedText>
+                                </Pressable>
+                            )}
+                            {/* Company description if available */}
+                            {company?.description && (
+                                <ThemedText style={[styles.companyDescription, { color: mutedTextColor }]} numberOfLines={2}>
+                                    {company.description}
                                 </ThemedText>
                             )}
+                            <View style={styles.companySubInfo}>
+                                {/* Primary company info - industry and location */}
+                                {(company?.industry || company?.location) && (
+                                    <ThemedText style={[styles.profileSubtitle, { color: mutedTextColor }]}>
+                                        {[company?.industry, company?.location].filter(Boolean).join(' • ')}
+                                    </ThemedText>
+                                )}
+                                {/* Company status badge */}
+                                {company?.status && (
+                                    <View style={[styles.companyStatusBadge, getCompanyStatusStyle(company.status)]}>
+                                        <ThemedText style={[styles.statusBadgeText, { color: getCompanyStatusStyle(company.status).color }]}>
+                                            {getCompanyStatusText(company.status)}
+                                        </ThemedText>
+                                    </View>
+                                )}
+                                {/* Secondary company info - size and founded year */}
+                                {(company?.size || company?.founded_year) && (
+                                    <ThemedText style={[styles.companySecondaryInfo, { color: mutedTextColor }]}>
+                                        {[
+                                            company?.size && `Size: ${company.size}`,
+                                            company?.founded_year && `Founded: ${company.founded_year}`
+                                        ].filter(Boolean).join(' • ')}
+                                    </ThemedText>
+                                )}
+                            </View>
                         </View>
                     </Pressable>
                     <ThemedIconButton
@@ -356,7 +421,7 @@ export default function ContentCard({
                 </View>
             )}
 
-            {/* User Profile Header - Show for individual user posts */}
+            {/* User Profile Header - Only show when no company data is available */}
             {!shouldShowCompanyHeader && user_id && (
                 <UserProfileHeader userId={user_id} />
             )}
@@ -502,5 +567,33 @@ const styles = StyleSheet.create({
     badgeText: {
         fontSize: 10,
         fontWeight: '600',
+    },
+    companySubInfo: {
+        marginTop: 4,
+        gap: 4,
+    },
+    companySecondaryInfo: {
+        fontSize: 11,
+        opacity: 0.6,
+        marginTop: 2,
+    },
+    companyStatusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    statusBadgeText: {
+        fontSize: 10,
+        fontWeight: '600',
+    },
+    websiteLink: {
+        fontSize: 12,
+        fontStyle: 'italic',
+        marginTop: 2,
+        textDecorationLine: 'underline',
+    },
+    companyDescription: {
+        fontSize: 12,
+        marginTop: 4,
     },
 });
