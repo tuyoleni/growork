@@ -5,7 +5,6 @@ export function useLikes() {
     likePost,
     unlikePost,
     toggleLike,
-    checkLikeStatus,
     getLikeCount,
     likeStates,
     initializePost

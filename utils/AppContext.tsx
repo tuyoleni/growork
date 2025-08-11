@@ -146,7 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     signOut: auth.signOut,
     refreshAuth: async () => {
       try {
-        const { data, error } = await supabase.auth.refreshSession();
+        const { error } = await supabase.auth.refreshSession();
         if (error) {
           console.error('Error refreshing auth:', error);
         }

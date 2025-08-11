@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { useNotifications } from '../../hooks/notifications/useNotifications';
 

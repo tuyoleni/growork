@@ -14,6 +14,8 @@ import { ThemedText } from "../../ThemedText";
 import { CommentItem } from "./CommentItem";
 import { EmojiBar } from "./EmojiBar";
 import { CommentsInputBar } from "./CommentsInputBar";
+import { useAuth, useComments } from "@/hooks";
+import type { Comment as CommentType } from "@/hooks/posts/useComments";
 
 type LikeMap = Record<string, boolean>;
 type CountMap = Record<string, number>;
@@ -91,10 +93,7 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
   const handleSubmitComment = async () => {
     if (!profile || !commentText.trim()) return;
     setIsSending(true);
-    await addComment(
-      profile.id,
-      commentText
-    );
+    await addComment(commentText);
     setCommentText("");
     setIsSending(false);
   };
@@ -187,7 +186,7 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
             </ThemedText>
           </View>
         )}
-        {comments.map((item: CommentWithProfile) => (
+        {comments.map((item: CommentType) => (
           <CommentItem
             key={item.id}
             item={item}

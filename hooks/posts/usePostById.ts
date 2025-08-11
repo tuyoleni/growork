@@ -1,4 +1,3 @@
-import { Post } from '@/types';
 import { supabase } from '@/utils/supabase';
 import { useCallback, useState } from 'react';
 
