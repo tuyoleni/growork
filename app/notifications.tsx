@@ -5,9 +5,8 @@ import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/hooks/useAuth';
+import { useThemeColor, useAuth } from '@/hooks';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/utils/notifications';
 import type { Notification } from '@/types/notifications';
 

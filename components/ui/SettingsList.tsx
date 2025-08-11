@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 
 interface SettingsItemProps {

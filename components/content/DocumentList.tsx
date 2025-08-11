@@ -1,4 +1,4 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { Document } from '@/types';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';

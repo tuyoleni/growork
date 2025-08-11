@@ -1,5 +1,4 @@
 import FlashBar from '@/components/ui/Flash';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppProvider } from '@/utils/AppContext';
 import { NotificationProvider } from '@/components/NotificationProvider';
 import { supabase } from '@/utils/supabase';
@@ -18,7 +17,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import SimpleBottomSheet from '@/components/GlobalBottomSheet';
 import CommentsBottomSheet from '@/components/content/comments/CommentsBottomSheet';
-import { CommentsBottomSheetProvider, useCustomCommentsBottomSheet } from '@/hooks/useCustomCommentsBottomSheet';
+import { useCustomCommentsBottomSheet } from '@/hooks';
+import { useColorScheme } from 'react-native';
+import { CommentsBottomSheetProvider } from '@/hooks/ui/useBottomSheet';
 
 interface AuthContextType {
   session: Session | null;

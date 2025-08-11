@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { useLikes } from '@/hooks/useLikes';
+import { useThemeColor } from '@/hooks';
+import { useLikes } from '@/hooks';
 import { useAppContext } from '@/utils/AppContext';
-import { useCustomCommentsBottomSheet } from '../../hooks/useCustomCommentsBottomSheet';
+import { useCustomCommentsBottomSheet } from '@/hooks';
 
 
 interface PostInteractionBarProps {
@@ -24,7 +24,7 @@ export default function PostInteractionBar({
   containerStyle,
 }: PostInteractionBarProps) {
   const { isLiked, toggleLike } = useLikes();
-  const { isBookmarked, toggleBookmark } = useAppContext();
+  const { toggleBookmark, bookmarkStates } = useAppContext();
   const { openCommentsSheet } = useCustomCommentsBottomSheet();
 
   // UI state
@@ -50,20 +50,20 @@ export default function PostInteractionBar({
       // isLiked is async, isBookmarked is sync
       const isLikedValue = await isLiked(postId);
       if (!cancelled) setLiked(!!isLikedValue);
-      if (!cancelled) setBookmarked(isBookmarked(postId));
+      if (!cancelled) setBookmarked(bookmarkStates[postId]?.isBookmarked || false);
     }
     syncState();
     return () => {
       cancelled = true;
     };
-  }, [postId, isLiked, isBookmarked]);
+  }, [postId, isLiked, bookmarkStates]);
 
   // Handle like action
   const handleLike = async () => {
     if (!postId) return;
     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLiked((curr) => !curr);
-    await toggleLike(postId, postOwnerId);
+    await toggleLike(postId);
   };
 
   // Handle bookmark action
@@ -71,7 +71,7 @@ export default function PostInteractionBar({
     if (!postId) return;
     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setBookmarked((curr) => !curr);
-    await toggleBookmark(postId, postOwnerId);
+    await toggleBookmark(postId);
   };
 
   // Handle comment action

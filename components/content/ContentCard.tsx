@@ -3,7 +3,7 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { Feather } from '@expo/vector-icons';
 import { BadgeCheck } from 'lucide-react-native';
 import { ThemedAvatar } from '../ui/ThemedAvatar';

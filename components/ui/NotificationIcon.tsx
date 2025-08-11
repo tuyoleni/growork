@@ -2,8 +2,8 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { NotificationBadge } from './NotificationBadge';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import NotificationBadge from './NotificationBadge';
+import { useThemeColor } from '@/hooks';
 
 interface NotificationIconProps {
     size?: number;
@@ -25,7 +25,7 @@ export function NotificationIcon({ size = 24, onPress }: NotificationIconProps) 
     return (
         <TouchableOpacity onPress={handlePress} style={styles.container}>
             <Feather name="bell" size={size} color={iconColor} />
-            <NotificationBadge size={16} />
+            <NotificationBadge />
         </TouchableOpacity>
     );
 }

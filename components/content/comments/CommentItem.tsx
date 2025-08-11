@@ -1,9 +1,9 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { useThemeColor } from "@/hooks";
 import { Colors } from "@/constants/Colors";
-import { Comment } from "@/hooks/useComments";
+import { Comment } from "@/hooks";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
 import { ThemedIconButton } from "@/components/ui/ThemedIconButton";
@@ -32,11 +32,11 @@ export function CommentItem({
   const mutedTextColor = useThemeColor({}, "mutedText");
   const tintColor = useThemeColor({}, "tint");
 
-  const displayName = item.profiles
-    ? `${item.profiles.name} ${item.profiles.surname}`
+  const displayName = item.profile
+    ? `${item.profile.name} ${item.profile.surname}`
     : "Anonymous";
   const avatarUrl =
-    item.profiles?.avatar_url ||
+    item.profile?.avatar_url ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=128`;
 
   return (

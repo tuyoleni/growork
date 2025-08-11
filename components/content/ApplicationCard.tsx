@@ -2,12 +2,12 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { ApplicationStatus } from '@/types/enums';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
-import { ApplicationWithDetails } from '@/hooks/useMyPostApplications';
+import { ApplicationWithDetails } from '@/hooks';
 
 interface ApplicationCardProps {
   application: ApplicationWithDetails;

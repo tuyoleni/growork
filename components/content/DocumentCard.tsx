@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { Document } from '@/types/documents';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 
 interface DocumentCardProps {
   document: Document;

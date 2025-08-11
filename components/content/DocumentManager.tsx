@@ -1,5 +1,5 @@
-import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth } from '@/hooks';
+import { useThemeColor } from '@/hooks';
 import { DocumentType, Document } from '@/types';
 import { supabase } from '@/utils/supabase';
 import { STORAGE_BUCKETS } from '@/utils/uploadUtils';

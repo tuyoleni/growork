@@ -1,5 +1,5 @@
 // This is a shim for web and Android where the tab bar is generally opaque.
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { View } from 'react-native';
 

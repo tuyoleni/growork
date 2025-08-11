@@ -3,8 +3,7 @@ import { ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
 import { Document } from '@/types/documents';
 import DocumentCard from '@/components/content/DocumentCard';
 import { Feather } from '@expo/vector-icons';
-import { PostWithProfile } from '@/hooks/usePosts';
-import { SearchResult, useSearch } from '@/hooks/useSearch';
+import { PostWithProfile, SearchResult, useSearch, useThemeColor } from '@/hooks';
 import SearchBar from './components/SearchBar';
 import FilterTabs from './components/FilterTabs';
 import IndustryFilter from './components/IndustryFilter';
@@ -13,7 +12,6 @@ import { PostType } from '@/types/enums';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import ContentCard from '@/components/content/ContentCard';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 import { SearchResultsSkeleton } from '@/components/ui/Skeleton';
@@ -47,7 +45,7 @@ export default function SearchClient() {
   };
 
   // Filter results based on selected filter
-  const filteredResults = results.filter(result => {
+  const filteredResults = results.filter((result: SearchResult) => {
     if (selectedFilter === 'all') return true;
     if (selectedFilter === 'jobs' && result._type === 'post') return result.type === PostType.Job;
     if (selectedFilter === 'news' && result._type === 'post') return result.type === PostType.News;
@@ -58,9 +56,9 @@ export default function SearchClient() {
   // Calculate counts for each filter
   const counts = {
     all: results.length,
-    jobs: results.filter(r => r._type === 'post' && r.type === PostType.Job).length,
-    news: results.filter(r => r._type === 'post' && r.type === PostType.News).length,
-    documents: results.filter(r => r._type === 'document').length,
+    jobs: results.filter((r: SearchResult) => r._type === 'post' && r.type === PostType.Job).length,
+    news: results.filter((r: SearchResult) => r._type === 'post' && r.type === PostType.News).length,
+    documents: results.filter((r: SearchResult) => r._type === 'document').length,
   };
 
   const filterOptions = [

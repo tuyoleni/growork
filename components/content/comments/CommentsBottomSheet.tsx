@@ -12,16 +12,16 @@ import {
 } from "react-native";
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useActionSheet } from "@expo/react-native-action-sheet";
-import { useAuth } from "@/hooks/useAuth";
-import { useComments } from "@/hooks/useComments";
+import { useAuth } from "@/hooks";
+import { useComments } from "@/hooks";
 import { useAppContext } from "@/utils/AppContext";
-import { usePosts } from "@/hooks/usePostById";
+import { usePosts } from "@/hooks";
 import { ThemedText } from "../../ThemedText";
 import { CommentItem } from "./CommentItem";
 import { EmojiBar } from "./EmojiBar";
 import { CommentsInputBar } from "./CommentsInputBar";
 import { Feather } from "@expo/vector-icons";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { useThemeColor } from "@/hooks";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Colors } from "@/constants/Colors";
 
@@ -44,9 +44,8 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
         fetchComments,
         addComment,
         deleteComment,
-        formatCommentDate,
-    } = useComments();
-    const { getPostById } = usePosts();
+    } = useComments(postId);
+    const { posts } = usePosts();
     const {
         toggleCommentLike: toggleLike,
         isCommentLiked: isLiked,
@@ -66,6 +65,21 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
     // Animation values
     const slideAnim = useRef(new Animated.Value(0)).current;
     const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+    // Utility function for formatting comment dates
+    const formatCommentDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+        if (diffInHours < 1) {
+            return 'Just now';
+        } else if (diffInHours < 24) {
+            return `${Math.floor(diffInHours)}h ago`;
+        } else {
+            return date.toLocaleDateString();
+        }
+    };
 
     // Theme colors
     const textColor = useThemeColor({}, 'text');
@@ -115,7 +129,7 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
 
             // Fetch post creator ID
             const fetchPostCreator = async () => {
-                const { data: post } = await getPostById(postId);
+                const post = posts.find(p => p.id === postId);
                 if (post) {
                     setPostCreatorId(post.user_id);
                 }
@@ -150,19 +164,7 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
     const handleSubmitComment = async () => {
         if (!profile || !commentText.trim()) return;
         setIsSending(true);
-        await addComment(
-            postId,
-            profile.id,
-            commentText,
-            {
-                id: profile.id,
-                avatar_url: profile.avatar_url,
-                name: profile.name,
-                surname: profile.surname,
-                username: profile.username,
-            },
-            postOwnerId
-        );
+        await addComment(commentText);
         setCommentText("");
         setIsSending(false);
     };

@@ -32,6 +32,12 @@ export type {
   PostFetchConfig
 } from './usePosts';
 
+// Extended types for specific use cases
+export type MyPost = import('./usePosts').PostWithProfile & {
+  is_active: boolean;
+  applications_count: number;
+};
+
 export type {
   BookmarkedItem,
   InteractionState,

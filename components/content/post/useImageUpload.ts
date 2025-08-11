@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage as uploadImageUtil , STORAGE_BUCKETS } from '@/utils/uploadUtils';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks';
 
 export const useImageUpload = () => {
   const [uploading, setUploading] = useState(false);

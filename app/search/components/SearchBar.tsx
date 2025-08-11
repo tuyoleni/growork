@@ -4,7 +4,7 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedInput } from '@/components/ThemedInput';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 
 interface SearchBarProps {
   value: string;

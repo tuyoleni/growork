@@ -2,8 +2,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AuthNavRow } from '@/components/ui/AuthNavRow';
 import { useFlashToast } from '@/components/ui/Flash';
-import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import { supabase } from '@/utils/supabase';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,11 +13,13 @@ import {
   TextInput,
 } from 'react-native';
 import ScreenContainer from '@/components/ScreenContainer';
+import { useThemeColor } from '@/hooks';
+import { useAppContext } from '@/utils/AppContext';
 
 export default function UsernameStep() {
   const router = useRouter();
   const { email, password } = useLocalSearchParams<{ email: string; password: string }>();
-  const { loading, signUp } = useAuth();
+  const { isLoading: loading, signUp } = useAppContext();
   const toast = useFlashToast(); // get toast handler
   const [username, setUsername] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -119,7 +119,7 @@ export default function UsernameStep() {
     setSubmitting(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const { error, user } = await signUp(email, password, username, name, surname, '');
+      const { error, data } = await signUp(email, password, username, name, surname);
       if (error) {
         setSignupError(typeof error === 'object' && error && 'message' in error ? error.message : String(error));
         toast.show({
@@ -130,7 +130,7 @@ export default function UsernameStep() {
         setSubmitting(false);
         return;
       }
-      if (!user?.id) {
+      if (!data?.user?.id) {
         setSignupError('Could not get user id for verification.');
         toast.show({
           type: 'danger',
@@ -141,7 +141,7 @@ export default function UsernameStep() {
         return;
       }
       // Pass username and email to verify screen
-      router.push({ pathname: './verify', params: { email, userId: user.id, username } });
+      router.push({ pathname: './verify', params: { email, userId: data.user.id, username } });
       // Trigger push notification after 3 seconds
       setTimeout(async () => {
         const Notifications = await import('expo-notifications');

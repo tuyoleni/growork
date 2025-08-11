@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 
 export interface ThemedButtonProps {
   title: string;

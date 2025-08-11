@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import CustomOptionStrip from './CustomOptionStrip';
 
 const BOOKMARK_CATEGORIES = [

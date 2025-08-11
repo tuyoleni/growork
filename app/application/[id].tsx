@@ -2,9 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { useAuth } from "@/hooks/useAuth";
-import { useMyPostApplications, ApplicationWithDetails } from "@/hooks/useMyPostApplications";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import { ApplicationStatus } from "@/types/enums";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -12,8 +9,10 @@ import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
 import { supabase } from "@/utils/supabase";
 import { ApplicationCard } from "@/components/content/ApplicationCard";
 import { ApplicationFilters } from "@/components/ui/ApplicationFilters";
+import { useAuth, useMyPostApplications, useThemeColor } from "@/hooks";
+import type { ApplicationWithDetails } from "@/hooks/applications/useMyPostApplications";
 
-type ViewMode = 'applications' | 'detail';
+type ViewMode = "applications" | "detail";
 
 export default function ApplicationDetailScreen() {
   const router = useRouter();

@@ -2,10 +2,9 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor, MyPost } from '@/hooks';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-import { MyPost } from '@/hooks/useMyPosts';
 
 interface MyPostCardProps {
   post: MyPost;

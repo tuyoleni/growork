@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ApplicationStatus } from '@/types/enums';
 import { JOB_TYPES } from '@/dataset/jobTypes';

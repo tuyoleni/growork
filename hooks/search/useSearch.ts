@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
-import { PostWithProfile } from './usePosts';
+import { PostWithProfile } from '../posts';
 import { Document } from '@/types/documents';
 import { PostType } from '@/types/enums';
 

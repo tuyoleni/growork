@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { DocumentType } from '@/types';
 
 interface DocumentSelectorProps {

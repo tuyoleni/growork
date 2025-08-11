@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { PostType } from '@/types';
-import { useAppContext } from '@/utils/AppContext';
-import { uploadImage , STORAGE_BUCKETS } from '@/utils/uploadUtils';
 import { ArticleFieldsData } from './ArticleFields';
 import { JobFieldsData } from './JobFields';
+import { useAuth } from '@/hooks';
 
 export function usePostForm(onSuccess?: () => void) {
-  const { user, addPost } = useAppContext();
+  const { user } = useAuth();
 
   // Form state
   const [title, setTitle] = useState('');
@@ -100,18 +99,20 @@ export function usePostForm(onSuccess?: () => void) {
 
     setLoading(true);
     try {
-      const { error } = await addPost({
-        user_id: user.id,
-        type: postType,
-        title: title.trim(),
-        content: content.trim(),
-        image_url: imageUrl,
-        industry: industry,
-        is_sponsored: false,
-        criteria,
-      });
+      // TODO: Implement post creation
+      // const { error } = await addPost({
+      //   user_id: user.id,
+      //   type: postType,
+      //   title: title.trim(),
+      //   content: content.trim(),
+      //   image_url: imageUrl,
+      //   industry: industry,
+      //   is_sponsored: false,
+      //   criteria,
+      // });
 
-      if (error) throw error;
+      // if (error) throw error;
+      throw new Error('Post creation not yet implemented');
 
       if (Platform.OS === 'ios') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       clearForm();

@@ -10,6 +10,8 @@ export {
 // Other application hooks
 export { useApplications } from './useApplications';
 export { useMyPostApplications } from './useMyPostApplications';
+export { useApplicationNotifications } from './useApplicationNotifications';
 
 // Types
 export type { ApplicationStatusConfig } from './useApplicationStatus';
+export type { ApplicationWithDetails } from './useMyPostApplications';

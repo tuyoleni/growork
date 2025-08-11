@@ -5,12 +5,12 @@ export { useNotifications } from './useNotifications';
 export {
     useGeneralNotifications,
     useInteractionNotifications,
-    useApplicationNotifications,
     useNotificationOperations
 } from './useNotifications';
 
 // Other notification hooks
 export { useNotificationSetup } from './useNotificationSetup';
+export { usePushNotifications } from './usePushNotifications';
 
 // Types
 export type { NotificationConfig } from './useNotifications';

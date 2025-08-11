@@ -2,7 +2,7 @@ import React, { RefObject, Dispatch, SetStateAction } from "react";
 import { View, ActivityIndicator, StyleSheet, Keyboard } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedInput } from "../../ThemedInput";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { useThemeColor } from "@/hooks";
 import type { Profile } from "@/types";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
 import { ThemedIconButton } from "@/components/ui/ThemedIconButton";

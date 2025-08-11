@@ -12,9 +12,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
-import { useAuth } from '@/hooks/useAuth';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth } from '@/hooks';
+import { usePermissions } from '@/hooks';
+import { useThemeColor } from '@/hooks';
 import { Company, CompanyFormData } from '@/types';
 import { STORAGE_BUCKETS , uploadImage } from '@/utils/uploadUtils';
 import { ThemedText } from '@/components/ThemedText';
@@ -22,7 +22,7 @@ import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 // Using SettingsList inputs instead of standalone input
 // import { ThemedInput } from '@/components/ThemedInput';
 import SettingsList from '@/components/ui/SettingsList';
-import { useCompanies } from '@/hooks/useCompanies';
+import { useCompanies } from '@/hooks';
 import ScreenContainer from '@/components/ScreenContainer';
 
 // interface SettingsItemProps {

@@ -1,4 +1,4 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useState, useEffect } from 'react';
@@ -8,8 +8,8 @@ import DocumentList from '../content/DocumentList';
 import { Document } from '@/types';
 import CustomOptionStrip from '../ui/CustomOptionStrip';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-import { useDocuments } from '@/hooks/useDocuments';
-import { useAuth } from '@/hooks/useAuth';
+import { useDocuments } from '@/hooks';
+import { useAuth } from '@/hooks';
 
 const DOCUMENT_FILTERS = [
   { icon: 'briefcase', label: 'CV' },

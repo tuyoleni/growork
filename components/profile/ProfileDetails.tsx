@@ -1,5 +1,5 @@
-import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth } from '@/hooks';
+import { useThemeColor } from '@/hooks';
 import { Profile } from '@/types';
 import { supabase } from '@/utils/supabase';
 import { uploadImage, STORAGE_BUCKETS } from '@/utils/uploadUtils';
@@ -24,7 +24,7 @@ export default function ProfileDetails({
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editedProfile, setEditedProfile] = useState<Profile>(profile);
-  const { refresh } = useAuth();
+
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
 

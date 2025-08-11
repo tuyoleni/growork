@@ -1,15 +1,15 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect } from 'react';
 import { Image, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks';
 import { Company } from '@/types';
 import { useRouter } from 'expo-router';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useCompanies } from '@/hooks/useCompanies';
+import { usePermissions } from '@/hooks';
+import { useCompanies } from '@/hooks';
 
 
 export default function CompaniesList() {

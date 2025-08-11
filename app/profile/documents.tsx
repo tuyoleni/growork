@@ -12,15 +12,15 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 
-import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth } from '@/hooks';
+import { useThemeColor } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
 import DocumentManager from '@/components/content/DocumentManager';
 import DocumentCard from '@/components/content/DocumentCard';
 import { Document, DocumentType } from '@/types';
-import { useDocuments } from '@/hooks/useDocuments';
+import { useDocuments } from '@/hooks';
 import { useFlashToast } from '@/components/ui/Flash';
 import { openGlobalSheet } from '@/utils/globalSheet';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, Pressable, StyleSheet, ViewStyle, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 
 export interface BadgeOption {
   label: string;

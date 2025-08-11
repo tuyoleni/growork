@@ -11,12 +11,12 @@ import {
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
-import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth } from '@/hooks';
+import { useThemeColor } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
-import { checkProfileCompleteness } from '@/hooks/useProfileCompleteness';
+import { checkProfileCompleteness } from '@/hooks';
 import { supabase } from '@/utils/supabase';
 import { useFlashToast } from '@/components/ui/Flash';
 

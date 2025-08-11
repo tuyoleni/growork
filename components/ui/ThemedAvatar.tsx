@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { Image } from "expo-image";
 import { ThemedText } from "../ThemedText";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { useThemeColor } from "@/hooks";
 
 interface ThemedAvatarProps {
   image: string;

@@ -11,7 +11,7 @@ import {
   BottomSheetTextInput,
   BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks';
 
 export interface SimpleBottomSheetProps {
   snapPoints: string[];

@@ -1,7 +1,7 @@
 import React from "react";
 import { ScrollView, Pressable, StyleSheet } from "react-native";
 import { ThemedText } from "../../ThemedText";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { useThemeColor } from "@/hooks";
 
 // ✅ Add explicit types for props and map param!
 interface EmojiBarProps {

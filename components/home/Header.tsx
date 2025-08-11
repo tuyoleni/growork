@@ -7,8 +7,8 @@ import React from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
-import { NotificationBadge } from '@/components/ui/NotificationBadge';
-import { usePermissions } from '@/hooks/usePermissions';
+import NotificationBadge from '@/components/ui/NotificationBadge';
+import { usePermissions } from '@/hooks';
 
 interface HeaderProps {
   selectedContentType: number;
@@ -62,7 +62,7 @@ const Header = ({
           >
             <View style={styles.bellContainer}>
               <Feather name="bell" size={22} color={theme.icon} />
-              <NotificationBadge size={16} />
+              <NotificationBadge />
             </View>
           </Pressable>
         </View>

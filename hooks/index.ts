@@ -1,5 +1,3 @@
-// Main hooks index - exports all hooks from organized categories
-
 // Authentication & User Management
 export * from './auth';
 

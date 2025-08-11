@@ -3,8 +3,8 @@ import { View, StyleSheet, Alert, Pressable, StatusBar, TouchableOpacity, useCol
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
-import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth } from '@/hooks';
+import { useThemeColor } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 // import { ThemedInput } from '@/components/ThemedInput';
@@ -13,16 +13,16 @@ import SettingsList from '@/components/ui/SettingsList';
 import ScreenContainer from '@/components/ScreenContainer';
 import { UserType } from '@/types/enums';
 import { supabase } from '@/utils/supabase';
-import { STORAGE_BUCKETS , uploadImage } from '@/utils/uploadUtils';
+import { STORAGE_BUCKETS, uploadImage } from '@/utils/uploadUtils';
 import { Feather } from '@expo/vector-icons';
 
 import { ProfileFormData } from '@/types';
-import { checkProfileCompleteness } from '@/hooks/useProfileCompleteness';
+import { checkProfileCompleteness } from '@/hooks';
 import { useFlashToast } from '@/components/ui/Flash';
 
 export default function EditProfileNative() {
   const router = useRouter();
-  const { user, profile, refresh } = useAuth();
+  const { user, profile } = useAuth();
   const colorScheme = useColorScheme();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
