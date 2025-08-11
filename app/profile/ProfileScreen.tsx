@@ -183,6 +183,19 @@ export default function ProfileScreen() {
             <ThemedText style={styles.profileName}>
               {profile.name} {profile.surname}
             </ThemedText>
+            {profile.username && (
+              <ThemedText style={[styles.profileUsername, { color: mutedTextColor }]}>
+                @{profile.username}
+              </ThemedText>
+            )}
+            <View style={styles.userTypeContainer}>
+              <ThemedText style={[styles.userTypeText, { color: mutedTextColor }]}>
+                {profile.user_type === 'business' ? 'Business Account' : 'Personal Account'}
+              </ThemedText>
+              {profile.user_type === 'business' && (
+                <UserTypeBadge />
+              )}
+            </View>
             {profile.profession && (
               <ThemedText style={[styles.profileProfession, { color: mutedTextColor }]}>
                 {profile.profession}
@@ -337,6 +350,94 @@ export default function ProfileScreen() {
   );
 }
 
+// UserTypeBadge component
+function UserTypeBadge() {
+  const { user } = useAuth();
+  const [companyStatus, setCompanyStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
+
+  useEffect(() => {
+    if (user) {
+      fetchCompanyStatus();
+    }
+  }, [user]);
+
+  const fetchCompanyStatus = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('companies')
+        .select('status')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!error && data) {
+        setCompanyStatus(data.status);
+      }
+    } catch (err) {
+      console.error('Error fetching company status:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.badge, { backgroundColor: tintColor + '20' }]}>
+        <ThemedText style={[styles.badgeText, { color: tintColor }]}>Loading...</ThemedText>
+      </View>
+    );
+  }
+
+  if (!companyStatus) {
+    return (
+      <View style={[styles.badge, { backgroundColor: '#f3f4f6' }]}>
+        <ThemedText style={[styles.badgeText, { color: '#6b7280' }]}>No Company</ThemedText>
+      </View>
+    );
+  }
+
+  const getBadgeStyle = () => {
+    switch (companyStatus) {
+      case 'approved':
+        return { backgroundColor: '#10b981', color: '#ffffff' };
+      case 'pending':
+        return { backgroundColor: '#f59e0b', color: '#ffffff' };
+      case 'rejected':
+        return { backgroundColor: '#ef4444', color: '#ffffff' };
+      default:
+        return { backgroundColor: '#6b7280', color: '#ffffff' };
+    }
+  };
+
+  const getBadgeText = () => {
+    switch (companyStatus) {
+      case 'approved':
+        return '✓ Approved';
+      case 'pending':
+        return '⏳ Pending';
+      case 'rejected':
+        return '✗ Rejected';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  const badgeStyle = getBadgeStyle();
+
+  return (
+    <View style={[styles.badge, { backgroundColor: badgeStyle.backgroundColor }]}>
+      <ThemedText style={[styles.badgeText, { color: badgeStyle.color }]}>
+        {getBadgeText()}
+      </ThemedText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -403,6 +504,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     marginBottom: 4,
+  },
+  profileUsername: {
+    fontSize: 16,
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  userTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  userTypeText: {
+    fontSize: 14,
   },
   profileProfession: {
     fontSize: 16,
@@ -530,5 +645,15 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

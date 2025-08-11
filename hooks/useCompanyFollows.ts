@@ -64,6 +64,28 @@ export function useCompanyFollows() {
         }
     }, [profile?.id, fetchFollowedCompanies]);
 
+    const isFollowingCompany = useCallback(async (companyId: string) => {
+        if (!profile?.id) return false;
+        try {
+            const { data, error } = await supabase
+                .from('company_follows')
+                .select('*')
+                .eq('profile_id', profile.id)
+                .eq('company_id', companyId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+                console.error('Error checking follow status:', error);
+                return false;
+            }
+
+            return !!data;
+        } catch (err: any) {
+            console.error('Error checking follow status:', err);
+            return false;
+        }
+    }, [profile?.id]);
+
     useEffect(() => {
         if (profile?.id) {
             fetchFollowedCompanies();
@@ -72,6 +94,6 @@ export function useCompanyFollows() {
         }
     }, [profile?.id, fetchFollowedCompanies]);
 
-    return { companies, loading, error, fetchFollowedCompanies, followCompany, unfollowCompany };
+    return { companies, loading, error, fetchFollowedCompanies, followCompany, unfollowCompany, isFollowingCompany };
 }
 

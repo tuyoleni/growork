@@ -3,6 +3,8 @@ import { supabase } from '@/utils/superbase';
 import { PostType } from '@/types';
 import { ContentCardProps } from '@/components/content/ContentCard';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { SUBSCRIPTION_CONFIG } from '@/constants/subscriptionConfig';
+import { cleanupSubscription, cleanupInterval, cleanupTimeout } from '@/utils/subscriptionUtils';
 
 // Extended ContentCardProps to include database fields and industry
 export type ExtendedContentCardProps = ContentCardProps & {
@@ -33,7 +35,7 @@ export interface DbPost {
   comments?: { id: string; user_id: string; post_id: string; content: string }[];
 }
 
-export function useFeedPosts(pollingInterval = 30000) {
+export function useFeedPosts(pollingInterval = SUBSCRIPTION_CONFIG.POLLING_INTERVAL) {
   const [posts, setPosts] = useState<DbPost[]>([]);
   const [convertedPosts, setConvertedPosts] = useState<ExtendedContentCardProps[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +87,7 @@ export function useFeedPosts(pollingInterval = 30000) {
           .from('companies')
           .select('*')
           .eq('id', criteria.companyId)
-          .single();
+          .maybeSingle();
 
         if (!companyError && companyData) {
           company = {
@@ -96,7 +98,19 @@ export function useFeedPosts(pollingInterval = 30000) {
             location: companyData.location || criteria.location || undefined,
             status: companyData.status || criteria.companyStatus || undefined,
           };
-        } else {
+        } else if (companyError && companyError.code === 'PGRST116') {
+          // Company not found - this is expected for some posts
+          console.log('Company not found for ID:', criteria.companyId, '- using fallback data');
+          // Fallback to criteria data
+          company = {
+            id: criteria.companyId,
+            name: criteria.company || '',
+            logo_url: undefined,
+            industry: criteria.industry || undefined,
+            location: criteria.location || undefined,
+            status: criteria.companyStatus || undefined,
+          };
+        } else if (companyError) {
           console.warn('Failed to fetch company data for ID:', criteria.companyId, companyError);
           // Fallback to criteria data
           company = {
@@ -220,38 +234,81 @@ export function useFeedPosts(pollingInterval = 30000) {
 
   // Setup real-time subscription and polling
   useEffect(() => {
+    let isMounted = true;
+
     // Initial fetch
     fetchPosts();
 
-    // Setup Supabase real-time subscription
-    try {
-      console.log('Setting up real-time subscription for posts...');
-      subscriptionRef.current = supabase
-        .channel('posts_channel')
-        .on(
-          'postgres_changes',
-          {
-            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-            schema: 'public',
-            table: 'posts'
-          },
-          async (payload) => {
-            console.log('Real-time update received:', payload);
-            // Fetch fresh data when any change occurs
-            await fetchPosts(true);
+    // Setup Supabase real-time subscription with better error handling
+    const setupRealTimeSubscription = async (retryCount = 0) => {
+      if (!isMounted) return;
+      try {
+        console.log('Setting up real-time subscription for posts...', retryCount > 0 ? `(retry ${retryCount})` : '');
+
+        // Clean up any existing subscription first
+        subscriptionRef.current = cleanupSubscription(subscriptionRef.current);
+
+        // Check if we have a valid session before setting up real-time
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('No active session - skipping real-time subscription, using polling only');
+          return;
+        }
+
+        subscriptionRef.current = supabase
+          .channel('posts_channel')
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+              schema: 'public',
+              table: 'posts'
+            },
+            async (payload) => {
+              console.log('Real-time update received:', payload);
+              // Fetch fresh data when any change occurs
+              await fetchPosts(true);
+            }
+          )
+          .subscribe((status) => {
+            console.log('Subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+              console.log('Successfully subscribed to posts real-time updates');
+            } else if (status === 'CHANNEL_ERROR') {
+              console.error('Failed to subscribe to posts real-time updates - falling back to polling only');
+              // Only retry once to avoid excessive retries
+              if (retryCount < SUBSCRIPTION_CONFIG.MAX_RETRIES && isMounted) {
+                console.log('Retrying real-time subscription...');
+                setTimeout(() => setupRealTimeSubscription(retryCount + 1), SUBSCRIPTION_CONFIG.RETRY_DELAY);
+              }
+            } else if (status === 'TIMED_OUT') {
+              console.warn('Real-time subscription timed out - falling back to polling only');
+            } else if (status === 'CLOSED') {
+              console.log('Real-time subscription closed');
+            }
+          });
+
+        // Add a timeout to detect if subscription fails to establish
+        const subscriptionTimeout = setTimeout(() => {
+          if (subscriptionRef.current) {
+            console.warn('Real-time subscription may not have established within timeout - continuing with polling');
           }
-        )
-        .subscribe((status) => {
-          console.log('Subscription status:', status);
-          if (status === 'SUBSCRIBED') {
-            console.log('Successfully subscribed to posts real-time updates');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('Failed to subscribe to posts real-time updates');
-          }
-        });
-    } catch (error) {
-      console.error('Error setting up real-time subscription:', error);
-    }
+        }, SUBSCRIPTION_CONFIG.SUBSCRIPTION_TIMEOUT);
+
+        // Clean up timeout
+        return () => cleanupTimeout(subscriptionTimeout);
+      } catch (error) {
+        console.error('Error setting up real-time subscription:', error);
+        // Only retry once to avoid excessive retries
+        if (retryCount < SUBSCRIPTION_CONFIG.MAX_RETRIES && isMounted) {
+          console.log('Retrying real-time subscription due to error...');
+          setTimeout(() => setupRealTimeSubscription(retryCount + 1), SUBSCRIPTION_CONFIG.RETRY_DELAY);
+        }
+      }
+    };
+
+    // Setup real-time subscription
+    setupRealTimeSubscription();
 
     // Setup polling as fallback (every 30 seconds)
     console.log('Setting up polling fallback...');
@@ -262,18 +319,13 @@ export function useFeedPosts(pollingInterval = 30000) {
 
     // Cleanup function
     return () => {
+      isMounted = false;
       console.log('Cleaning up real-time subscription and polling...');
       // Cleanup Supabase subscription
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-        subscriptionRef.current = null;
-      }
+      subscriptionRef.current = cleanupSubscription(subscriptionRef.current);
 
       // Cleanup polling interval
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
+      pollingIntervalRef.current = cleanupInterval(pollingIntervalRef.current);
     };
   }, [fetchPosts, pollingInterval]);
 

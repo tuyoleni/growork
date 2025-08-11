@@ -4,7 +4,7 @@ import { supabase } from '@/utils/superbase';
 import { useEffect, useState, useCallback } from 'react';
 
 // Extended Post type with profile data
-export type PostWithProfile = Post & { 
+export type PostWithProfile = Post & {
   profiles?: Profile | null;
   likes?: Like[];
   comments?: Comment[];
@@ -19,13 +19,13 @@ export function usePosts() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Fetch posts first with basic data
       let query = supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (type) {
         query = query.eq('type', type);
       }
@@ -33,18 +33,18 @@ export function usePosts() {
       if (industryFilter) {
         query = query.eq('industry', industryFilter);
       }
-      
+
       const { data: postsData, error: postsError } = await query;
-      
+
       if (postsError) {
         throw postsError;
       }
-      
+
       // Process posts to get user profiles
       if (postsData && postsData.length > 0) {
         // Get all user IDs from posts (filter out null values)
         const userIds = [...new Set(postsData.map(post => post.user_id))].filter(Boolean);
-        
+
         // Fetch profiles for these users
         let profilesData = [];
         if (userIds.length > 0) {
@@ -52,21 +52,21 @@ export function usePosts() {
             .from('profiles')
             .select('*')
             .in('id', userIds);
-          
+
           if (profilesError) {
             console.warn('Error fetching profiles:', profilesError);
             // Continue anyway, we'll just show posts without profile data
           }
-          
+
           profilesData = data || [];
         }
-        
+
         // Create a map of user_id -> profile
         const profilesMap = profilesData.reduce((map, profile) => {
           map[profile.id] = profile;
           return map;
         }, {} as Record<string, Profile>);
-        
+
         // For each post, fetch likes and comments
         const postsWithData = await Promise.all(postsData.map(async (post) => {
           // Fetch likes for this post
@@ -74,22 +74,22 @@ export function usePosts() {
             .from('likes')
             .select('id, user_id')
             .eq('post_id', post.id);
-          
+
           if (likesError) {
             console.warn(`Error fetching likes for post ${post.id}:`, likesError);
           }
-          
+
           // Fetch comments for this post
           const { data: commentsData, error: commentsError } = await supabase
             .from('comments')
             .select('id, user_id, content, created_at')
             .eq('post_id', post.id)
             .order('created_at', { ascending: false });
-          
+
           if (commentsError) {
             console.warn(`Error fetching comments for post ${post.id}:`, commentsError);
           }
-          
+
           // Return post with profile, likes, and comments
           return {
             ...post,
@@ -98,7 +98,7 @@ export function usePosts() {
             comments: commentsData || []
           };
         }));
-        
+
         setPosts(postsWithData);
       } else {
         setPosts([]);
@@ -122,11 +122,11 @@ export function usePosts() {
         .from('posts')
         .insert([postData])
         .select();
-      
+
       if (error) {
         throw error;
       }
-      
+
       // Refresh the posts
       fetchPosts();
       return { data, error: null };
@@ -144,11 +144,11 @@ export function usePosts() {
       const { error } = await supabase
         .from('likes')
         .insert([{ post_id: postId, user_id: userId }]);
-      
+
       if (error) {
         throw error;
       }
-      
+
       // Refresh the posts
       fetchPosts();
       return { error: null };
@@ -165,11 +165,11 @@ export function usePosts() {
         .delete()
         .eq('post_id', postId)
         .eq('user_id', userId);
-      
+
       if (error) {
         throw error;
       }
-      
+
       // Refresh the posts
       fetchPosts();
       return { error: null };
@@ -185,11 +185,11 @@ export function usePosts() {
         .from('comments')
         .insert([{ post_id: postId, user_id: userId, content }])
         .select();
-      
+
       if (error) {
         throw error;
       }
-      
+
       // Refresh the posts
       fetchPosts();
       return { data, error: null };
@@ -199,11 +199,122 @@ export function usePosts() {
     }
   }, [fetchPosts]);
 
+  const fetchPostsByUser = useCallback(async (userId: string) => {
+    try {
+      setError(null);
+
+      // Fetch posts by user ID
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (postsError) {
+        throw postsError;
+      }
+
+      // Process posts to get user profiles
+      if (postsData && postsData.length > 0) {
+        // Get all user IDs from posts (filter out null values)
+        const userIds = [...new Set(postsData.map(post => post.user_id))].filter(Boolean);
+
+        // Fetch profiles for these users
+        let profilesData = [];
+        if (userIds.length > 0) {
+          const { data, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds);
+
+          if (profilesError) {
+            console.warn('Error fetching profiles:', profilesError);
+            // Continue anyway, we'll just show posts without profile data
+          }
+
+          profilesData = data || [];
+        }
+
+        // Create a map of user_id -> profile
+        const profilesMap = profilesData.reduce((map, profile) => {
+          map[profile.id] = profile;
+          return map;
+        }, {} as Record<string, Profile>);
+
+        // For each post, fetch likes and comments
+        const postsWithData = await Promise.all(postsData.map(async (post) => {
+          // Fetch likes for this post
+          const { data: likesData, error: likesError } = await supabase
+            .from('likes')
+            .select('id, user_id')
+            .eq('post_id', post.id);
+
+          if (likesError) {
+            console.warn(`Error fetching likes for post ${post.id}:`, likesError);
+          }
+
+          // Fetch comments for this post
+          const { data: commentsData, error: commentsError } = await supabase
+            .from('comments')
+            .select('id, user_id, content, created_at')
+            .eq('post_id', post.id)
+            .order('created_at', { ascending: false });
+
+          if (commentsError) {
+            console.warn(`Error fetching comments for post ${post.id}:`, commentsError);
+          }
+
+          // Return post with profile, likes, and comments
+          return {
+            ...post,
+            profiles: profilesMap[post.user_id] || null,
+            likes: likesData || [],
+            comments: commentsData || []
+          };
+        }));
+
+        return { posts: postsWithData, error: null };
+      } else {
+        return { posts: [], error: null };
+      }
+    } catch (err: any) {
+      console.error('Error fetching posts by user:', err);
+      setError(err.message);
+      return { posts: [], error: err };
+    }
+  }, []);
+
+  // Fetch posts by company ID
+  const fetchPostsByCompany = useCallback(async (companyId: string) => {
+    try {
+      setError(null);
+
+      // Fetch posts by company ID using the criteria.companyId field
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .contains('criteria', { companyId: companyId })
+        .order('created_at', { ascending: false });
+
+      if (postsError) {
+        throw postsError;
+      }
+
+      return { posts: postsData || [], error: null };
+    } catch (err: any) {
+      console.error('Error fetching posts by company:', err);
+      setError(err.message);
+      return { posts: [], error: err };
+    }
+  }, []);
+
   return {
     posts,
     loading,
     error,
     fetchPosts,
+    fetchPostsByUser,
+    fetchPostsByCompany,
     addPost,
     likePost,
     unlikePost,
@@ -226,14 +337,14 @@ export function useSearchPosts() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Build the search query
       let query = supabase
         .from('posts')
         .select('*')
         .or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%,criteria->>company.ilike.%${searchTerm}%`)
         .order('created_at', { ascending: false });
-      
+
       if (type) {
         query = query.eq('type', type);
       }
@@ -241,18 +352,18 @@ export function useSearchPosts() {
       if (industryFilter) {
         query = query.eq('industry', industryFilter);
       }
-      
+
       const { data: postsData, error: postsError } = await query;
-      
+
       if (postsError) {
         throw postsError;
       }
-      
+
       // Process posts to get user profiles
       if (postsData && postsData.length > 0) {
         // Get all user IDs from posts (filter out null values)
         const userIds = [...new Set(postsData.map(post => post.user_id))].filter(Boolean);
-        
+
         // Fetch profiles for these users
         let profilesData = [];
         if (userIds.length > 0) {
@@ -260,20 +371,20 @@ export function useSearchPosts() {
             .from('profiles')
             .select('*')
             .in('id', userIds);
-          
+
           if (profilesError) {
             console.warn('Error fetching profiles:', profilesError);
           }
-          
+
           profilesData = data || [];
         }
-        
+
         // Create a map of user_id -> profile
         const profilesMap = profilesData.reduce((map, profile) => {
           map[profile.id] = profile;
           return map;
         }, {} as Record<string, Profile>);
-        
+
         // For each post, fetch likes and comments
         const postsWithData = await Promise.all(postsData.map(async (post) => {
           // Fetch likes for this post
@@ -281,22 +392,22 @@ export function useSearchPosts() {
             .from('likes')
             .select('id, user_id')
             .eq('post_id', post.id);
-          
+
           if (likesError) {
             console.warn(`Error fetching likes for post ${post.id}:`, likesError);
           }
-          
+
           // Fetch comments for this post
           const { data: commentsData, error: commentsError } = await supabase
             .from('comments')
             .select('id, user_id, content, created_at')
             .eq('post_id', post.id)
             .order('created_at', { ascending: false });
-          
+
           if (commentsError) {
             console.warn(`Error fetching comments for post ${post.id}:`, commentsError);
           }
-          
+
           // Return post with profile, likes, and comments
           return {
             ...post,
@@ -305,7 +416,7 @@ export function useSearchPosts() {
             comments: commentsData || []
           };
         }));
-        
+
         setSearchResults(postsWithData);
       } else {
         setSearchResults([]);

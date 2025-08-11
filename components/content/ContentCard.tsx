@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { ThemedText } from '../ThemedText';
@@ -11,6 +11,147 @@ import { ThemedIconButton } from '../ui/ThemedIconButton';
 import ThemedButton from '../ui/ThemedButton';
 import PostInteractionBar from './PostInteractionBar';
 import { useRouter } from 'expo-router';
+import { supabase } from '@/utils/superbase';
+
+// UserProfileHeader component
+function UserProfileHeader({ userId }: { userId: string }) {
+    const [profile, setProfile] = useState<any>(null);
+    const [companyStatus, setCompanyStatus] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const textColor = useThemeColor({}, 'text');
+    const mutedTextColor = useThemeColor({}, 'mutedText');
+    const router = useRouter();
+
+    useEffect(() => {
+        fetchUserProfile();
+    }, [userId]);
+
+    const fetchUserProfile = async () => {
+        try {
+            setLoading(true);
+
+            // Fetch user profile
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (!profileError && profileData) {
+                setProfile(profileData);
+
+                // If it's a business account, fetch company status
+                if (profileData.user_type === 'business') {
+                    const { data: companyData, error: companyError } = await supabase
+                        .from('companies')
+                        .select('status')
+                        .eq('user_id', userId)
+                        .single();
+
+                    if (!companyError && companyData) {
+                        setCompanyStatus(companyData.status);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching user profile:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleProfilePress = () => {
+        if (profile?.id) {
+            router.push(`/profile`);
+        }
+    };
+
+    if (loading || !profile) {
+        return (
+            <View style={styles.profileHeader}>
+                <View style={styles.profileInfo}>
+                    <ThemedAvatar size={40} image="" />
+                    <View style={styles.profileText}>
+                        <View style={styles.nameRow}>
+                            <ThemedText style={[styles.profileName, { color: mutedTextColor }]}>
+                                Loading...
+                            </ThemedText>
+                        </View>
+                    </View>
+                </View>
+                <ThemedIconButton
+                    icon={<Feather name="more-horizontal" size={20} color={mutedTextColor} />}
+                    onPress={() => { }}
+                />
+            </View>
+        );
+    }
+
+    const getCompanyBadgeStyle = () => {
+        switch (companyStatus) {
+            case 'approved':
+                return { backgroundColor: '#10b981', color: '#ffffff' };
+            case 'pending':
+                return { backgroundColor: '#f59e0b', color: '#ffffff' };
+            case 'rejected':
+                return { backgroundColor: '#ef4444', color: '#ffffff' };
+            default:
+                return { backgroundColor: '#6b7280', color: '#ffffff' };
+        }
+    };
+
+    const getCompanyBadgeText = () => {
+        switch (companyStatus) {
+            case 'approved':
+                return '✓ Approved';
+            case 'pending':
+                return '⏳ Pending';
+            case 'rejected':
+                return '✗ Rejected';
+            default:
+                return 'No Company';
+        }
+    };
+
+    return (
+        <View style={styles.profileHeader}>
+            <Pressable style={styles.profileInfo} onPress={handleProfilePress}>
+                <ThemedAvatar
+                    size={40}
+                    image={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&size=40`}
+                />
+                <View style={styles.profileText}>
+                    <View style={styles.nameRow}>
+                        <ThemedText style={[styles.profileName, { color: textColor }]}>
+                            {profile.name} {profile.surname}
+                        </ThemedText>
+                        {profile.username && (
+                            <ThemedText style={[styles.profileUsername, { color: mutedTextColor }]}>
+                                @{profile.username}
+                            </ThemedText>
+                        )}
+                    </View>
+                    <View style={styles.profileSubInfo}>
+                        <ThemedText style={[styles.profileSubtitle, { color: mutedTextColor }]}>
+                            {profile.user_type === 'business' ? 'Business Account' : 'Personal Account'}
+                        </ThemedText>
+                        {profile.user_type === 'business' && companyStatus && (
+                            <View style={[styles.companyBadge, getCompanyBadgeStyle()]}>
+                                <ThemedText style={[styles.badgeText, { color: getCompanyBadgeStyle().color }]}>
+                                    {getCompanyBadgeText()}
+                                </ThemedText>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Pressable>
+            <ThemedIconButton
+                icon={<Feather name="more-horizontal" size={20} color={textColor} />}
+                onPress={() => { }}
+            />
+        </View>
+    );
+}
 
 export interface ContentCardProps {
     id?: string;
@@ -33,6 +174,7 @@ export interface ContentCardProps {
     hasApplied?: boolean;
     user_id?: string;
     style?: any;
+    compact?: boolean; // New prop to control padding for flat design
     // Company information (if available)
     company?: {
         id: string;
@@ -58,26 +200,12 @@ export default function ContentCard({
     user_id,
     style,
     company,
+    compact = false, // Default to false for backward compatibility
 }: ContentCardProps) {
     const router = useRouter();
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
     const borderColor = useThemeColor({}, 'border');
-    const backgroundColor = useThemeColor({}, 'background');
-
-    // Log company data being displayed
-    React.useEffect(() => {
-        console.log('=== ContentCard Company Data ===');
-        console.log('Company object:', company);
-        console.log('Criteria company:', criteria?.company);
-        console.log('Company ID:', company?.id || criteria?.companyId);
-        console.log('Company name:', company?.name || criteria?.company);
-        console.log('Company logo URL:', company?.logo_url);
-        console.log('Company industry:', company?.industry);
-        console.log('Company location:', company?.location);
-        console.log('Company status:', company?.status);
-        console.log('==============================');
-    }, [company, criteria]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -94,7 +222,7 @@ export default function ContentCard({
 
     const handleCompanyPress = () => {
         if (company?.id) {
-            router.push(`/profile/CompanyManagement?id=${company.id}`);
+            router.push(`/company/${company.id}`);
         }
     };
 
@@ -180,11 +308,22 @@ export default function ContentCard({
         return <View style={styles.detailsContainer}>{details}</View>;
     };
 
-    return (
-        <ThemedView style={[styles.container, { borderBottomColor: borderColor + '20' }, style]}>
+    // Only show company header if company data exists
+    const shouldShowCompanyHeader = company || criteria?.company;
 
-            {/* Profile Header */}
-            {(company || criteria?.company) && (
+    return (
+        <ThemedView style={[
+            styles.container,
+            {
+                borderBottomColor: borderColor + '20',
+                paddingHorizontal: compact ? 0 : 16,
+                paddingVertical: compact ? 8 : 16,
+            },
+            style
+        ]}>
+
+            {/* Company Header - Show only for company posts */}
+            {shouldShowCompanyHeader && (
                 <View style={styles.profileHeader}>
                     <Pressable style={styles.profileInfo} onPress={handleCompanyPress}>
                         <ThemedAvatar
@@ -214,6 +353,11 @@ export default function ContentCard({
                         onPress={handleMenuPress}
                     />
                 </View>
+            )}
+
+            {/* User Profile Header - Show for individual user posts */}
+            {!shouldShowCompanyHeader && user_id && (
+                <UserProfileHeader userId={user_id} />
             )}
 
             {/* Main Image */}
@@ -270,8 +414,6 @@ export default function ContentCard({
 const styles = StyleSheet.create({
     container: {
         borderBottomWidth: 0.5,
-        paddingHorizontal: 16,
-        paddingVertical: 16,
     },
     profileHeader: {
         flexDirection: 'row',
@@ -340,5 +482,24 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '500',
         opacity: 0.6,
+    },
+    profileUsername: {
+        fontSize: 12,
+        fontStyle: 'italic',
+    },
+    profileSubInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 2,
+    },
+    companyBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    badgeText: {
+        fontSize: 10,
+        fontWeight: '600',
     },
 });

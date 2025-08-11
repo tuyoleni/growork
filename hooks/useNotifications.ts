@@ -3,11 +3,10 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { 
-    checkNotificationPermissions, 
+import {
+    checkNotificationPermissions,
     requestNotificationPermissions,
-    sendNotification,
-    NotificationType 
+    sendNotification
 } from '@/utils/notifications';
 
 // Set notification handler (following Expo docs)
@@ -44,10 +43,10 @@ export function useNotifications() {
 
         return () => {
             if (notificationListener.current) {
-                Notifications.removeNotificationSubscription(notificationListener.current);
+                notificationListener.current.remove();
             }
             if (responseListener.current) {
-                Notifications.removeNotificationSubscription(responseListener.current);
+                responseListener.current.remove();
             }
         };
     }, []);
@@ -84,7 +83,7 @@ export function useNotifications() {
                 '', // userId will be handled by the calling function
                 title,
                 body,
-                NotificationType.POST_LIKE, // default type
+                'post_like', // default type
                 data,
                 expoPushToken
             );
@@ -107,7 +106,7 @@ export function useNotifications() {
                     postOwnerId,
                     title,
                     body,
-                    NotificationType.POST_BOOKMARK,
+                    'post_bookmark',
                     {
                         type: 'post_bookmark',
                         postId,

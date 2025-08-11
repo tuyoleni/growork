@@ -186,7 +186,6 @@ export function useCompanies() {
     }
 
     try {
-      setLoading(true);
       setError(null);
 
       const { data: companies, error: fetchError } = await supabase
@@ -216,8 +215,6 @@ export function useCompanies() {
       console.error('Error fetching company:', err.message);
       setError(err.message);
       return { error: err };
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -261,6 +258,42 @@ export function useCompanies() {
     }
   }, [user]);
 
+  // Get company stats (posts count, jobs count, and followers count)
+  const getCompanyStats = useCallback(async (companyId: string) => {
+    try {
+      setError(null);
+
+      // Fetch posts count by company ID using the criteria.companyId field
+      const { count: postsCount } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .contains('criteria', { companyId: companyId });
+
+      // Fetch jobs count by company ID (posts with type 'job')
+      const { count: jobsCount } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .contains('criteria', { companyId: companyId })
+        .eq('type', 'job');
+
+      // Fetch followers count
+      const { count: followersCount } = await supabase
+        .from('company_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId);
+
+      return {
+        posts: postsCount || 0,
+        jobs: jobsCount || 0,
+        followers: followersCount || 0,
+      };
+    } catch (err: any) {
+      console.error('Error fetching company stats:', err.message);
+      setError(err.message);
+      return { posts: 0, jobs: 0, followers: 0 };
+    }
+  }, []);
+
   // Fetch companies on mount and when user changes
   useEffect(() => {
     if (user) {
@@ -281,5 +314,6 @@ export function useCompanies() {
     getCompanyById,
     getCompanyByIdPublic,
     updateCompanyLogo,
+    getCompanyStats,
   };
 } 

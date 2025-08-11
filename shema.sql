@@ -211,6 +211,20 @@ CREATE TABLE public.company_follows (
   CONSTRAINT company_follows_unique UNIQUE (profile_id, company_id)
 );
 
+-- Link table: users follow users
+CREATE TABLE public.user_follows (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  follower_id uuid NOT NULL,
+  following_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT user_follows_pkey PRIMARY KEY (id),
+  CONSTRAINT user_follows_follower_id_fkey FOREIGN KEY (follower_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT user_follows_following_id_fkey FOREIGN KEY (following_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT user_follows_unique UNIQUE (follower_id, following_id)
+);
+
 -- Helpful indexes
 CREATE INDEX IF NOT EXISTS idx_company_follows_profile ON public.company_follows(profile_id);
 CREATE INDEX IF NOT EXISTS idx_company_follows_company ON public.company_follows(company_id);
+CREATE INDEX IF NOT EXISTS idx_user_follows_follower ON public.user_follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_user_follows_following ON public.user_follows(following_id);

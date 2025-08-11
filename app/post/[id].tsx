@@ -69,10 +69,15 @@ const PostDetail = () => {
         .from('companies')
         .select('logo_url')
         .eq('id', companyId)
-        .single();
+        .maybeSingle();
 
       if (!companyError && companyData?.logo_url) {
         return companyData.logo_url;
+      } else if (companyError && companyError.code === 'PGRST116') {
+        // Company not found - this is expected for some posts
+        console.log('Company not found for ID:', companyId, '- skipping logo fetch');
+      } else if (companyError) {
+        console.warn('Error fetching company data for ID:', companyId, companyError);
       }
     } catch (error) {
       console.error('Error fetching company data:', error);

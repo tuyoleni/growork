@@ -149,6 +149,66 @@ export function SearchResultsSkeleton() {
   );
 }
 
+// Company Details Skeleton
+export function CompanyDetailsSkeleton() {
+  const borderColor = useThemeColor({}, 'border');
+
+  return (
+    <View style={styles.companyDetailsContainer}>
+      {/* Header */}
+      <View style={[styles.companyHeader, { borderBottomColor: borderColor }]}>
+        <Skeleton width={24} height={24} borderRadius={12} />
+        <Skeleton width={120} height={18} borderRadius={4} style={styles.companyHeaderTitle} />
+        <Skeleton width={24} height={24} borderRadius={12} />
+      </View>
+
+      {/* Company Info */}
+      <View style={styles.companyInfoSection}>
+        <Skeleton width={80} height={80} borderRadius={40} />
+        <View style={styles.companyInfoText}>
+          <Skeleton width={200} height={24} borderRadius={4} style={styles.companyName} />
+          <Skeleton width={150} height={16} borderRadius={4} style={styles.companyIndustry} />
+          <Skeleton width={180} height={14} borderRadius={4} style={styles.companyLocation} />
+        </View>
+      </View>
+
+      {/* Stats */}
+      <View style={[styles.statsSection, { borderBottomColor: borderColor }]}>
+        <View style={styles.statItem}>
+          <Skeleton width={40} height={20} borderRadius={4} />
+          <Skeleton width={60} height={14} borderRadius={4} style={styles.statLabel} />
+        </View>
+        <View style={styles.statItem}>
+          <Skeleton width={40} height={20} borderRadius={4} />
+          <Skeleton width={80} height={14} borderRadius={4} style={styles.statLabel} />
+        </View>
+      </View>
+
+      {/* Follow Button */}
+      <View style={styles.followButtonSection}>
+        <Skeleton width="100%" height={44} borderRadius={22} />
+      </View>
+
+      {/* Description */}
+      <View style={[styles.descriptionSection, { borderBottomColor: borderColor }]}>
+        <Skeleton width="100%" height={16} borderRadius={4} style={styles.descriptionLine} />
+        <Skeleton width="90%" height={16} borderRadius={4} style={styles.descriptionLine} />
+        <Skeleton width="85%" height={16} borderRadius={4} style={styles.descriptionLine} />
+      </View>
+
+      {/* Posts Section */}
+      <View style={styles.postsSection}>
+        <Skeleton width={80} height={20} borderRadius={4} style={styles.postsTitle} />
+        {[1, 2, 3].map((index) => (
+          <View key={`post-${index}`} style={styles.postItem}>
+            <ContentCardSkeleton />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   skeleton: {
     overflow: 'hidden',
@@ -259,6 +319,71 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchResultItem: {
+    marginBottom: 8,
+  },
+  companyDetailsContainer: {
+    flex: 1,
+  },
+  companyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  companyHeaderTitle: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  companyInfoSection: {
+    flexDirection: 'row',
+    padding: 16,
+    alignItems: 'center',
+  },
+  companyInfoText: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  companyName: {
+    marginBottom: 4,
+  },
+  companyIndustry: {
+    marginBottom: 4,
+  },
+  companyLocation: {
+    marginBottom: 4,
+  },
+  statsSection: {
+    flexDirection: 'row',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statLabel: {
+    marginTop: 2,
+  },
+  followButtonSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  descriptionSection: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  descriptionLine: {
+    marginBottom: 8,
+  },
+  postsSection: {
+    padding: 16,
+  },
+  postsTitle: {
+    marginBottom: 16,
+  },
+  postItem: {
     marginBottom: 8,
   },
 }); 

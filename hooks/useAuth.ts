@@ -59,9 +59,24 @@ export function useAuth() {
 
   // Setup real-time subscription for profile changes
   const setupProfileSubscription = useCallback((userId: string) => {
+    if (!userId) {
+      console.log('No user ID provided for profile subscription');
+      return;
+    }
+
+    // Prevent duplicate subscriptions for the same user
+    if (profileSubscription.current && profileSubscription.current.subscribe) {
+      console.log('Profile subscription already exists for user:', userId);
+      return;
+    }
+
     // Clean up existing subscription
     if (profileSubscription.current) {
-      profileSubscription.current.unsubscribe();
+      try {
+        profileSubscription.current.unsubscribe();
+      } catch (error) {
+        console.warn('Error cleaning up profile subscription:', error);
+      }
       profileSubscription.current = null;
     }
 
@@ -104,6 +119,15 @@ export function useAuth() {
       )
       .subscribe((status) => {
         console.log('Profile subscription status:', status);
+
+        // Handle subscription status changes
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('Profile subscription channel error - will retry on next auth change');
+        } else if (status === 'CLOSED') {
+          console.log('Profile subscription closed');
+        } else if (status === 'SUBSCRIBED') {
+          console.log('Profile subscription established successfully');
+        }
       });
   }, []);
 
