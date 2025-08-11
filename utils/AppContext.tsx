@@ -1,11 +1,18 @@
-import { useAuth } from '@/hooks/useAuth';
-import { useAds } from '@/hooks/useAds';
-import { useApplications } from '@/hooks/useApplications';
-import { useBookmarks } from '@/hooks/useBookmarks';
-import { useCommentLikes } from '@/hooks/useCommentLikes';
-import { usePosts } from '@/hooks/usePosts';
-import { Ad, Application, Document, Post, Profile } from '@/types';
-import React, { createContext, useContext, ReactNode, useState, useCallback, useEffect } from 'react';
+import { useAuth } from '../hooks/auth';
+import { useAds } from '../hooks/search';
+import { useApplications } from '../hooks/applications';
+import { useBookmarks, useCommentLikes, usePosts } from '../hooks/posts';
+import { Ad, Application, Post, Profile } from '../types';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+
+// Import the BookmarkState type from useInteractions
+interface BookmarkState {
+  loading: boolean;
+  error: string | null;
+  isBookmarked: boolean;
+  bookmarks: string[];
+  bookmarkedItems: any[];
+}
 
 interface AppContextType {
   // Authentication
@@ -13,20 +20,16 @@ interface AppContextType {
   profile: Profile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  authError: string | null;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, username: string, name: string, surname: string) => Promise<any>;
   signOut: () => Promise<any>;
-  refreshAuth: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<any>;
 
   // Posts
   posts: Post[];
   postsLoading: boolean;
   postsError: string | null;
-  fetchPosts: (type?: any) => Promise<void>;
-  addPost: (postData: Partial<Post>) => Promise<any>;
-  likePost: (postId: string, userId: string) => Promise<any>;
-  unlikePost: (postId: string, userId: string) => Promise<any>;
+  postsRefreshing: boolean;
+  refreshPosts: () => Promise<void>;
+  clearPostsError: () => void;
 
   // Applications
   applications: Application[];
@@ -47,11 +50,10 @@ interface AppContextType {
   bookmarks: string[];
   bookmarksLoading: boolean;
   bookmarksError: string | null;
-  isBookmarked: (postId: string) => boolean;
-  addBookmark: (postId: string) => Promise<any>;
-  removeBookmark: (postId: string) => Promise<any>;
-  toggleBookmark: (postId: string, postOwnerId?: string) => Promise<any>;
-  fetchBookmarks: () => Promise<void>;
+  toggleBookmark: (postId: string) => Promise<any>;
+  checkBookmarkStatus: (postId: string) => Promise<any>;
+  initializePost: (postId: string) => Promise<any>;
+  bookmarkStates: Record<string, BookmarkState>;
 
   // Comment Likes
   commentLikesLoading: boolean;
@@ -77,12 +79,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Initialize state when user changes
   useEffect(() => {
     if (auth.user) {
-      postsHook.fetchPosts();
+      postsHook.refresh();
       applicationsHook.fetchApplications();
       adsHook.fetchAds();
-      bookmarksHook.fetchBookmarkedContent();
+      // Note: bookmarks are now managed per-post through useInteractions
     }
-  }, [auth.user]);
+  }, [auth.user, postsHook, applicationsHook, adsHook]);
 
   const value: AppContextType = {
     // Auth state and methods
@@ -90,20 +92,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     profile: auth.profile,
     isAuthenticated: !!auth.user,
     isLoading: auth.loading,
-    authError: auth.error,
-    signIn: auth.signIn,
-    signUp: auth.signUp,
     signOut: auth.signOut,
-    refreshAuth: auth.refresh,
+    updateProfile: auth.updateProfile,
 
     // Posts state and methods
     posts: postsHook.posts,
     postsLoading: postsHook.loading,
     postsError: postsHook.error,
-    fetchPosts: postsHook.fetchPosts,
-    addPost: postsHook.addPost,
-    likePost: postsHook.likePost,
-    unlikePost: postsHook.unlikePost,
+    postsRefreshing: postsHook.refreshing,
+    refreshPosts: postsHook.refresh,
+    clearPostsError: postsHook.clearError,
 
     // Applications state and methods
     applications: applicationsHook.applications,
@@ -121,23 +119,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     recordAdImpression: adsHook.recordAdImpression,
 
     // Bookmarks state and methods
-    bookmarks: bookmarksHook.bookmarks,
+    bookmarks: [], // Legacy support - use bookmarkStates instead
     bookmarksLoading: bookmarksHook.loading,
     bookmarksError: bookmarksHook.error,
-    isBookmarked: bookmarksHook.isBookmarked,
-    addBookmark: bookmarksHook.addBookmark,
-    removeBookmark: bookmarksHook.removeBookmark,
     toggleBookmark: bookmarksHook.toggleBookmark,
-    fetchBookmarks: bookmarksHook.fetchBookmarkedContent,
+    checkBookmarkStatus: bookmarksHook.checkBookmarkStatus,
+    initializePost: bookmarksHook.initializePost,
+    bookmarkStates: bookmarksHook.bookmarkStates,
 
     // Comment Likes state and methods
     commentLikesLoading: commentLikesHook.loading,
     commentLikesError: commentLikesHook.error,
-    isCommentLiked: commentLikesHook.isLiked,
+    isCommentLiked: async (commentId: string) => commentLikesHook.isLiked(),
     likeComment: commentLikesHook.likeComment,
     unlikeComment: commentLikesHook.unlikeComment,
-    toggleCommentLike: commentLikesHook.toggleLike,
-    getCommentLikeCount: commentLikesHook.getLikeCount,
+    toggleCommentLike: commentLikesHook.toggleCommentLike,
+    getCommentLikeCount: async () => 0, // Not implemented in current hook
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

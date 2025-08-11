@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AuthNavRow } from '@/components/ui/AuthNavRow';
 import { useFlashToast } from '@/components/ui/Flash';
-import { useAuth } from '@/hooks/auth';
+import { useAppContext } from '@/utils/AppContext';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -13,7 +13,7 @@ import {
 import ScreenContainer from '@/components/ScreenContainer';
 
 export default function LoginScreen() {
-  const { signIn, loading } = useAuth();
+  const { signIn, isLoading } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const toast = useFlashToast();
@@ -71,11 +71,11 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={styles.loginButton}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={isLoading}
             activeOpacity={0.8}
           >
             <ThemedText style={styles.loginButtonText}>
-              {loading ? 'Logging in...' : 'Login'}
+              {isLoading ? 'Logging in...' : 'Login'}
             </ThemedText>
           </TouchableOpacity>
         </ThemedView>
