@@ -14,7 +14,6 @@ import { ThemedText } from "../../ThemedText";
 import { CommentItem } from "./CommentItem";
 import { EmojiBar } from "./EmojiBar";
 import { CommentsInputBar } from "./CommentsInputBar";
-import { CommentWithProfile, useAuth, useComments } from "@/hooks";
 
 type LikeMap = Record<string, boolean>;
 type CountMap = Record<string, number>;

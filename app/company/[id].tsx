@@ -9,8 +9,9 @@ import { ThemedView } from '../../components/ThemedView';
 import ThemedButton from '../../components/ui/ThemedButton';
 import { ThemedAvatar } from '../../components/ui/ThemedAvatar';
 import ContentCard from '../../components/content/ContentCard';
-import { useCompanies } from '@/hooks/companies';
-import { usePosts } from '@/hooks/posts';
+import { useCompanies } from '../../hooks/companies';
+import { usePosts } from '../../hooks/posts';
+import { withRetry } from '../../hooks/data/useNetworkMonitor';
 
 interface CompanyStats {
     posts: number;
@@ -21,32 +22,25 @@ interface CompanyStats {
 export default function CompanyDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    // Removed unused user variable
     const { getCompanyByIdPublic, getCompanyByUserId } = useCompanies();
-    const { fetchPostsByCompany } = usePosts();
+    const { posts: companyPosts, loading: postsLoading } = usePosts({ userId: id });
 
     const [company, setCompany] = useState<Company | null>(null);
-    const [posts, setPosts] = useState<Post[]>([]);
     const [stats] = useState<CompanyStats>({ posts: 0, jobs: 0, followers: 0 });
     const [loading, setLoading] = useState(true);
-    const [postsLoading, setPostsLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-
-    // Store functions in refs to avoid dependency issues
     const functionsRef = useRef({
         getCompanyByIdPublic,
-        getCompanyByUserId,
-        fetchPostsByCompany
+        getCompanyByUserId
     });
 
     // Update refs when functions change
     useEffect(() => {
         functionsRef.current = {
             getCompanyByIdPublic,
-            getCompanyByUserId,
-            fetchPostsByCompany
+            getCompanyByUserId
         };
-    }, [getCompanyByIdPublic, getCompanyByUserId, fetchPostsByCompany]);
+    }, [getCompanyByIdPublic, getCompanyByUserId]);
 
     const fetchCompanyDetails = useCallback(async () => {
         if (!id) return;
@@ -67,18 +61,7 @@ export default function CompanyDetailsScreen() {
 
             setCompany(companyData);
 
-            // Fetch posts
-            try {
-                setPostsLoading(true);
-                const { posts: postsData, error: postsError } = await functionsRef.current.fetchPostsByCompany(companyData.id);
-                if (!postsError) {
-                    setPosts(postsData || []);
-                }
-            } catch (postsError) {
-                console.error('Error fetching posts:', postsError);
-            } finally {
-                setPostsLoading(false);
-            }
+            // Posts are now fetched automatically by the usePosts hook
 
         } catch (error: any) {
             console.error('Error fetching company details:', error);
@@ -162,7 +145,7 @@ export default function CompanyDetailsScreen() {
                 {/* Company Stats */}
                 <ThemedView style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 20 }}>
                     <View style={{ alignItems: 'center' }}>
-                        <ThemedText style={{ fontSize: 20, fontWeight: 'bold' }}>{stats.posts}</ThemedText>
+                        <ThemedText style={{ fontSize: 20, fontWeight: 'bold' }}>{companyPosts.length}</ThemedText>
                         <ThemedText style={{ fontSize: 14, color: '#666' }}>Posts</ThemedText>
                     </View>
                     <View style={{ alignItems: 'center' }}>
@@ -183,8 +166,8 @@ export default function CompanyDetailsScreen() {
 
                     {postsLoading ? (
                         <ActivityIndicator size="small" />
-                    ) : posts.length > 0 ? (
-                        posts.map((post) => (
+                    ) : companyPosts.length > 0 ? (
+                        companyPosts.map((post) => (
                             <ContentCard
                                 key={post.id}
                                 id={post.id}

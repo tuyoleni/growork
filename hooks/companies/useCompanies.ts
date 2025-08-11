@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../auth';
 import { Company } from '@/types/company';
-import { withRetry, handleAndroidNetworkError } from '../data';
+import { withRetry, handleAndroidNetworkError } from '../data/useNetworkMonitor';
 import { supabase } from '@/utils/supabase';
 
 export const useCompanies = () => {
