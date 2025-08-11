@@ -1,9 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
-
-import { useCompanies } from '../../hooks/useCompanies';
-import { usePosts } from '../../hooks/usePosts';
 import { Company } from '../../types/company';
 import { Post } from '../../types/posts';
 import ScreenContainer from '../../components/ScreenContainer';
@@ -12,7 +9,8 @@ import { ThemedView } from '../../components/ThemedView';
 import ThemedButton from '../../components/ui/ThemedButton';
 import { ThemedAvatar } from '../../components/ui/ThemedAvatar';
 import ContentCard from '../../components/content/ContentCard';
-import { withRetry } from '../../hooks/useNetworkMonitor';
+import { useCompanies } from '@/hooks/companies';
+import { usePosts } from '@/hooks/posts';
 
 interface CompanyStats {
     posts: number;

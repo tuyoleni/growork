@@ -4,6 +4,7 @@ import { useApplications } from '../hooks/applications';
 import { useBookmarks, useCommentLikes, usePosts } from '../hooks/posts';
 import { Ad, Application, Post, Profile } from '../types';
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import { supabase } from './supabase';
 
 // Import the BookmarkState type from useInteractions
 interface BookmarkState {
@@ -20,7 +21,11 @@ interface AppContextType {
   profile: Profile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  authError: string | null;
+  signIn: (email: string, password: string) => Promise<{ error?: any; data?: any }>;
+  signUp: (email: string, password: string, username: string, name: string, surname: string) => Promise<{ error?: any; data?: any }>;
   signOut: () => Promise<any>;
+  refreshAuth: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<any>;
 
   // Posts
@@ -76,6 +81,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const bookmarksHook = useBookmarks();
   const commentLikesHook = useCommentLikes();
 
+  // Local state for auth errors
+  const [authError, setAuthError] = React.useState<string | null>(null);
+
   // Initialize state when user changes
   useEffect(() => {
     if (auth.user) {
@@ -83,6 +91,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       applicationsHook.fetchApplications();
       adsHook.fetchAds();
       // Note: bookmarks are now managed per-post through useInteractions
+      setAuthError(null); // Clear any previous auth errors
     }
   }, [auth.user, postsHook, applicationsHook, adsHook]);
 
@@ -92,7 +101,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
     profile: auth.profile,
     isAuthenticated: !!auth.user,
     isLoading: auth.loading,
+    authError: authError, // Use the local state for auth errors
+    signIn: async (email: string, password: string) => {
+      try {
+        setAuthError(null);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) {
+          setAuthError(error.message);
+        }
+        return { data, error };
+      } catch (error: any) {
+        const errorMessage = error.message || 'Sign in failed';
+        setAuthError(errorMessage);
+        return { error: { message: errorMessage } };
+      }
+    },
+    signUp: async (email: string, password: string, username: string, name: string, surname: string) => {
+      try {
+        setAuthError(null);
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username,
+              name,
+              surname,
+            },
+          },
+        });
+        if (error) {
+          setAuthError(error.message);
+        }
+        return { data, error };
+      } catch (error: any) {
+        const errorMessage = error.message || 'Sign up failed';
+        setAuthError(errorMessage);
+        return { error: { message: errorMessage } };
+      }
+    },
     signOut: auth.signOut,
+    refreshAuth: async () => {
+      try {
+        const { data, error } = await supabase.auth.refreshSession();
+        if (error) {
+          console.error('Error refreshing auth:', error);
+        }
+      } catch (error) {
+        console.error('Error refreshing auth:', error);
+      }
+    },
     updateProfile: auth.updateProfile,
 
     // Posts state and methods
