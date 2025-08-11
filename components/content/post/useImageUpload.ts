@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadImage as uploadImageUtil } from '@/utils/uploadUtils';
-import { STORAGE_BUCKETS } from '@/utils/superbase';
+import { uploadImage as uploadImageUtil , STORAGE_BUCKETS } from '@/utils/uploadUtils';
 import { useAuth } from '@/hooks/useAuth';
 
 export const useImageUpload = () => {
@@ -33,20 +32,20 @@ export const useImageUpload = () => {
 
     setUploading(true);
     setError(null);
-    
+
     try {
       // Use the same uploadImage utility as profile
       const publicUrl: string | null = await uploadImageUtil({
-        bucket: STORAGE_BUCKETS.POSTS, // Use posts bucket instead of avatars
+        bucket: STORAGE_BUCKETS.POSTS,
         userId: user.id,
         uri,
         fileNamePrefix: 'post'
       });
-      
+
       if (!publicUrl) {
         throw new Error('Failed to upload image');
       }
-      
+
       return publicUrl;
     } catch (e: any) {
       setError(e.message || 'Failed to upload image');

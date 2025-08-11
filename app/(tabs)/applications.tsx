@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   FlatList,
@@ -8,19 +8,23 @@ import {
   Alert,
 
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { useAuth } from '@/hooks/useAuth';
-import { useMyPostApplications } from '@/hooks/useMyPostApplications';
-import { useMyPosts, MyPost } from '@/hooks/useMyPosts';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { ApplicationStatus } from '@/types/enums';
-import { usePermissions } from '@/hooks/usePermissions';
+
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { ApplicationCard } from '@/components/content/ApplicationCard';
 import { MyPostCard } from '@/components/content/MyPostCard';
 import { ApplicationStats } from '@/components/ui/ApplicationStats';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+import { usePermissions, useAuth, useMyPostApplications, useMyPosts, useThemeColor } from '@/hooks';
+import { Feather } from '@expo/vector-icons';
+import { ApplicationStatus } from '@/types/enums';
+import { PostWithProfile } from '@/hooks/posts';
+
+// Extend PostWithProfile with properties needed by MyPostCard
+interface MyPost extends PostWithProfile {
+  is_active: boolean;
+  applications_count: number;
+}
 
 type TabType = 'applications' | 'posts';
 
@@ -39,15 +43,13 @@ export default function ApplicationsScreen() {
     posts,
     loading: postsLoading,
     error: postsError,
-    fetchMyPosts,
-    updatePostStatus,
-    deletePost,
-  } = useMyPosts();
+    refresh: refreshPosts,
+  } = useMyPosts(user?.id || '');
 
   const { openCreatePostSheet } = useBottomSheetManager({
     onPostSuccess: () => {
       if (user) {
-        fetchMyPosts(user.id);
+        refreshPosts();
       }
     }
   });
@@ -60,19 +62,21 @@ export default function ApplicationsScreen() {
   const mutedTextColor = useThemeColor({}, 'mutedText');
   const tintColor = useThemeColor({}, 'tint');
 
+  const lastUserId = useRef<string | null>(null);
+
   useEffect(() => {
-    if (user) {
+    if (user?.id && user.id !== lastUserId.current) {
+      lastUserId.current = user.id;
       fetchApplicationsForMyPosts(user.id);
-      fetchMyPosts(user.id);
     }
-  }, [user, fetchApplicationsForMyPosts, fetchMyPosts]);
+  }, [user?.id, fetchApplicationsForMyPosts]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     if (user) {
       await Promise.all([
         fetchApplicationsForMyPosts(user.id),
-        fetchMyPosts(user.id),
+        refreshPosts(),
       ]);
     }
     setRefreshing(false);
@@ -98,17 +102,15 @@ export default function ApplicationsScreen() {
   };
 
   const handlePostStatusUpdate = async (postId: string, status: 'active' | 'inactive') => {
-    const result = await updatePostStatus(postId, status);
-    if (result.error) {
-      Alert.alert('Error', 'Failed to update post status');
-    }
+    // TODO: Implement post status update functionality
+    console.log('Update post status:', postId, status);
+    Alert.alert('Info', 'Post status update functionality coming soon');
   };
 
   const handlePostDelete = async (postId: string) => {
-    const result = await deletePost(postId);
-    if (result.error) {
-      Alert.alert('Error', 'Failed to delete post');
-    }
+    // TODO: Implement post deletion functionality
+    console.log('Delete post:', postId);
+    Alert.alert('Info', 'Post deletion functionality coming soon');
   };
 
   // No filtering or grouping needed
@@ -149,10 +151,17 @@ export default function ApplicationsScreen() {
     </TouchableOpacity>
   );
 
-  const renderPostItem = ({ item }: { item: MyPost }) => {
+  const renderPostItem = ({ item }: { item: PostWithProfile }) => {
+    // Cast to MyPost type with default values for missing properties
+    const myPost: MyPost = {
+      ...item,
+      is_active: true, // Default to active - TODO: get from actual post data
+      applications_count: 0, // Default to 0 - TODO: get from actual application count
+    };
+
     return (
       <MyPostCard
-        post={item}
+        post={myPost}
         onStatusUpdate={handlePostStatusUpdate}
         onDelete={handlePostDelete}
       />

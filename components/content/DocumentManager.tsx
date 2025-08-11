@@ -1,7 +1,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { DocumentType, Document } from '@/types';
-import { supabase, STORAGE_BUCKETS } from '@/utils/superbase';
+import { supabase } from '@/utils/supabase';
+import { STORAGE_BUCKETS } from '@/utils/uploadUtils';
 import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';

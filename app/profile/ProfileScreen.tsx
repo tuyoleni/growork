@@ -16,10 +16,9 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
-import { supabase } from '@/utils/superbase';
-// import { UserType } from '@/types/enums';
-import { useFlashToast } from '@/components/ui/Flash';
 import { checkProfileCompleteness } from '@/hooks/useProfileCompleteness';
+import { supabase } from '@/utils/supabase';
+import { useFlashToast } from '@/components/ui/Flash';
 
 interface ProfileStats {
   posts: number;

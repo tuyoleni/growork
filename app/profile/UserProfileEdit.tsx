@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, Pressable, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
-import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedInput } from '@/components/ThemedInput';
-import { supabase } from '@/utils/superbase';
+import { supabase } from '@/utils/supabase';
 import { UserType, type ProfileFormData } from '@/types';
+import ScreenContainer from '@/components/ScreenContainer';
+import { useAuth, useThemeColor } from '@/hooks';
 
 const fields: {
     label: string;
@@ -30,7 +30,7 @@ const fields: {
     ];
 
 export default function UserProfileEdit() {
-    const { user, profile, refresh } = useAuth();
+    const { user, profile } = useAuth();
     const [editing, setEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<ProfileFormData>({
@@ -98,7 +98,6 @@ export default function UserProfileEdit() {
             if (error) throw error;
             Alert.alert('Success', 'Profile updated!');
             setEditing(false);
-            // Profile will be updated automatically via real-time subscription
         } catch (e: any) {
             Alert.alert('Error', e.message || 'Update failed');
         } finally {
@@ -117,7 +116,7 @@ export default function UserProfileEdit() {
     }
 
     return (
-        <ThemedView style={styles.container}>
+        <ScreenContainer style={styles.container}>
             <StatusBar barStyle="dark-content" />
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: borderColor }]}>
@@ -179,7 +178,7 @@ export default function UserProfileEdit() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </ThemedView>
+        </ScreenContainer>
     );
 }
 

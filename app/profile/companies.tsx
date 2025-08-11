@@ -18,7 +18,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
-import { supabase } from '@/utils/superbase';
+import { supabase } from '@/utils/supabase';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCompanyFollows } from '@/hooks/useCompanyFollows';
 import { UserType } from '@/types/enums';

@@ -1,0 +1,268 @@
+import { useCallback, useState, useEffect } from 'react';
+import { supabase } from '@/utils/supabase';
+import { useAuth } from '../auth/useAuth';
+import { Notification } from '@/types/notifications';
+
+export interface NotificationConfig {
+  type?: 'general' | 'interaction' | 'application';
+  operations?: boolean;
+  autoFetch?: boolean;
+  limit?: number;
+  realtime?: boolean;
+}
+
+export interface NotificationOperations {
+  markAsRead: (notificationId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteNotification: (notificationId: string) => Promise<void>;
+  sendNotification: (recipientId: string, type: string, data: any) => Promise<void>;
+}
+
+// Unified hook for all notification types with optional operations
+export function useNotifications(config: NotificationConfig = {}) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { user } = useAuth();
+
+  // Fetch notifications based on config
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      let query = supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (config.type === 'interaction') {
+        query = query.eq('type', 'interaction');
+      } else if (config.type === 'application') {
+        query = query.eq('type', 'application');
+      }
+
+      if (config.limit) {
+        query = query.limit(config.limit);
+      }
+
+      const { data, error: fetchError } = await query;
+
+      if (fetchError) throw fetchError;
+      
+      const notificationsData = data || [];
+      setNotifications(notificationsData);
+      setUnreadCount(notificationsData.filter(n => !n.read).length);
+    } catch (err: any) {
+      console.error('Error fetching notifications:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, config.type, config.limit]);
+
+  // Mark single notification as read
+  const markAsRead = useCallback(async (notificationId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === notificationId
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+      
+      // Update unread count
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err: any) {
+      console.error('Error marking notification as read:', err);
+    }
+  }, [user]);
+
+  // Mark all notifications as read
+  const markAllAsRead = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user.id)
+        .eq('read', false);
+
+      if (error) throw error;
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, read: true }))
+      );
+      
+      // Reset unread count
+      setUnreadCount(0);
+    } catch (err: any) {
+      console.error('Error marking all notifications as read:', err);
+    }
+  }, [user]);
+
+  // Delete a notification
+  const deleteNotification = useCallback(async (notificationId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      const deletedNotification = notifications.find(n => n.id === notificationId);
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      
+      // Update unread count if deleted notification was unread
+      if (deletedNotification && !deletedNotification.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (err: any) {
+      console.error('Error deleting notification:', err);
+    }
+  }, [user, notifications]);
+
+  // Send a notification to another user
+  const sendNotification = useCallback(async (recipientId: string, type: string, data: any) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: recipientId,
+          type,
+          data,
+          sender_id: user.id,
+          read: false
+        });
+
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Error sending notification:', err);
+    }
+  }, [user]);
+
+  // Setup realtime subscription if enabled
+  useEffect(() => {
+    if (!config.realtime || !user) return;
+
+    const channel = supabase
+      .channel('notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        const newNotification = payload.new as Notification;
+        setNotifications(prev => [newNotification, ...prev]);
+        if (!newNotification.read) {
+          setUnreadCount(prev => prev + 1);
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        const updatedNotification = payload.new as Notification;
+        setNotifications(prev =>
+          prev.map(n =>
+            n.id === updatedNotification.id ? updatedNotification : n
+          )
+        );
+        
+        // Update unread count
+        setUnreadCount(prev => {
+          const wasRead = (payload.old as Notification)?.read;
+          const isRead = updatedNotification.read;
+          if (wasRead && !isRead) return prev + 1;
+          if (!wasRead && isRead) return Math.max(0, prev - 1);
+          return prev;
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, config.realtime]);
+
+  // Auto-fetch notifications
+  useEffect(() => {
+    if (config.autoFetch !== false) {
+      fetchNotifications();
+    }
+  }, [fetchNotifications, config.autoFetch]);
+
+  // Return operations if requested
+  if (config.operations) {
+    return {
+      notifications,
+      loading,
+      error,
+      unreadCount,
+      operations: {
+        markAsRead,
+        markAllAsRead,
+        deleteNotification,
+        sendNotification
+      }
+    };
+  }
+
+  // Return basic notification data
+  return {
+    notifications,
+    loading,
+    error,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    sendNotification
+  };
+}
+
+// Convenience hooks for specific notification types
+export function useGeneralNotifications(config: Omit<NotificationConfig, 'type'> = {}) {
+  return useNotifications({ ...config, type: 'general' });
+}
+
+export function useInteractionNotifications(config: Omit<NotificationConfig, 'type'> = {}) {
+  return useNotifications({ ...config, type: 'interaction' });
+}
+
+export function useApplicationNotifications(config: Omit<NotificationConfig, 'type'> = {}) {
+  return useNotifications({ ...config, type: 'application' });
+}
+
+// Hook with operations enabled
+export function useNotificationOperations(config: Omit<NotificationConfig, 'operations'> = {}) {
+  return useNotifications({ ...config, operations: true });
+}

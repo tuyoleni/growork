@@ -12,6 +12,7 @@ Growork is a modern professional networking and job search platform built with R
 - **Document Management**: Upload and manage CVs, cover letters, and certificates
 - **Bookmarks**: Save jobs and content for later viewing
 - **Company Profiles**: Companies can create profiles and post job opportunities
+- **Live Comments**: Comment updates with automatic refresh
 
 ## Getting Started
 
@@ -24,12 +25,14 @@ Growork is a modern professional networking and job search platform built with R
 ### Installation
 
 1. Clone the repository
+
    ```bash
    git clone https://github.com/tuyoleni/growork.git
    cd growork
    ```
 
 2. Install dependencies
+
    ```bash
    npm install
    # or
@@ -44,31 +47,47 @@ Growork is a modern professional networking and job search platform built with R
 ### Running the App
 
 The Expo development server provides options to run the app on:
+
 - iOS Simulator
 - Android Emulator
 - Physical devices using Expo Go
 - Web browser
 
+## Real-Time Features
+
+Growork includes live comments with automatic refresh. Users can see comments appear across all devices with regular updates.
+
 ## Tech Stack
 
-- **Frontend**: React Native, Expo
-- **Navigation**: Expo Router (file-based routing)
-- **State Management**: React Context API
+- **Frontend**: React Native with Expo
+- **Backend**: Supabase (PostgreSQL + Real-time)
+- **Authentication**: Supabase Auth
+- **Storage**: Supabase Storage
+- **State Management**: React Context + Custom Hooks
+- **Navigation**: Expo Router
 - **UI Components**: Custom themed components
-- **Database**: Supabase (as indicated by utils/superbase.ts)
 
 ## Project Structure
 
-- `/app`: Main application screens using file-based routing
-- `/components`: Reusable UI components
-- `/hooks`: Custom React hooks for data fetching and state management
-- `/types`: TypeScript type definitions
-- `/utils`: Utility functions and context providers
-- `/assets`: Images, fonts, and other static assets
+```
+growork/
+├── app/                    # Expo Router screens
+├── components/            # Reusable UI components
+├── hooks/                 # Custom React hooks
+├── utils/                 # Utility functions and configurations
+├── types/                 # TypeScript type definitions
+├── constants/             # App constants and configurations
+└── docs/                  # Documentation
+```
 
-## User Types
+## Contributing
 
-Growork supports three types of users:
-- Regular Users: Job seekers and general professionals
-- Professional Users: Verified professionals with enhanced profiles
-- Company Users: Organizations that can post jobs and manage applications
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.

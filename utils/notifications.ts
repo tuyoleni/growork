@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { supabase } from './superbase';
+import { supabase } from './supabase';
 
 // Notification types - using string literals to match the database schema
 export enum NotificationType {

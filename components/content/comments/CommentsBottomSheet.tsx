@@ -15,6 +15,7 @@ import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useComments } from "@/hooks/useComments";
 import { useAppContext } from "@/utils/AppContext";
+import { usePosts } from "@/hooks/usePostById";
 import { ThemedText } from "../../ThemedText";
 import { CommentItem } from "./CommentItem";
 import { EmojiBar } from "./EmojiBar";
@@ -29,7 +30,7 @@ type CountMap = Record<string, number>;
 
 interface CommentsBottomSheetProps {
     postId: string;
-    postOwnerId?: string;
+    postOwnerId?: string; // Company ID that owns the post (used for other purposes)
     visible: boolean;
     onClose?: () => void;
 }
@@ -45,6 +46,7 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
         deleteComment,
         formatCommentDate,
     } = useComments();
+    const { getPostById } = usePosts();
     const {
         toggleCommentLike: toggleLike,
         isCommentLiked: isLiked,
@@ -57,6 +59,7 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
     const [isSending, setIsSending] = useState(false);
     const [likedComments, setLikedComments] = useState<LikeMap>({});
     const [likeCounts, setLikeCounts] = useState<CountMap>({});
+    const [postCreatorId, setPostCreatorId] = useState<string | null>(null);
 
     const inputRef = useRef<any>(null);
 
@@ -109,8 +112,17 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
         if (postId && visible) {
             fetchComments(postId);
             setCommentText("");
+
+            // Fetch post creator ID
+            const fetchPostCreator = async () => {
+                const { data: post } = await getPostById(postId);
+                if (post) {
+                    setPostCreatorId(post.user_id);
+                }
+            };
+            fetchPostCreator();
         }
-    }, [postId, visible, fetchComments]);
+    }, [postId, visible]); // Remove fetchComments from dependencies since it's stable
 
     useEffect(() => {
         const loadLikeData = async () => {
@@ -129,7 +141,10 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
                 setLikeCounts(counts);
             }
         };
-        loadLikeData();
+
+        if (comments.length > 0) {
+            loadLikeData();
+        }
     }, [comments, isLiked, getLikeCount]);
 
     const handleSubmitComment = async () => {
@@ -297,7 +312,8 @@ export default function CommentsBottomSheet({ postId, postOwnerId, visible, onCl
                                     key={item.id}
                                     item={item}
                                     isOwn={profile ? item.user_id === profile.id : false}
-                                    isAuthor={item.user_id === profile?.id}
+                                    isAuthor={postCreatorId ? item.user_id === postCreatorId : false}
+
                                     liked={likedComments[item.id] || false}
                                     likeCount={likeCounts[item.id] || 0}
                                     onLike={() => handleToggleLike(item.id)}

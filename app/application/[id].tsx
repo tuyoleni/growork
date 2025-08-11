@@ -9,7 +9,7 @@ import { ApplicationStatus } from "@/types/enums";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
-import { supabase } from "@/utils/superbase";
+import { supabase } from "@/utils/supabase";
 import { ApplicationCard } from "@/components/content/ApplicationCard";
 import { ApplicationFilters } from "@/components/ui/ApplicationFilters";
 

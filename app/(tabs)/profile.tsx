@@ -6,18 +6,14 @@ import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CategorySelector from '@/components/ui/CategorySelector';
-import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAuth, useThemeColor } from '@/hooks';
 import { useRouter } from 'expo-router';
 import React, { useState, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-// import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-// import { DocumentType } from '@/types';
-// import { UserType } from '@/types/enums';
 import { Feather } from '@expo/vector-icons';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
-import { calculateProfileStrength } from '@/lib/utils';
+import { calculateProfileStrength } from '@/utils/utils';
 
 const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 

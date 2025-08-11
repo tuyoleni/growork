@@ -11,7 +11,7 @@ import { ThemedIconButton } from '../ui/ThemedIconButton';
 import ThemedButton from '../ui/ThemedButton';
 import PostInteractionBar from './PostInteractionBar';
 import { useRouter } from 'expo-router';
-import { supabase } from '@/utils/superbase';
+import { supabase } from '@/utils/supabase';
 
 // UserProfileHeader component
 function UserProfileHeader({ userId }: { userId: string }) {
@@ -62,6 +62,7 @@ function UserProfileHeader({ userId }: { userId: string }) {
 
     const handleProfilePress = () => {
         if (profile?.id) {
+            // Navigate to the current user's profile since there's no dynamic route
             router.push(`/profile`);
         }
     };

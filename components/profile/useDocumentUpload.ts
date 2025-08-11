@@ -4,7 +4,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { supabase, STORAGE_BUCKETS } from '@/utils/superbase';
+import { supabase } from '@/utils/supabase';
+import { STORAGE_BUCKETS } from '@/utils/uploadUtils';
 import { useAuth } from '@/hooks/useAuth';
 
 export const CATEGORIES = ['CV', 'Cover Letter', 'Certificate'];
@@ -43,12 +44,12 @@ export function useDocumentUpload() {
       const fileExt = fileName.split('.').pop()?.toLowerCase() || 'pdf';
       const uniqueFileName = `document_${user.id}_${Date.now()}.${fileExt}`;
       const filePath = `${uniqueFileName}`;
-      
+
       // Read file as base64
       const base64 = await FileSystem.readAsStringAsync(fileUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      
+
       // Convert base64 to Uint8Array for React Native compatibility
       const byteCharacters = atob(base64);
       const byteNumbers = new Array(byteCharacters.length);
@@ -56,7 +57,7 @@ export function useDocumentUpload() {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      
+
       // Upload to Supabase storage using Uint8Array instead of Blob
       const { data, error } = await supabase.storage
         .from(STORAGE_BUCKETS.DOCUMENTS)
@@ -65,7 +66,7 @@ export function useDocumentUpload() {
           cacheControl: '3600',
           upsert: false
         });
-        
+
       if (error) {
         console.error('Document upload error:', error);
         throw new Error(`Upload failed: ${error.message}`);
@@ -73,7 +74,7 @@ export function useDocumentUpload() {
 
       // Get public URL
       const publicUrl = supabase.storage.from(STORAGE_BUCKETS.DOCUMENTS).getPublicUrl(filePath).data.publicUrl;
-      
+
       // Save document record to database
       const { data: docData, error: dbError } = await supabase
         .from('documents')
@@ -122,7 +123,7 @@ export function useDocumentUpload() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        
+
         if (asset.mimeType === 'application/pdf') {
           // Upload to Supabase
           const uploadedDoc = await uploadDocumentToSupabase(

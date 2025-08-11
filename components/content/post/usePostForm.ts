@@ -3,8 +3,7 @@ import { Alert, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { PostType } from '@/types';
 import { useAppContext } from '@/utils/AppContext';
-import { uploadImage } from '@/utils/uploadUtils';
-import { STORAGE_BUCKETS } from '@/utils/superbase';
+import { uploadImage , STORAGE_BUCKETS } from '@/utils/uploadUtils';
 import { ArticleFieldsData } from './ArticleFields';
 import { JobFieldsData } from './JobFields';
 

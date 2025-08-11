@@ -6,6 +6,7 @@ export interface Company {
 }
 
 export interface Post {
+  image_url: string | undefined;
   id: string;
   title: string;
   company: Company;

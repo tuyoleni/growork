@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -6,22 +6,18 @@ import {
   NativeSyntheticEvent,
   Pressable,
   View,
-  Share,
 } from 'react-native';
 
 
 import Header, { HEADER_HEIGHT } from '@/components/home/Header';
 import ScreenContainer from '@/components/ScreenContainer';
-import { useAuth } from '@/hooks/useAuth';
-import {
-  useFeedPosts,
-  ExtendedContentCardProps,
-} from '@/hooks/useFeedPosts';
+import { useAuth, useHomeFeed } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 import ContentCard from '@/components/content/ContentCard';
 import { PostType, UserType } from '@/types/enums';
 import { ContentCardSkeleton } from '@/components/ui/Skeleton';
+
 
 const INDUSTRIES = [
   'Technology', 'Finance', 'Healthcare', 'Retail', 'Logistics',
@@ -37,23 +33,17 @@ export default function Home() {
   const lastScrollY = useRef(0);
   const isAnimating = useRef(false);
 
-  // Data from feed posts hook
   const {
-    posts: dbPosts,
-    convertedPosts,
+    posts: cardPosts,
     loading,
     error,
-    fetchPosts,
-  } = useFeedPosts();
+    refresh: fetchPosts,
+  } = useHomeFeed();
 
-  // Use converted posts directly
-  const cardPosts = convertedPosts;
-
-  // UI filtering on card posts
   const getIndustryLabel = (index: number) => INDUSTRIES[index] || '';
   const filteredPosts = useMemo(
     () =>
-      cardPosts.filter((post: ExtendedContentCardProps) => {
+      cardPosts.filter((post) => {
         if (post.variant === 'sponsored') return true;
         if (selectedContentType === 1 && post.variant !== 'job') return false;
         if (selectedContentType === 2 && post.variant !== 'news') return false;
@@ -106,27 +96,16 @@ export default function Home() {
   const handlePostSuccess = () => fetchPosts();
 
   // --- SHEET OPENERS ---
-  const { openCreatePostSheet, openCommentSheet, openJobApplicationSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });
+  const { openCreatePostSheet, openJobApplicationSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });
 
   function handleShowCreatePost() {
     openCreatePostSheet();
   }
 
-  function handleShowComments(postId: string) {
-    openCommentSheet(postId);
-  }
 
-  function handleShare(post: ExtendedContentCardProps) {
-    Share.share({
-      message: post.description || post.title || 'Check out this post!',
-      title: post.title || 'Growork Post',
-      url: post.mainImage || undefined,
-    });
-  }
 
-  function handleApplyToJob(post: ExtendedContentCardProps) {
+  function handleApplyToJob(post: any) {
     if (post.variant === 'job' && post.id) {
-      // We need to fetch the full post data to pass to the application form
       const jobPost = {
         id: post.id,
         title: post.title,
@@ -149,7 +128,7 @@ export default function Home() {
     }
   }
 
-  if (loading && !dbPosts.length) {
+  if (loading && !cardPosts.length) {
     return (
       <ScreenContainer>
         {/* Sticky/animated header */}
@@ -209,7 +188,7 @@ export default function Home() {
         contentContainerStyle={{ paddingTop: 0 }}
       >
         {filteredPosts.length > 0 ? (
-          filteredPosts.map((post, index) => (
+          filteredPosts.map((post: any, index: number) => (
             <ContentCard
               key={`${post.title}-${post.variant}-${index}-${post.id ?? 'unknown'}`}
               {...post}

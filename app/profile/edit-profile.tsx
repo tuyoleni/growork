@@ -12,8 +12,8 @@ import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import SettingsList from '@/components/ui/SettingsList';
 import ScreenContainer from '@/components/ScreenContainer';
 import { UserType } from '@/types/enums';
-import { supabase, STORAGE_BUCKETS } from '@/utils/superbase';
-import { uploadImage } from '@/utils/uploadUtils';
+import { supabase } from '@/utils/supabase';
+import { STORAGE_BUCKETS , uploadImage } from '@/utils/uploadUtils';
 import { Feather } from '@expo/vector-icons';
 
 import { ProfileFormData } from '@/types';
@@ -346,7 +346,7 @@ export default function EditProfileNative() {
         throw updateError;
       }
 
-      // Profile will be updated automatically via real-time subscription
+      // Profile will be updated automatically via cache refresh
       Alert.alert('Success', 'Profile updated successfully!', [
         { text: 'OK', onPress: () => router.back() }
       ]);
@@ -379,7 +379,7 @@ export default function EditProfileNative() {
         .update({ avatar_url: publicUrl })
         .eq('id', profile.id);
       if (updateError) throw updateError;
-      // Profile will be updated automatically via real-time subscription
+      // Profile will be updated automatically via cache refresh
       Alert.alert('Success', 'Avatar updated!');
     } catch (e: any) {
       setError(e.message || 'Failed to upload avatar');

@@ -9,13 +9,12 @@ import {
 } from "react-native";
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useActionSheet } from "@expo/react-native-action-sheet";
-import { useAuth } from "@/hooks/useAuth";
-import { useComments } from "@/hooks/useComments";
 import { useAppContext } from "@/utils/AppContext";
 import { ThemedText } from "../../ThemedText";
 import { CommentItem } from "./CommentItem";
 import { EmojiBar } from "./EmojiBar";
 import { CommentsInputBar } from "./CommentsInputBar";
+import { CommentWithProfile, useAuth, useComments } from "@/hooks";
 
 type LikeMap = Record<string, boolean>;
 type CountMap = Record<string, number>;
@@ -31,11 +30,9 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
     comments,
     loading,
     error,
-    fetchComments,
     addComment,
     deleteComment,
-    formatCommentDate,
-  } = useComments();
+  } = useComments(postId);
   const {
     toggleCommentLike: toggleLike,
     isCommentLiked: isLiked,
@@ -55,10 +52,9 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
 
   useEffect(() => {
     if (postId) {
-      fetchComments(postId);
       setCommentText("");
     }
-  }, [postId, fetchComments]);
+  }, [postId]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
@@ -97,16 +93,8 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
     if (!profile || !commentText.trim()) return;
     setIsSending(true);
     await addComment(
-      postId,
       profile.id,
-      commentText,
-      {
-        id: profile.id,
-        avatar_url: profile.avatar_url,
-        name: profile.name,
-        surname: profile.surname,
-        username: profile.username,
-      }
+      commentText
     );
     setCommentText("");
     setIsSending(false);
@@ -149,6 +137,21 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
 
   const emojiReactions = ["❤️", "👏", "🔥", "🙏", "😢", "😊", "😮", "😂"];
 
+  // Simple date formatting function
+  const formatCommentDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
 
 
   return (
@@ -185,7 +188,7 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
             </ThemedText>
           </View>
         )}
-        {comments.map((item) => (
+        {comments.map((item: CommentWithProfile) => (
           <CommentItem
             key={item.id}
             item={item}

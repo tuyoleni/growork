@@ -2,7 +2,7 @@ import FlashBar from '@/components/ui/Flash';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppProvider } from '@/utils/AppContext';
 import { NotificationProvider } from '@/components/NotificationProvider';
-import { supabase } from '@/utils/superbase';
+import { supabase } from '@/utils/supabase';
 import { setOpenGlobalSheet } from '@/utils/globalSheet';
 
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';

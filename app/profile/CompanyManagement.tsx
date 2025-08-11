@@ -16,8 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Company, CompanyFormData } from '@/types';
-import { STORAGE_BUCKETS } from '@/utils/superbase';
-import { uploadImage } from '@/utils/uploadUtils';
+import { STORAGE_BUCKETS , uploadImage } from '@/utils/uploadUtils';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 // Using SettingsList inputs instead of standalone input

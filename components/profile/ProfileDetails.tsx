@@ -1,7 +1,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Profile } from '@/types';
-import { supabase, uploadImage, STORAGE_BUCKETS } from '@/utils/superbase';
+import { supabase } from '@/utils/supabase';
+import { uploadImage, STORAGE_BUCKETS } from '@/utils/uploadUtils';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { StyleSheet, View, Pressable, ActivityIndicator, Alert } from 'react-native';
@@ -55,7 +56,7 @@ export default function ProfileDetails({
         throw error;
       }
 
-      // Profile will be updated automatically via real-time subscription
+      // Profile will be updated automatically via cache refresh
       setIsEditing(false);
     } catch (error: any) {
       Alert.alert('Error', error.message);
@@ -102,7 +103,7 @@ export default function ProfileDetails({
         throw updateError;
       }
 
-      // Profile will be updated automatically via real-time subscription
+      // Profile will be updated automatically via cache refresh
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {

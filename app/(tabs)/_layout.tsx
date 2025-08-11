@@ -1,10 +1,10 @@
 import { HapticTab } from '@/components/HapticTab';
 import { Colors } from '@/constants/Colors';
+import { usePermissions } from '@/hooks';
 import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { useColorScheme } from 'react-native';
-import { usePermissions } from '@/hooks/usePermissions';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? 'light';

@@ -1,66 +1,55 @@
 'use client'
-import { useAuth } from '@/hooks/useAuth';
-import { useBookmarks } from '@/hooks/useBookmarks';
-import ScreenContainer from '@/components/ScreenContainer';
+import { useBookmarks } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import BookmarksHeader from '@/components/ui/BookmarksHeader';
 import { ContentCardSkeleton } from '@/components/ui/Skeleton';
-
-import { useThemeColor } from '@/hooks/useThemeColor';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, ScrollView } from 'react-native';
 import BookmarkedContentList from '@/components/content/BookmarkedContentList';
 import { PostType } from '@/types/enums';
 import { useRouter } from 'expo-router';
+import ScreenContainer from '@/components/ScreenContainer';
 
-
-
+// Define the type for bookmarked items
+interface BookmarkedItem {
+  id: string;
+  type: 'post' | 'application';
+  data: any;
+  bookmarked_at: string;
+}
 
 export default function Bookmarks() {
   const [selectedCategory, setSelectedCategory] = useState(3); // All category
-  const { user } = useAuth();
   const {
     bookmarkedItems,
     loading,
     error,
-    fetchBookmarkedContent,
-    removeBookmark
+    toggleBookmark
   } = useBookmarks();
-  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
-  const textColor = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
-
   // Filter items based on selected category
-  const getFilteredItems = () => {
+  const getFilteredItems = (): BookmarkedItem[] => {
     if (selectedCategory === 3) { // All
-      return bookmarkedItems;
+      return bookmarkedItems as BookmarkedItem[];
     } else if (selectedCategory === 0) { // Jobs
-      return bookmarkedItems.filter(item =>
+      return (bookmarkedItems as BookmarkedItem[]).filter(item =>
         item.type === 'post' && (item.data as any).type === PostType.Job
       );
     } else if (selectedCategory === 1) { // News
-      return bookmarkedItems.filter(item =>
+      return (bookmarkedItems as BookmarkedItem[]).filter(item =>
         item.type === 'post' && (item.data as any).type === PostType.News
       );
     } else if (selectedCategory === 2) { // Applications
-      return bookmarkedItems.filter(item => item.type === 'application');
+      return (bookmarkedItems as BookmarkedItem[]).filter(item => item.type === 'application');
     }
-    return bookmarkedItems;
+    return bookmarkedItems as BookmarkedItem[];
   };
 
   const filteredItems = getFilteredItems();
 
-  // Refresh bookmarks
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchBookmarkedContent();
-    setRefreshing(false);
-  };
-
-  const handleItemPress = (item: any) => {
+  const handleItemPress = (item: BookmarkedItem) => {
     if (item.type === 'post') {
       // Navigate to post detail
       router.push(`/post/${item.id}`);
@@ -70,9 +59,9 @@ export default function Bookmarks() {
     }
   };
 
-  const handleRemoveBookmark = async (item: any) => {
+  const handleRemoveBookmark = async (item: BookmarkedItem) => {
     if (item.type === 'post') {
-      await removeBookmark(item.id);
+      await toggleBookmark(item.id);
     } else if (item.type === 'application') {
       // Applications can't be "unbookmarked" - they're automatically tracked
       console.log('Cannot remove application bookmark');
@@ -106,7 +95,6 @@ export default function Bookmarks() {
 
   return (
     <ScreenContainer>
-      {/* Custom Header */}
       <BookmarksHeader
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
@@ -118,7 +106,7 @@ export default function Bookmarks() {
       >
         {/* Bookmarks Content */}
         <ThemedView style={styles.contentSection}>
-          {loading && !refreshing && (
+          {loading && (
             <ThemedView style={styles.loadingContainer}>
               {[1, 2, 3].map((index) => (
                 <ContentCardSkeleton key={`bookmark-skeleton-${index}`} />

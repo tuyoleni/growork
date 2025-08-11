@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Image,
   ScrollView,
@@ -7,14 +7,10 @@ import {
   TouchableOpacity,
   View as RNView,
   Linking,
-  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { usePosts as usePostById } from '@/hooks/usePostById';
-import { usePosts as useFeedPosts } from '@/hooks/usePosts';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { useApplicationStatus } from '@/hooks/useApplicationStatus';
+import { usePosts as useFeedPosts, useThemeColor, useApplicationStatus, useTextToSpeech, usePostById } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -24,17 +20,16 @@ import { useFlashToast } from '@/components/ui/Flash';
 
 import PostInteractionBar from '@/components/content/PostInteractionBar';
 import ApplyButton from '@/components/content/post/ApplyButton';
-import PostBadge from '@/components/content/post/PostBadge';
+
 import ThemedButton from '@/components/ui/ThemedButton';
 import { openGlobalSheet } from '@/utils/globalSheet';
 import JobApplicationForm from '@/components/content/JobApplicationForm';
 import { PostDetailSkeleton } from '@/components/ui/Skeleton';
-import { supabase } from '@/utils/superbase';
-import { TextToSpeechButton } from '@/components/content/TextToSpeechButton';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+
+
 
 const ICON_SIZE = 20;
-const { width: screenWidth } = Dimensions.get('window');
+
 
 const PostDetail = () => {
   const { id } = useLocalSearchParams();
@@ -42,18 +37,18 @@ const PostDetail = () => {
   const toast = useFlashToast();
 
   const [post, setPost] = useState<Post | null>(null);
-  const [companyLogos, setCompanyLogos] = useState<Record<string, string>>({});
+
 
   const borderColor = useThemeColor({}, 'border');
-  const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
   const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
   const mutedTextColor = useThemeColor({}, 'mutedText');
 
-  const { loading: isLoading, getPostById } = usePostById();
-  const { posts: allPosts, loading: feedLoading, fetchPosts } = useFeedPosts();
-  const { application, hasApplied, loading: applicationLoading, checkApplicationStatus } = useApplicationStatus(id as string);
+  const { posts: allPosts, loading: feedLoading, refresh: fetchPosts } = useFeedPosts();
+  const { statuses: applicationStatuses, loading: applicationLoading, refresh: checkApplicationStatus } = useApplicationStatus({ postIds: [id as string], single: true });
+  const application = applicationStatuses[0] || null;
+  const hasApplied = !!application;
   const { speak, stop, isSpeaking, isPaused } = useTextToSpeech();
+  const { getPostById, loading: postLoading } = usePostById();
 
   // Cleanup text-to-speech when component unmounts
   useEffect(() => {
@@ -62,28 +57,7 @@ const PostDetail = () => {
     };
   }, [stop]);
 
-  // Function to fetch company data
-  const fetchCompanyData = async (companyId: string) => {
-    try {
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .select('logo_url')
-        .eq('id', companyId)
-        .maybeSingle();
 
-      if (!companyError && companyData?.logo_url) {
-        return companyData.logo_url;
-      } else if (companyError && companyError.code === 'PGRST116') {
-        // Company not found - this is expected for some posts
-        console.log('Company not found for ID:', companyId, '- skipping logo fetch');
-      } else if (companyError) {
-        console.warn('Error fetching company data for ID:', companyId, companyError);
-      }
-    } catch (error) {
-      console.error('Error fetching company data:', error);
-    }
-    return null;
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,38 +68,18 @@ const PostDetail = () => {
       }
     };
     fetchData();
-  }, [id, getPostById, fetchPosts]);
+  }, [id, fetchPosts, getPostById]);
 
-  const recommendedPosts: Post[] =
-    post && allPosts
-      ? allPosts.filter(
-        (p: Post) =>
-          p.type === post.type &&
-          p.id !== post.id
-      )
-      : [];
+  const recommendedPosts = useMemo(() => {
+    if (!post || !allPosts) return [];
+    return allPosts.filter(
+      (p: Post) =>
+        p.type === post.type &&
+        p.id !== post.id
+    );
+  }, [post, allPosts]);
 
-  // Fetch company logos for recommended posts
-  useEffect(() => {
-    const fetchCompanyLogos = async () => {
-      if (recommendedPosts.length > 0) {
-        const logos: Record<string, string> = {};
 
-        for (const post of recommendedPosts) {
-          if (post.criteria?.companyId) {
-            const logoUrl = await fetchCompanyData(post.criteria.companyId);
-            if (logoUrl) {
-              logos[post.criteria.companyId] = logoUrl;
-            }
-          }
-        }
-
-        setCompanyLogos(logos);
-      }
-    };
-
-    fetchCompanyLogos();
-  }, [recommendedPosts]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -146,19 +100,14 @@ const PostDetail = () => {
     }
   };
 
-  const handleShare = () => {
-    if (post) {
-      // TODO: Implement share functionality
-      console.log('Share post:', post.id);
-    }
-  };
+
 
   const handleMoreOptions = () => {
     // TODO: Implement more options menu
     console.log('More options pressed');
   };
 
-  if (isLoading || feedLoading) {
+  if (postLoading || feedLoading) {
     return (
       <ScreenContainer>
         <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
@@ -369,14 +318,8 @@ const PostDetail = () => {
               {isJob ? 'Similar Jobs' : 'Related News'}
             </ThemedText>
             <RNView style={styles.recommendedListContainer}>
-              {recommendedPosts.map((item) => {
+              {recommendedPosts.map((item: Post) => {
                 const itemCompanyName = item.criteria?.company || 'Company';
-                const itemCompanyId = item.criteria?.companyId;
-
-                // Use actual company logo if available, otherwise fallback to UI Avatars
-                const itemCompanyLogo = itemCompanyId && companyLogos[itemCompanyId]
-                  ? companyLogos[itemCompanyId]
-                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(itemCompanyName)}&size=128`;
 
                 return (
                   <TouchableOpacity
@@ -387,7 +330,10 @@ const PostDetail = () => {
                     ]}
                     onPress={() => router.push(`/post/${item.id}`)}
                   >
-                    <Image source={{ uri: itemCompanyLogo }} style={styles.recommendedLogo} />
+                    <Image
+                      source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(itemCompanyName)}&size=128` }}
+                      style={styles.recommendedLogo}
+                    />
                     <RNView style={styles.recommendedInfo}>
                       <ThemedText style={styles.recommendedTitle} numberOfLines={2}>
                         {item.title}

@@ -4,7 +4,7 @@ import { AuthNavRow } from '@/components/ui/AuthNavRow';
 import { useFlashToast } from '@/components/ui/Flash';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { supabase } from '@/utils/superbase';
+import { supabase } from '@/utils/supabase';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
