@@ -39,8 +39,13 @@ function useProtectedRoute() {
     if (initialLoading) return;
     const isAuthRoute = segments.some(segment => segment === 'auth');
     const isPostRoute = segments.some(segment => segment === 'post');
+    const isProfileRoute = segments.some(segment => segment === 'profile');
+    const isApplicationsRoute = segments.some(segment => segment === 'applications');
+    const isBookmarksRoute = segments.some(segment => segment === 'bookmarks');
 
-    if (!session?.user && !isAuthRoute && !isPostRoute) {
+    // Allow public access to main content (home, search, post viewing)
+    // Only protect user-specific routes
+    if (!session?.user && (isProfileRoute || isApplicationsRoute || isBookmarksRoute)) {
       router.replace('/auth/login');
     } else if (session?.user && isAuthRoute) {
       router.replace('/(tabs)');

@@ -22,7 +22,7 @@ interface CompanyStats {
 export default function CompanyDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const { getCompanyByIdPublic, getCompanyByUserId } = useCompanies();
+    const { getCompanyByIdPublic, getCompanyByUserId, debugCompanyTable } = useCompanies();
     const { posts: companyPosts, loading: postsLoading } = usePosts({ userId: id });
 
     const [company, setCompany] = useState<Company | null>(null);
@@ -42,18 +42,31 @@ export default function CompanyDetailsScreen() {
         };
     }, [getCompanyByIdPublic, getCompanyByUserId]);
 
+    // Debug company table on component mount
+    useEffect(() => {
+        debugCompanyTable();
+    }, [debugCompanyTable]);
+
     const fetchCompanyDetails = useCallback(async () => {
         if (!id) return;
 
         try {
             setLoading(true);
+            console.log('Fetching company with ID:', id);
 
             const { company: companyResult, error } = await functionsRef.current.getCompanyByIdPublic(id);
-            if (companyResult && !error) {
+
+            if (error) {
+                console.error('Company fetch error:', error);
+                throw new Error(error);
+            }
+
+            if (companyResult) {
+                console.log('Company found:', companyResult.name);
                 setCompany(companyResult);
             } else {
-                console.error('Company not found or error:', error);
-                throw new Error(error || 'Company not found');
+                console.log('No company found with ID:', id);
+                throw new Error('Company not found');
             }
 
             // Posts are now fetched automatically by the usePosts hook
@@ -61,14 +74,16 @@ export default function CompanyDetailsScreen() {
         } catch (error: any) {
             console.error('Error fetching company details:', error);
 
-            // Android-specific: Provide more helpful error messages
+            // Provide more helpful error messages
             let errorMessage = 'Failed to load company details';
             if (error.message.includes('network') || error.message.includes('timeout')) {
                 errorMessage = 'Network connection issue. Please check your internet connection and try again.';
             } else if (error.message.includes('permission')) {
                 errorMessage = 'Permission denied. Please log in again.';
-            } else if (error.message.includes('not found')) {
+            } else if (error.message.includes('not found') || error.message.includes('multiple rows')) {
                 errorMessage = 'Company not found. It may have been removed or made private.';
+            } else if (error.message.includes('JSON object requested')) {
+                errorMessage = 'Company data is corrupted. Please try again later.';
             }
 
             console.error(errorMessage);
