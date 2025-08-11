@@ -16,7 +16,7 @@ export interface BookmarkState extends InteractionState {
   isBookmarked: boolean;
 }
 
-// Simplified hook for post interactions
+// Simplified hook for post interactions - fetches all data regardless of authentication
 export function useInteractions() {
   const { user } = useAuth();
 
@@ -249,14 +249,14 @@ export function useInteractions() {
     }
   }, [user, checkBookmarkStatus]);
 
-  // Initialize post state
+  // Initialize post state - ALWAYS fetches data regardless of authentication
   const initializePost = useCallback(async (postId: string) => {
     try {
       // Always get like count (public data)
       const likeCount = await getLikeCount(postId);
 
       if (user) {
-        // Get user-specific data only if authenticated
+        // Get user-specific data if authenticated
         const [isLiked, isBookmarked] = await Promise.all([
           checkLikeStatus(postId),
           checkBookmarkStatus(postId)
@@ -281,7 +281,7 @@ export function useInteractions() {
           }
         }));
       } else {
-        // For non-authenticated users, only show public data
+        // For non-authenticated users, show public data with default user states
         setLikeStates(prev => ({
           ...prev,
           [postId]: {

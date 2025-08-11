@@ -1,29 +1,20 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../../utils/supabase';
 import { User, Session } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Profile } from '../../types';
 
 export function useAuthOperations() {
   const profileLoaded = useRef(false);
   const profileFetching = useRef(false);
 
-  // Fetch user profile from database
+  // Fetch user profile from database (always fresh data)
   const fetchUserProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     if (profileFetching.current) return null;
-    
+
     try {
       profileFetching.current = true;
-      
-      // First try to get from cache
-      const cachedProfile = await AsyncStorage.getItem(`profile_${userId}`);
-      if (cachedProfile) {
-        const parsed = JSON.parse(cachedProfile);
-        profileLoaded.current = true;
-        return parsed;
-      }
 
-      // Fetch from database
+      // Always fetch fresh data from database
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -36,8 +27,6 @@ export function useAuthOperations() {
       }
 
       if (profile) {
-        // Cache the profile
-        await AsyncStorage.setItem(`profile_${userId}`, JSON.stringify(profile));
         profileLoaded.current = true;
         return profile;
       }
@@ -67,8 +56,7 @@ export function useAuthOperations() {
       }
 
       if (updatedProfile) {
-        // Update cache
-        await AsyncStorage.setItem(`profile_${userId}`, JSON.stringify(updatedProfile));
+        profileLoaded.current = false;
         return updatedProfile;
       }
 
@@ -79,15 +67,19 @@ export function useAuthOperations() {
     }
   }, []);
 
-  // Clear profile cache
-  const clearProfileCache = useCallback(async (userId: string) => {
+  // Force refresh profile from database (always fresh data)
+  const forceRefreshProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
-      await AsyncStorage.removeItem(`profile_${userId}`);
+      // Reset profile loaded state
       profileLoaded.current = false;
+
+      // Fetch fresh data from database
+      return await fetchUserProfile(userId);
     } catch (error) {
-      console.error('Error clearing profile cache:', error);
+      console.error('Error force refreshing profile:', error);
+      return null;
     }
-  }, []);
+  }, [fetchUserProfile]);
 
   // Check if profile is loaded
   const isProfileLoaded = useCallback(() => profileLoaded.current, []);
@@ -95,7 +87,7 @@ export function useAuthOperations() {
   return {
     fetchUserProfile,
     updateUserProfile,
-    clearProfileCache,
+    forceRefreshProfile,
     isProfileLoaded,
   };
 }

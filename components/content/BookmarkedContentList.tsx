@@ -4,7 +4,13 @@ import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 import { useThemeColor } from '@/hooks';
 import { Feather } from '@expo/vector-icons';
-import { BookmarkedItem } from '@/hooks';
+// BookmarkedItem interface defined locally since it's no longer exported
+interface BookmarkedItem {
+    id: string;
+    type: 'post' | 'application';
+    data: any;
+    bookmarked_at: string;
+}
 import { PostType, ApplicationStatus } from '@/types/enums';
 import { Image } from 'expo-image';
 import ContentCard from './ContentCard';

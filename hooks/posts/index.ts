@@ -39,10 +39,8 @@ export type MyPost = import('./usePosts').PostWithProfile & {
 };
 
 export type {
-  BookmarkedItem,
   InteractionState,
   LikeState,
-  CommentState,
   BookmarkState
 } from './useInteractions';
 

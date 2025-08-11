@@ -90,7 +90,7 @@ export default function PostInteractionBar({
     setLikeCount(newLikeCount);
 
     try {
-      const result = await toggleLike(postId, postOwnerId);
+      const result = await toggleLike(postId);
 
       if (!result.success) {
         // Revert on failure

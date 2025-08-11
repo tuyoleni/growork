@@ -5,7 +5,6 @@ export function useLikes() {
     likePost,
     unlikePost,
     toggleLike,
-    getLikeCount,
     likeStates,
     initializePost
   } = useInteractions();
@@ -17,7 +16,6 @@ export function useLikes() {
     likePost,
     unlikePost,
     toggleLike,
-    getLikeCount,
     likeStates,
     initializePost
   };

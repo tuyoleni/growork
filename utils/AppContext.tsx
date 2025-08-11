@@ -11,8 +11,6 @@ interface BookmarkState {
   loading: boolean;
   error: string | null;
   isBookmarked: boolean;
-  bookmarks: string[];
-  bookmarkedItems: any[];
 }
 
 interface AppContextType {
@@ -56,7 +54,6 @@ interface AppContextType {
   bookmarksLoading: boolean;
   bookmarksError: string | null;
   toggleBookmark: (postId: string) => Promise<any>;
-  checkBookmarkStatus: (postId: string) => Promise<any>;
   initializePost: (postId: string) => Promise<any>;
   bookmarkStates: Record<string, BookmarkState>;
 
@@ -191,12 +188,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addAd: adsHook.addAd,
     recordAdImpression: adsHook.recordAdImpression,
 
-    // Bookmarks state and methods
-    bookmarks: [], // Legacy support - use bookmarkStates instead
+    bookmarks: [],
     bookmarksLoading: bookmarksHook.loading,
     bookmarksError: bookmarksHook.error,
     toggleBookmark: bookmarksHook.toggleBookmark,
-    checkBookmarkStatus: bookmarksHook.checkBookmarkStatus,
     initializePost: bookmarksHook.initializePost,
     bookmarkStates: bookmarksHook.bookmarkStates,
 

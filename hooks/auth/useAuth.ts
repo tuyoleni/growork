@@ -13,20 +13,18 @@ export function useAuth() {
   const {
     fetchUserProfile,
     updateUserProfile,
-    clearProfileCache,
+    forceRefreshProfile,
     isProfileLoaded
   } = useAuthOperations();
 
   // Use refs to store the latest values to avoid dependency issues
   const userRef = useRef<User | null>(null);
   const fetchUserProfileRef = useRef(fetchUserProfile);
-  const clearProfileCacheRef = useRef(clearProfileCache);
 
   // Update refs when values change
   useEffect(() => {
     userRef.current = user;
     fetchUserProfileRef.current = fetchUserProfile;
-    clearProfileCacheRef.current = clearProfileCache;
   });
 
   // Handle auth state changes
@@ -46,11 +44,6 @@ export function useAuth() {
       setSession(null);
       setUser(null);
       setProfile(null);
-
-      // Clear profile cache
-      if (userRef.current?.id) {
-        await clearProfileCacheRef.current(userRef.current.id);
-      }
     }
   }, []); // Empty dependency array since we use refs
 
@@ -101,13 +94,35 @@ export function useAuth() {
       const updatedProfile = await updateUserProfile(user.id, updates);
       if (updatedProfile) {
         setProfile(updatedProfile);
+
+        // Force refresh profile to ensure cache is updated
+        const freshProfile = await forceRefreshProfile(user.id);
+        if (freshProfile) {
+          setProfile(freshProfile);
+        }
       }
       return updatedProfile;
     } catch (error) {
       console.error('Error updating profile:', error);
       return null;
     }
-  }, [user?.id, updateUserProfile]);
+  }, [user?.id, updateUserProfile, forceRefreshProfile]);
+
+  // Force refresh profile (useful for components to call when they need fresh data)
+  const refreshProfile = useCallback(async () => {
+    if (!user?.id) return null;
+
+    try {
+      const freshProfile = await forceRefreshProfile(user.id);
+      if (freshProfile) {
+        setProfile(freshProfile);
+      }
+      return freshProfile;
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+      return null;
+    }
+  }, [user?.id, forceRefreshProfile]);
 
   return {
     user,
@@ -116,6 +131,7 @@ export function useAuth() {
     loading,
     signOut,
     updateProfile,
+    refreshProfile,
     isProfileLoaded: isProfileLoaded(),
   };
 }

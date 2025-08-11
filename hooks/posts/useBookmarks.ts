@@ -13,7 +13,6 @@ export interface BookmarkedItem {
 export function useBookmarks() {
   const {
     toggleBookmark,
-    checkBookmarkStatus,
     bookmarkStates,
     initializePost
   } = useInteractions();
@@ -24,9 +23,7 @@ export function useBookmarks() {
     bookmarks: [], // Legacy support - use bookmarkStates instead
     bookmarkedItems: [], // Legacy support - use bookmarkStates instead
     toggleBookmark,
-    checkBookmarkStatus,
     initializePost,
-    // New consolidated state
     bookmarkStates
   };
 }
