@@ -143,6 +143,16 @@ export const generateStatusUpdateEmail = (applicationData: any, newStatus: strin
 
     const hasDocuments = documents && documents.length > 0;
 
+    // Debug: Log the data being processed
+    console.log('Email Generation Debug:', {
+        applicant,
+        job,
+        companies,
+        documents,
+        hasDocuments,
+        documentCount: documents.length
+    });
+
     return `
     <!DOCTYPE html>
     <html>

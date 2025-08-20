@@ -51,18 +51,23 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
       if (user?.id && !hasFetchedDocuments.current) {
         hasFetchedDocuments.current = true;
 
-        const { hasApplied: appliedStatus } = await checkIfApplied(user.id, jobPost.id);
-        if (appliedStatus) {
-          setHasApplied(true);
+        try {
+          const { hasApplied: appliedStatus } = await checkIfApplied(user.id, jobPost.id);
+          if (appliedStatus) {
+            setHasApplied(true);
+          }
+          await fetchDocuments(DocumentType.CV);
+          await fetchDocuments(DocumentType.CoverLetter);
+        } catch (error) {
+          // Silently handle errors in production
+        } finally {
+          setIsChecking(false);
         }
-        fetchDocuments(DocumentType.CV);
-        fetchDocuments(DocumentType.CoverLetter);
-        setIsChecking(false);
       }
     };
 
     checkApplication();
-  }, [user?.id, jobPost.id, checkIfApplied, toast, onSuccess]);
+  }, [user?.id, jobPost.id, checkIfApplied, fetchDocuments]);
 
 
 

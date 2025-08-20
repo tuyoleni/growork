@@ -235,7 +235,7 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
     if (post.type === PostType.Job) {
       openJobApplicationSheet(post, {
         onSuccess: () => {
-          console.log('Application submitted successfully');
+  
         }
       });
     }

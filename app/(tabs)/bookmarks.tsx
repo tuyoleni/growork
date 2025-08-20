@@ -61,7 +61,7 @@ export default function Bookmarks() {
       router.push(`/post/${item.id}`);
     } else if (item.type === 'application') {
       // Navigate to application detail or show application info
-      console.log('Application pressed:', item.id);
+
     }
   };
 

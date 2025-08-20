@@ -129,11 +129,18 @@ export default function ApplicationDetailScreen() {
             .single();
 
           // Fetch all documents attached to this application
-          const { data: documentsData } = await supabase
-            .from('documents')
-            .select('*')
-            .or(`id.eq.${applicationData.resume_id},id.eq.${applicationData.cover_letter_id}`)
-            .not('id', 'is', null);
+          const documentIds = [];
+          if (applicationData.resume_id) documentIds.push(applicationData.resume_id);
+          if (applicationData.cover_letter_id) documentIds.push(applicationData.cover_letter_id);
+
+          let documentsData = [];
+          if (documentIds.length > 0) {
+            const { data: docs } = await supabase
+              .from('documents')
+              .select('*')
+              .in('id', documentIds);
+            documentsData = docs || [];
+          }
 
           // Combine all the data
           const applicationWithProfile = {
@@ -142,6 +149,14 @@ export default function ApplicationDetailScreen() {
             companies: companyData,
             documents: documentsData || []
           };
+
+          // Debug: Log the fetched data
+          console.log('Application Data:', {
+            resume_id: applicationData.resume_id,
+            cover_letter_id: applicationData.cover_letter_id,
+            documentIds,
+            documentsData
+          });
 
           setApplication(applicationWithProfile);
           setViewMode('detail');
