@@ -5,7 +5,7 @@ import { useBookmarks, useCommentLikes, usePosts } from '../hooks/posts';
 import { Ad, Application, Post, Profile } from '../types';
 import { UserType } from '../types/enums';
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
-import { supabase } from './supabase';
+import { supabase, testSupabaseConnection } from './supabase';
 
 interface BookmarkState {
   loading: boolean;
@@ -86,6 +86,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (auth.user?.id) {
       const initializeData = async () => {
         try {
+          // Test Supabase connection first
+          const connectionOk = await testSupabaseConnection();
+          if (!connectionOk) {
+            console.error('❌ Supabase connection failed during app initialization');
+            return;
+          }
+
           await Promise.all([
             postsHook.refresh(),
             applicationsHook.fetchApplications(),

@@ -81,7 +81,10 @@ export default function ApplicationDetailScreen() {
                 type,
                 industry,
                 criteria,
-                user_id
+                user_id,
+                content,
+                created_at,
+                updated_at
               )
             `)
             .eq('id', id)
@@ -97,17 +100,47 @@ export default function ApplicationDetailScreen() {
             return;
           }
 
-          // Fetch profile data separately
+          // Fetch comprehensive profile data
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('id, username, name, surname, avatar_url, bio')
+            .select(`
+              id, 
+              username, 
+              name, 
+              surname, 
+              avatar_url, 
+              bio,
+              profession,
+              experience_years,
+              education,
+              skills,
+              location,
+              phone,
+              website
+            `)
             .eq('id', applicationData.user_id)
             .single();
 
-          // Combine the data
+          // Fetch company data for the job poster
+          const { data: companyData } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('user_id', applicationData.posts.user_id)
+            .single();
+
+          // Fetch all documents attached to this application
+          const { data: documentsData } = await supabase
+            .from('documents')
+            .select('*')
+            .or(`id.eq.${applicationData.resume_id},id.eq.${applicationData.cover_letter_id}`)
+            .not('id', 'is', null);
+
+          // Combine all the data
           const applicationWithProfile = {
             ...applicationData,
-            profiles: profileData
+            profiles: profileData,
+            companies: companyData,
+            documents: documentsData || []
           };
 
           setApplication(applicationWithProfile);
@@ -127,7 +160,10 @@ export default function ApplicationDetailScreen() {
                 type,
                 industry,
                 criteria,
-                user_id
+                user_id,
+                content,
+                created_at,
+                updated_at
               )
             `)
             .eq('post_id', id)
@@ -142,12 +178,26 @@ export default function ApplicationDetailScreen() {
             ?.map((app: any) => app.user_id)
             .filter(Boolean) || [];
 
-          // Fetch profiles for these users
-          let profilesData = [];
+          // Fetch comprehensive profiles for these users
+          let profilesData: any[] = [];
           if (userIds.length > 0) {
             const { data: profiles } = await supabase
               .from('profiles')
-              .select('*')
+              .select(`
+                id, 
+                username, 
+                name, 
+                surname, 
+                avatar_url, 
+                bio,
+                profession,
+                experience_years,
+                education,
+                skills,
+                location,
+                phone,
+                website
+              `)
               .in('id', userIds);
             profilesData = profiles || [];
           }
@@ -230,6 +280,19 @@ export default function ApplicationDetailScreen() {
       const applicant = applicationData.profiles || {};
       const job = applicationData.posts || {};
 
+      // Validate required data
+      if (!job || !job.title) {
+        console.error('Job data missing:', job);
+        Alert.alert('Error', 'Job information not found');
+        return;
+      }
+
+      if (!applicant || !applicant.username) {
+        console.error('Applicant data missing:', applicant);
+        Alert.alert('Error', 'Applicant information not found');
+        return;
+      }
+
       // Get company owner email - use current user's email since they are the company owner
       const { data: { session } } = await supabase.auth.getSession();
       const companyOwnerEmail = session?.user?.email;
@@ -239,43 +302,42 @@ export default function ApplicationDetailScreen() {
         return;
       }
 
+      // Debug: Log the data we're working with
+      console.log('Application Data:', applicationData);
+      console.log('Job Data:', job);
+      console.log('Applicant Data:', applicant);
+
       const emailData = {
-        applicant: {
-          name: applicant.name,
-          surname: applicant.surname,
-          username: applicant.username,
-          email: applicant.email || 'applicant@example.com'
-        },
-        job: {
-          title: job.title,
-          company: job.company || 'Your Company'
-        },
+        ...applicationData,
         appliedDate: new Date(applicationData.created_at).toLocaleDateString()
       };
 
       const htmlContent = generateStatusUpdateEmail(emailData, applicationData.status);
 
-      // Prepare attachments
-      const attachments = await prepareApplicationAttachments(applicationData, supabase);
+      // Debug: Log the email content to see what's being sent
+      console.log('Email HTML Content:', htmlContent);
 
-      // Call Supabase Edge Function to send email to company owner
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: {
+      // Call Supabase Edge Function directly with fetch
+      const response = await fetch('https://gkjtpxzmbvispwmfgzrc.supabase.co/functions/v1/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_KEY}`
+        },
+        body: JSON.stringify({
           to: companyOwnerEmail,
-          subject: `Application Status Update - ${job.title}`,
-          html: htmlContent,
-          attachments: attachments
-        }
+          subject: `New Application: ${applicant.name && applicant.surname ? `${applicant.name} ${applicant.surname}` : applicant.username} - ${job.title}`,
+          html: htmlContent
+        })
       });
+
+      const result = await response.json();
+      const { data, error } = result;
 
       if (error) {
         Alert.alert('Error', `Failed to send email: ${error.message}`);
       } else {
-        const attachmentCount = attachments.length;
-        const message = attachmentCount > 0
-          ? `Email sent successfully with ${attachmentCount} attachment${attachmentCount > 1 ? 's' : ''}`
-          : 'Email sent successfully to applicant';
-        Alert.alert('Success', message);
+        Alert.alert('Success', 'Email sent successfully with document links');
       }
     } catch (error: any) {
       console.error('Error sending email:', error);

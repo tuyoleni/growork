@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient, processLock } from '@supabase/supabase-js'
 import 'react-native-url-polyfill/auto'
+import { checkNetworkStatus } from './networkUtils'
 
 export const supabase = createClient(
     process.env.EXPO_PUBLIC_SUPABASE_URL!,
@@ -41,5 +42,36 @@ export const clearAllSupabaseData = async () => {
         }
     } catch (error) {
         console.error('Error clearing Supabase data:', error);
+    }
+};
+
+// Test function to verify Supabase connection
+export const testSupabaseConnection = async () => {
+    try {
+        console.log('🔍 Testing Supabase connection...');
+
+        // Check network connectivity first
+        const networkStatus = await checkNetworkStatus();
+        if (!networkStatus.isConnected) {
+            console.error('❌ No internet connection detected');
+            return false;
+        }
+
+        // Test basic connection by fetching a single row from a table
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .limit(1);
+
+        if (error) {
+            console.error('❌ Supabase connection test failed:', error);
+            return false;
+        }
+
+        console.log('✅ Supabase connection test successful');
+        return true;
+    } catch (error) {
+        console.error('❌ Supabase connection test error:', error);
+        return false;
     }
 };
