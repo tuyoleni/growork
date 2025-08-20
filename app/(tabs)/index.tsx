@@ -42,7 +42,7 @@ export default function Home() {
     posts: cardPosts,
     loading,
     error,
-    refresh: fetchPosts,
+    refresh,
   } = useHomeFeed();
 
   const getIndustryLabel = (index: number) => INDUSTRIES[index] || '';
@@ -98,18 +98,19 @@ export default function Home() {
   };
 
   const handlePostSuccess = useCallback(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    refresh();
+  }, [refresh]);
 
-  // Handle pull-to-refresh
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await fetchPosts();
+      await refresh();
+      // Small delay to ensure UI updates properly
+      await new Promise(resolve => setTimeout(resolve, 500));
     } finally {
       setRefreshing(false);
     }
-  }, [fetchPosts]);
+  }, [refresh]);
 
   // Check for new posts
   const checkForNewPosts = useCallback(() => {
@@ -186,6 +187,14 @@ export default function Home() {
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           onScroll={handleScroll}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#007AFF"
+              colors={['#007AFF']}
+            />
+          }
           contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
         >
           {[1, 2, 3, 4, 5].map((index) => (
@@ -266,7 +275,7 @@ export default function Home() {
                 backgroundColor: '#3b82f6',
                 borderRadius: 8
               }}
-              onPress={() => fetchPosts()}
+              onPress={() => refresh()}
             >
               <ThemedText style={{ color: '#fff' }}>Retry</ThemedText>
             </Pressable>

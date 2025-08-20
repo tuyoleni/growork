@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, Animated } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 
@@ -9,12 +9,23 @@ interface NewPostsIndicatorProps {
   style?: any;
 }
 
-export default function NewPostsIndicator({ 
-  visible, 
-  onPress, 
-  message = "New posts available • Tap to see",
-  style 
+export default function NewPostsIndicator({
+  visible,
+  onPress,
+  message = "New posts • Tap to refresh",
+  style
 }: NewPostsIndicatorProps) {
+  // Auto-hide after 4 seconds
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        onPress(); // This will hide the indicator
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [visible, onPress]);
+
   if (!visible) return null;
 
   return (
@@ -25,19 +36,19 @@ export default function NewPostsIndicator({
         left: 20,
         right: 20,
         zIndex: 100,
-        backgroundColor: '#007AFF',
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        borderRadius: 16,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+        elevation: 3,
       }, style]}
     >
       <Pressable onPress={onPress}>
-        <ThemedText style={{ color: '#fff', textAlign: 'center', fontWeight: '600' }}>
+        <ThemedText style={{ color: '#fff', textAlign: 'center', fontWeight: '500', fontSize: 13 }}>
           {message}
         </ThemedText>
       </Pressable>

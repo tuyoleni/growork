@@ -209,6 +209,73 @@ export function CompanyDetailsSkeleton() {
   );
 }
 
+// Job Application Form Skeleton
+export function JobApplicationSkeleton() {
+  const borderColor = useThemeColor({}, 'border');
+
+  return (
+    <View style={styles.jobApplicationContainer}>
+      {/* Step Title */}
+      <Skeleton width={200} height={20} borderRadius={4} style={styles.stepTitle} />
+      
+      {/* Document Selection Area */}
+      <View style={styles.documentSelectionArea}>
+        <Skeleton width="100%" height={80} borderRadius={8} style={styles.documentCard} />
+        <Skeleton width="100%" height={80} borderRadius={8} style={styles.documentCard} />
+        <Skeleton width="100%" height={60} borderRadius={8} style={styles.uploadButton} />
+      </View>
+    </View>
+  );
+}
+
+// Cover Letter Step Skeleton
+export function CoverLetterSkeleton() {
+  return (
+    <View style={styles.jobApplicationContainer}>
+      {/* Step Title */}
+      <Skeleton width={200} height={20} borderRadius={4} style={styles.stepTitle} />
+      
+      {/* Description */}
+      <Skeleton width="90%" height={16} borderRadius={4} style={{ marginBottom: 12 }} />
+      
+      {/* Cover Letter Input */}
+      <Skeleton width="100%" height={120} borderRadius={8} style={styles.coverLetterInput} />
+      
+      {/* Upload Section */}
+      <Skeleton width={180} height={16} borderRadius={4} style={{ marginBottom: 8 }} />
+      <Skeleton width="100%" height={60} borderRadius={8} style={styles.uploadButton} />
+    </View>
+  );
+}
+
+// Review Step Skeleton
+export function ReviewSkeleton() {
+  return (
+    <View style={styles.jobApplicationContainer}>
+      {/* Step Title */}
+      <Skeleton width={200} height={20} borderRadius={4} style={styles.stepTitle} />
+      
+      {/* Position Section */}
+      <View style={styles.reviewSection}>
+        <Skeleton width={80} height={16} borderRadius={4} style={styles.reviewLabel} />
+        <Skeleton width="100%" height={20} borderRadius={4} />
+      </View>
+      
+      {/* CV Section */}
+      <View style={styles.reviewSection}>
+        <Skeleton width={40} height={16} borderRadius={4} style={styles.reviewLabel} />
+        <Skeleton width="100%" height={60} borderRadius={8} style={styles.reviewContent} />
+      </View>
+      
+      {/* Cover Letter Section */}
+      <View style={styles.reviewSection}>
+        <Skeleton width={100} height={16} borderRadius={4} style={styles.reviewLabel} />
+        <Skeleton width="100%" height={80} borderRadius={8} style={styles.reviewContent} />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   skeleton: {
     overflow: 'hidden',
@@ -385,5 +452,46 @@ const styles = StyleSheet.create({
   },
   postItem: {
     marginBottom: 8,
+  },
+  // Job Application Form Skeleton
+  jobApplicationContainer: {
+    padding: 16,
+  },
+  stepTitle: {
+    marginBottom: 16,
+  },
+  documentSelectionArea: {
+    minHeight: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  documentCard: {
+    width: '100%',
+    height: 80,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  coverLetterInput: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  uploadButton: {
+    width: '100%',
+    height: 60,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+  },
+  reviewSection: {
+    marginBottom: 12,
+  },
+  reviewLabel: {
+    marginBottom: 4,
+  },
+  reviewContent: {
+    height: 60,
+    borderRadius: 8,
   },
 }); 

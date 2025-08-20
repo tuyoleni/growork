@@ -26,20 +26,20 @@ export default function ApplyButton({
   const palette = Colors[scheme];
 
   // Button background
-  const backgroundColor = applied 
+  const backgroundColor = applied
     ? '#10b981' // Green for applied
-    : variant === 'primary' 
-    ? palette.tint 
-    : palette.background;
-  
+    : variant === 'primary'
+      ? palette.tint
+      : palette.background;
+
   // Text color logic: white for all variants in dark, standard palette otherwise
   const textColor = applied
     ? '#fff'
     : scheme === 'dark'
-    ? '#fff'
-    : variant === 'primary'
-    ? palette.background
-    : palette.text;
+      ? '#fff'
+      : variant === 'primary'
+        ? palette.background
+        : palette.text;
   const borderColor = palette.border;
 
   // Compact size options
@@ -64,34 +64,34 @@ export default function ApplyButton({
   };
 
   return (
-            <TouchableOpacity
-          style={[
-            styles.button,
-            {
-              backgroundColor,
-              paddingVertical: buttonSizes[size].paddingVertical,
-              paddingHorizontal: buttonSizes[size].paddingHorizontal,
-              borderWidth: variant === 'secondary' ? 1 : 0,
-              borderColor: variant === 'secondary' ? borderColor : undefined,
-              opacity: (disabled || applied) ? 0.7 : 1,
-            },
-            style,
-          ]}
-          onPress={handlePress}
-          activeOpacity={0.85}
-          disabled={disabled || applied}
-        >
-              <Text
-          style={[
-            styles.buttonText,
-            {
-              color: textColor,
-              fontSize: fontSizes[size],
-            },
-          ]}
-        >
-          {applied ? 'Applied' : label}
-        </Text>
+    <TouchableOpacity
+      style={[
+        styles.button,
+        {
+          backgroundColor,
+          paddingVertical: buttonSizes[size].paddingVertical,
+          paddingHorizontal: buttonSizes[size].paddingHorizontal,
+          borderWidth: variant === 'secondary' ? 1 : 0,
+          borderColor: variant === 'secondary' ? borderColor : undefined,
+          opacity: (disabled || applied) ? 0.7 : 1,
+        },
+        style,
+      ]}
+      onPress={handlePress}
+      activeOpacity={0.85}
+      disabled={disabled || applied}
+    >
+      <Text
+        style={[
+          styles.buttonText,
+          {
+            color: textColor,
+            fontSize: fontSizes[size],
+          },
+        ]}
+      >
+        {applied ? 'Applied' : label}
+      </Text>
     </TouchableOpacity>
   );
 }

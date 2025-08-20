@@ -14,7 +14,7 @@ export default function TabLayout() {
     ? {
       title: 'Applications',
       tabBarIcon: ({ color }: { color: string }) => (
-        <Feather name="briefcase" size={20} color={color} />
+        <Feather name="users" size={20} color={color} />
       ),
       tabBarButton: (props: any) => <HapticTab {...props} />,
     }

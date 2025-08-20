@@ -5,7 +5,7 @@ import { supabase } from '@/utils/supabase';
 import { STORAGE_BUCKETS } from '@/utils/uploadUtils';
 import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, View, ScrollView } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
@@ -47,35 +47,36 @@ export default function DocumentManager({
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
 
+  // Fetch documents function
+  const fetchDocuments = useCallback(async () => {
+    if (!userId || !documentType) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('type', documentType)
+        .order('uploaded_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching documents:', error);
+        return;
+      }
+
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, documentType]);
+
   // Fetch documents when component mounts or documentType changes
   useEffect(() => {
-    const fetchDocuments = async () => {
-      if (!userId || !documentType) return;
-
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('documents')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('type', documentType)
-          .order('uploaded_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching documents:', error);
-          return;
-        }
-
-        setDocuments(data || []);
-      } catch (error) {
-        console.error('Error fetching documents:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDocuments();
-  }, [userId, documentType]);
+  }, [fetchDocuments]);
 
   const handleDocumentSelect = (document: Document) => {
     if (selectable && onSelect) {
@@ -168,6 +169,9 @@ export default function DocumentManager({
       }
 
       Alert.alert('Success', 'Document uploaded successfully!');
+      
+      // Refresh the documents list
+      await fetchDocuments();
       onSuccess?.();
     } catch (error: any) {
       console.error('Error uploading document:', error);
@@ -203,6 +207,23 @@ export default function DocumentManager({
               <ThemedText style={[styles.emptyText, { color: textColor }]}>
                 No documents found
               </ThemedText>
+              <ThemedText style={[styles.emptySubtext, { color: textColor }]}>
+                Upload a document to continue
+              </ThemedText>
+              <Pressable
+                style={[styles.uploadButton, { borderColor }, uploading && styles.uploadButtonDisabled]}
+                onPress={handleUploadDocument}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <ActivityIndicator size="small" color={textColor} />
+                ) : (
+                  <>
+                    <Feather name="upload" size={20} color={textColor} />
+                    <ThemedText style={styles.uploadButtonText}>Upload Document</ThemedText>
+                  </>
+                )}
+              </Pressable>
             </View>
           ) : (
             <ScrollView
@@ -334,6 +355,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
+    opacity: 0.7,
   },
   documentsList: {
     flex: 1,

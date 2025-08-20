@@ -138,18 +138,23 @@ export async function sendNotification(
     expoPushToken?: string
 ) {
     try {
+        console.log('📱 Sending notification:', { userId, title, body, type, data });
+        
         // Save to database first
         await saveNotificationToDatabase(userId, title, body, type, data);
+        console.log('✅ Notification saved to database');
 
         // Send push notification if token is provided
         if (expoPushToken) {
             await sendPushNotification(expoPushToken, title, body, data);
+            console.log('✅ Push notification sent');
         } else {
             // Fallback to local notification
             await scheduleLocalNotification(title, body, data);
+            console.log('✅ Local notification scheduled');
         }
     } catch (error) {
-        console.error('Error sending notification:', error);
+        console.error('❌ Error sending notification:', error);
         throw error;
     }
 }
@@ -227,6 +232,27 @@ export async function markAllNotificationsAsRead(userId: string) {
     } catch (error) {
         console.error('Error marking all notifications as read:', error);
         throw error;
+    }
+}
+
+// Test notification function
+export async function sendTestNotification(userId: string) {
+    try {
+        console.log('🧪 Sending test notification to user:', userId);
+        
+        await sendNotification(
+            userId,
+            'Test Notification',
+            'This is a test notification to verify the system is working!',
+            'test',
+            { test: true, timestamp: new Date().toISOString() }
+        );
+        
+        console.log('✅ Test notification sent successfully');
+        return true;
+    } catch (error) {
+        console.error('❌ Test notification failed:', error);
+        return false;
     }
 }
 

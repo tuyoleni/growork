@@ -1,6 +1,7 @@
 import { Application, ApplicationStatus } from '@/types';
 import { supabase } from '@/utils/supabase';
 import { useCallback, useState } from 'react';
+import { sendNotification } from '@/utils/notifications';
 
 export interface ApplicationWithDetails extends Application {
   posts: {
@@ -13,7 +14,8 @@ export interface ApplicationWithDetails extends Application {
   profiles: {
     id: string;
     username: string;
-    full_name: string;
+    name: string;
+    surname: string;
     avatar_url: string | null;
     bio: string | null;
   };
@@ -36,6 +38,7 @@ export function useMyPostApplications() {
         .eq('user_id', currentUserId);
 
       if (postsError) {
+        console.error('Posts query error:', postsError);
         throw postsError;
       }
 
@@ -44,28 +47,34 @@ export function useMyPostApplications() {
         return;
       }
 
-      // Get all post IDs created by the user
       const postIds = myPosts.map(post => post.id);
 
-      // Fetch applications for these posts with related data
       const { data: applicationsData, error: applicationsError } = await supabase
         .from('applications')
-        .select(`
-          *,
-          posts (
-            id,
-            title,
-            type,
-            industry,
-            criteria
-          )
-        `)
+        .select('*')
         .in('post_id', postIds)
         .order('created_at', { ascending: false });
 
       if (applicationsError) {
+        console.error('Applications query error:', applicationsError);
         throw applicationsError;
       }
+
+      // Now get the posts data separately
+      const { data: postsData, error: postsDataError } = await supabase
+        .from('posts')
+        .select('id, title, type, industry, criteria')
+        .in('id', postIds);
+
+      if (postsDataError) {
+        console.error('Posts data query error:', postsDataError);
+      }
+
+      // Create a map of posts
+      const postsMap = (postsData || []).reduce((acc: any, post: any) => {
+        acc[post.id] = post;
+        return acc;
+      }, {});
 
       // Get user IDs from applications to fetch profiles separately
       const userIds = applicationsData
@@ -75,10 +84,15 @@ export function useMyPostApplications() {
       // Fetch profiles for these users
       let profilesData = [];
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('*')
           .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Profiles query error:', profilesError);
+        }
+
         profilesData = profiles || [];
       }
 
@@ -88,9 +102,10 @@ export function useMyPostApplications() {
         return acc;
       }, {});
 
-      // Combine applications with their profiles
+      // Combine applications with their posts and profiles
       const applicationsWithProfiles = applicationsData?.map((app: any) => ({
         ...app,
+        posts: postsMap[app.post_id] || null,
         profiles: profilesMap[app.user_id] || null
       })) || [];
 
@@ -112,6 +127,37 @@ export function useMyPostApplications() {
 
       if (error) {
         throw error;
+      }
+
+      // Send notification to the applicant
+      try {
+        // Get application details to find the applicant
+        const { data: applicationData } = await supabase
+          .from('applications')
+          .select(`
+            user_id,
+            posts (
+              title
+            )
+          `)
+          .eq('id', applicationId)
+          .single();
+
+        if (applicationData) {
+          const jobTitle = applicationData.posts?.[0]?.title || 'your application';
+          const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+
+          await sendNotification(
+            applicationData.user_id,
+            'Application Status Update',
+            `Your application for "${jobTitle}" has been ${statusText}`,
+            'application_status',
+            { applicationId, status, jobTitle }
+          );
+        }
+      } catch (notificationError) {
+        console.error('Failed to send application status notification:', notificationError);
+        // Don't fail the status update if notification fails
       }
 
       // Update the local state

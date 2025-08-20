@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '../auth/useAuth';
+import { sendNotification } from '@/utils/notifications';
 
 export interface InteractionState {
   loading: boolean;
@@ -79,6 +80,39 @@ export function useInteractions() {
           [postId]: { ...prev[postId], loading: false, error: error.message }
         }));
         return { success: false, error: error.message };
+      }
+
+      // Send notification to post owner
+      try {
+        // Get post details to find the owner
+        const { data: postData } = await supabase
+          .from('posts')
+          .select('user_id, title')
+          .eq('id', postId)
+          .single();
+
+        if (postData && postData.user_id !== user.id) {
+          // Get user profile for notification
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('name, username')
+            .eq('id', user.id)
+            .single();
+
+          const senderName = userProfile?.name || userProfile?.username || 'Someone';
+          const postTitle = postData.title || 'your post';
+
+          await sendNotification(
+            postData.user_id,
+            'New Like',
+            `${senderName} liked ${postTitle}`,
+            'post_like',
+            { postId, senderId: user.id, senderName, postTitle }
+          );
+        }
+      } catch (notificationError) {
+        console.error('Failed to send like notification:', notificationError);
+        // Don't fail the like operation if notification fails
       }
 
       const newLikeCount = await getLikeCount(postId);

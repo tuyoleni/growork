@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Platform, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useThemeColor } from '@/hooks';
-import { useLikes } from '@/hooks';
+import { useThemeColor, useCustomCommentsBottomSheet, useLikes } from '@/hooks';
 import { useAppContext } from '@/utils/AppContext';
-import { useCustomCommentsBottomSheet } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 
 

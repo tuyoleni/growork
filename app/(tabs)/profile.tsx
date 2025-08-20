@@ -1,20 +1,22 @@
 import CompaniesList from '@/components/profile/CompaniesList';
 import DocumentsList from '@/components/profile/DocumentsList';
 import FollowingGrid from '@/components/profile/FollowingGrid';
+import MyPostsList from '@/components/profile/MyPostsList';
 import ProfileHeader from '@/components/profile/Header';
 import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CategorySelector from '@/components/ui/CategorySelector';
 import { useFlashToast } from '@/components/ui/Flash';
-import { useAuth, useThemeColor } from '@/hooks';
+import { useAuth, useThemeColor, usePermissions } from '@/hooks';
 import { useRouter } from 'expo-router';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Animated, StyleSheet, View, RefreshControl } from 'react-native';
+import { Animated, StyleSheet, View, RefreshControl, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
 import { calculateProfileStrength } from '@/utils/utils';
+import { sendTestNotification } from '@/utils/notifications';
 
 const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 
@@ -23,6 +25,13 @@ export default function Profile() {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const { profile, loading, error, isConnectionTimeoutError, refreshProfile } = useAuth();
+  const { isBusinessUser } = usePermissions();
+  const toast = useFlashToast();
+
+  // Define category options based on user type
+  const CATEGORY_OPTIONS = isBusinessUser
+    ? ['Documents', 'Companies', 'Media', 'My Posts']
+    : ['Documents', 'Companies', 'Media'];
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -32,13 +41,40 @@ export default function Profile() {
       setRefreshing(false);
     }
   }, [refreshProfile]);
-  const toast = useFlashToast();
+
+  const handleTestNotification = useCallback(async () => {
+    if (!profile?.id) return;
+
+    try {
+      const success = await sendTestNotification(profile.id);
+      if (success) {
+        toast.show({
+          type: 'success',
+          title: 'Test Notification Sent',
+          message: 'Check your notifications!'
+        });
+      } else {
+        toast.show({
+          type: 'danger',
+          title: 'Test Failed',
+          message: 'Failed to send test notification'
+        });
+      }
+    } catch (error) {
+      toast.show({
+        type: 'danger',
+        title: 'Error',
+        message: 'Failed to send test notification'
+      });
+    }
+  }, [profile?.id, toast]);
   const scrollY = useRef(new Animated.Value(0)).current;
   const iconColor = useThemeColor({}, 'icon');
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const textColor = useThemeColor({}, 'text');
   const mutedTextColor = useThemeColor({}, 'mutedText');
+  const tintColor = useThemeColor({}, 'tint');
 
   // Show toast for connection timeout errors
   useEffect(() => {
@@ -190,12 +226,21 @@ export default function Profile() {
               selectedIndex={selectedIndex}
               onChange={setSelectedIndex}
             />
+
+            {/* Test Notification Button */}
+            <TouchableOpacity
+              style={[styles.testButton, { backgroundColor: tintColor }]}
+              onPress={handleTestNotification}
+            >
+              <ThemedText style={styles.testButtonText}>Test Notification</ThemedText>
+            </TouchableOpacity>
           </ThemedView>
 
           <ThemedView style={styles.contentSection}>
             {selectedIndex === 0 && <DocumentsList />}
             {selectedIndex === 1 && <CompaniesList />}
             {selectedIndex === 2 && <FollowingGrid />}
+            {selectedIndex === 3 && isBusinessUser && <MyPostsList />}
           </ThemedView>
         </ThemedView>
       </Animated.ScrollView>
@@ -256,5 +301,17 @@ const styles = StyleSheet.create({
   contentSection: {
     marginTop: 16,
     flex: 1,
+  },
+  testButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

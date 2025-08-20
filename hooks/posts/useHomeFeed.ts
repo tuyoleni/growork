@@ -17,7 +17,7 @@ export function useHomeFeed() {
 
       const postsData = await fetchPostsWithData();
       console.log('🏠 Home feed: Raw posts data received:', postsData?.length || 0, 'posts');
-      console.log('🏠 Home feed: Raw posts data:', JSON.stringify(postsData, null, 2));
+
 
       // Convert each post to the correct format with error handling
       const convertedPosts = await Promise.allSettled(

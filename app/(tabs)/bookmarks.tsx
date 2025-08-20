@@ -11,13 +11,8 @@ import { PostType } from '@/types/enums';
 import { useRouter } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
 
-// Define the type for bookmarked items
-interface BookmarkedItem {
-  id: string;
-  type: 'post' | 'application';
-  data: any;
-  bookmarked_at: string;
-}
+// Import BookmarkedItem type from the hook
+import { BookmarkedItem } from '@/hooks/posts/useBookmarks';
 
 export default function Bookmarks() {
   const [selectedCategory, setSelectedCategory] = useState(3); // All category
@@ -26,7 +21,7 @@ export default function Bookmarks() {
     bookmarkedItems,
     loading,
     error,
-    toggleBookmark,
+    removeBookmark,
     refreshBookmarks
   } = useBookmarks();
 
@@ -71,12 +66,7 @@ export default function Bookmarks() {
   };
 
   const handleRemoveBookmark = async (item: BookmarkedItem) => {
-    if (item.type === 'post') {
-      await toggleBookmark(item.id);
-    } else if (item.type === 'application') {
-      // Applications can't be "unbookmarked" - they're automatically tracked
-      console.log('Cannot remove application bookmark');
-    }
+    await removeBookmark(item);
   };
 
   const getCategorySubtitle = () => {

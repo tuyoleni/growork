@@ -38,9 +38,10 @@ function CompanyHeader({ companyId, companyName }: { companyId: string; companyN
     if (loading) {
         return (
             <View style={styles.header}>
-                <ThemedAvatar size={32} image="" square={true} />
+                <View style={[styles.skeletonAvatar, { backgroundColor: mutedTextColor + '20' }]} />
                 <View style={styles.headerText}>
-                    <ThemedText style={[styles.name, { color: mutedTextColor }]}>Loading...</ThemedText>
+                    <View style={[styles.skeletonName, { backgroundColor: mutedTextColor + '20' }]} />
+                    <View style={[styles.skeletonSubtitle, { backgroundColor: mutedTextColor + '20' }]} />
                 </View>
             </View>
         );
@@ -191,7 +192,7 @@ export default function ContentCard({
     isSponsored = false,
 }: ContentCardProps) {
     console.log('📋 ContentCard: Received props - variant:', variant, 'criteria:', criteria, 'user_id:', user_id);
-    console.log('📋 ContentCard: Full props:', JSON.stringify({ variant, criteria, user_id, title, description }, null, 2));
+
     const router = useRouter();
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
@@ -417,5 +418,21 @@ const styles = StyleSheet.create({
     sponsored: {
         fontSize: 12,
         fontWeight: '500',
+    },
+    skeletonAvatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 4,
+    },
+    skeletonName: {
+        height: 14,
+        width: 120,
+        borderRadius: 2,
+        marginBottom: 4,
+    },
+    skeletonSubtitle: {
+        height: 10,
+        width: 80,
+        borderRadius: 2,
     },
 });

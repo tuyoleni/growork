@@ -4,15 +4,9 @@ import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 import { useThemeColor } from '@/hooks';
 import { Feather } from '@expo/vector-icons';
-// BookmarkedItem interface defined locally since it's no longer exported
-interface BookmarkedItem {
-    id: string;
-    type: 'post' | 'application';
-    data: any;
-    bookmarked_at: string;
-}
+import { BookmarkedItem } from '@/hooks/posts/useBookmarks';
 import { PostType, ApplicationStatus } from '@/types/enums';
-import { Image } from 'expo-image';
+
 import ContentCard from './ContentCard';
 
 interface BookmarkedContentListProps {
@@ -79,33 +73,11 @@ export default function BookmarkedContentList({
         }
     };
 
-    const getPostTypeIcon = (type: PostType) => {
-        switch (type) {
-            case PostType.Job:
-                return 'briefcase';
-            case PostType.News:
-                return 'file-text';
-            default:
-                return 'bookmark';
-        }
-    };
+
 
     const renderPostItem = (item: BookmarkedItem) => {
         const post = item.data as any;
         const profile = post.profiles;
-        const fullName = profile ? `${profile.name || ''} ${profile.surname || ''}`.trim() : 'User';
-        const companyName = post.type === PostType.Job && post.criteria?.company ? post.criteria.company : undefined;
-        const newsSource = post.type === PostType.News && (post.criteria?.source || post.criteria?.author)
-            ? (post.criteria.source || post.criteria.author)
-            : undefined;
-        const headerTitle = companyName || newsSource || fullName;
-        const avatarImage = post?.image_url
-            ? post.image_url
-            : companyName
-                ? `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random&size=40`
-                : newsSource
-                    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(newsSource)}&background=random&size=40`
-                    : (profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random&size=40`);
 
         return (
             <ContentCard

@@ -28,7 +28,6 @@ export interface DbPost {
 export function usePostOperations() {
   const convertDbPostToContentCard = useCallback(async (post: DbPost): Promise<ExtendedContentCardProps> => {
     console.log('🔄 convertDbPostToContentCard: Post ID:', post.id, 'Type:', post.type);
-    console.log('📋 Full post data:', JSON.stringify(post, null, 2));
 
 
     let postProfile: { avatar_url: string | null; name: string; surname: string; username?: string | null } = {
@@ -73,7 +72,6 @@ export function usePostOperations() {
 
     // Build criteria object from JSON criteria field
     const criteriaData = post.criteria || {};
-    console.log('📋 Raw criteria data from post:', JSON.stringify(criteriaData, null, 2));
 
     const criteria = {
       companyId: criteriaData.companyId || undefined,
@@ -84,8 +82,6 @@ export function usePostOperations() {
       source: criteriaData.source || undefined,
       publication_date: criteriaData.publication_date || undefined,
     };
-
-    console.log('📋 Built criteria object:', JSON.stringify(criteria, null, 2));
 
     const convertedPost: ExtendedContentCardProps = {
       id: post.id,
@@ -162,8 +158,7 @@ export function usePostOperations() {
 
       const { data: postsData, error: postsError } = await query;
 
-      console.log('🔍 fetchPostsWithData: Raw posts query result:', JSON.stringify(postsData, null, 2));
-      console.log('🔍 fetchPostsWithData: Posts error:', JSON.stringify(postsError, null, 2));
+
 
       if (postsError) {
         console.error('❌ Error fetching posts:', postsError);

@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, TouchableOpacity, View, Pressable, ActivityIndicator } from 'react-native';
+import { Animated, TouchableOpacity, View } from 'react-native';
 import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -9,15 +9,15 @@ import { useAuth } from '@/hooks';
 import { useApplications } from '@/hooks';
 import { useDocuments } from '@/hooks';
 import { useApplicationNotifications } from '@/hooks';
-import { useThemeColor } from '@/hooks';
+import { JobApplicationSkeleton, CoverLetterSkeleton } from '@/components/ui/Skeleton';
+
 import DocumentCard from './DocumentCard';
 import DocumentManager from './DocumentManager';
-import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useFlashToast } from '@/components/ui/Flash';
 
 export enum ApplicationStep {
-  ResumeSelection = 0,
+  CVSelection = 0,
   CoverLetter = 1,
   Review = 2,
 }
@@ -32,43 +32,39 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
   const toast = useFlashToast();
   const { user, profile } = useAuth();
   const { addApplication, checkIfApplied } = useApplications();
-  const { loading: documentsLoading, fetchDocuments } = useDocuments(user?.id);
+  const { fetchDocuments, loading: documentsLoading } = useDocuments(user?.id);
   const { notifyNewApplication } = useApplicationNotifications();
 
-  const [currentStep, setCurrentStep] = useState<ApplicationStep>(ApplicationStep.ResumeSelection);
+  const [currentStep, setCurrentStep] = useState<ApplicationStep>(ApplicationStep.CVSelection);
   const [loading, setLoading] = useState(false);
   const [coverLetter, setCoverLetter] = useState('');
   const [selectedResume, setSelectedResume] = useState<Document | null>(null);
   const [selectedCoverLetter, setSelectedCoverLetter] = useState<Document | null>(null);
-  const [showDocumentPicker, setShowDocumentPicker] = useState(false);
-  const [showCoverLetterPicker, setShowCoverLetterPicker] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const textColor = useThemeColor({}, 'text');
-  const borderColor = useThemeColor({}, 'border');
+  const hasFetchedDocuments = useRef(false);
 
-  // Check if user has already applied and fetch documents on mount
   useEffect(() => {
     const checkApplication = async () => {
-      if (user?.id) {
-        const { hasApplied } = await checkIfApplied(user.id, jobPost.id);
-        if (hasApplied) {
-          toast.show({
-            type: 'info',
-            title: 'Already Applied',
-            message: 'You have already applied to this position.'
-          });
-          onSuccess?.(); // Close the form
-          return;
-        }
+      if (user?.id && !hasFetchedDocuments.current) {
+        hasFetchedDocuments.current = true;
 
+        const { hasApplied: appliedStatus } = await checkIfApplied(user.id, jobPost.id);
+        if (appliedStatus) {
+          setHasApplied(true);
+        }
         fetchDocuments(DocumentType.CV);
         fetchDocuments(DocumentType.CoverLetter);
+        setIsChecking(false);
       }
     };
 
     checkApplication();
-  }, [user?.id, jobPost.id, checkIfApplied, fetchDocuments, toast, onSuccess]);
+  }, [user?.id, jobPost.id, checkIfApplied, toast, onSuccess]);
+
+
 
   // Animate progress
   useEffect(() => {
@@ -81,21 +77,19 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
 
   const handleSelectResume = (document: Document) => {
     setSelectedResume(document);
-    setShowDocumentPicker(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleSelectCoverLetter = (document: Document) => {
     setSelectedCoverLetter(document);
-    setShowCoverLetterPicker(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleNextStep = () => {
-    if (currentStep === ApplicationStep.ResumeSelection) {
+    if (currentStep === ApplicationStep.CVSelection) {
       if (!selectedResume) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        toast.show({ type: 'danger', title: 'Missing Resume', message: 'Please select a resume to continue.' });
+        toast.show({ type: 'danger', title: 'Missing CV', message: 'Please select a CV to continue.' });
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -111,7 +105,7 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
   const handlePrevStep = () => {
     if (currentStep === ApplicationStep.CoverLetter) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCurrentStep(ApplicationStep.ResumeSelection);
+      setCurrentStep(ApplicationStep.CVSelection);
     } else if (currentStep === ApplicationStep.Review) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setCurrentStep(ApplicationStep.CoverLetter);
@@ -147,16 +141,16 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onSuccess?.();
+      setHasApplied(true);
     } catch (error: any) {
       // Handle duplicate application error specifically
       if (error?.code === '23505' && error?.message?.includes('applications_user_id_post_id_key')) {
+        setHasApplied(true);
         toast.show({
           type: 'info',
           title: 'Already Applied',
           message: 'You have already applied to this position.'
         });
-        onSuccess?.(); // Close the form since they've already applied
       } else {
         toast.show({
           type: 'danger',
@@ -170,87 +164,65 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
   };
 
   const renderStepContent = () => {
-    if (showDocumentPicker) {
+    // Show applied status if user has already applied
+    if (hasApplied) {
       return (
-        <ThemedView style={{ flex: 1, minHeight: 400 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
-            <ThemedText style={{ fontSize: 18, fontWeight: '600' }}>Select a Resume</ThemedText>
-            <Pressable style={{ padding: 8, borderRadius: 20 }} onPress={() => setShowDocumentPicker(false)}>
-              <Feather name="x" size={18} color={textColor} />
-            </Pressable>
+        <View style={{ padding: 20, alignItems: 'center' }}>
+          <View style={{
+            backgroundColor: '#10b981',
+            borderRadius: 50,
+            width: 80,
+            height: 80,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 20
+          }}>
+            <ThemedText style={{ color: '#fff', fontSize: 24 }}>✓</ThemedText>
           </View>
-          <DocumentManager
-            userId={user?.id}
-            documentType={DocumentType.CV}
-            selectable
-            onSelect={handleSelectResume}
-            disableScrolling={true}
-          />
-        </ThemedView>
-      );
-    }
-
-    if (showCoverLetterPicker) {
-      return (
-        <ThemedView style={{ flex: 1, minHeight: 400 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
-            <ThemedText style={{ fontSize: 18, fontWeight: '600' }}>Select a Cover Letter</ThemedText>
-            <Pressable style={{ padding: 8, borderRadius: 20 }} onPress={() => setShowCoverLetterPicker(false)}>
-              <Feather name="x" size={18} color={textColor} />
-            </Pressable>
-          </View>
-          <DocumentManager
-            userId={user?.id}
-            documentType={DocumentType.CoverLetter}
-            selectable
-            onSelect={handleSelectCoverLetter}
-            disableScrolling={true}
-          />
-        </ThemedView>
+          <ThemedText type="title" style={{ marginBottom: 8, textAlign: 'center' }}>
+            Application Submitted
+          </ThemedText>
+          <ThemedText style={{ textAlign: 'center', opacity: 0.7, marginBottom: 20 }}>
+            You have already applied to this position. You can track your application progress in the Applications tab or check your email for updates from the employer.
+          </ThemedText>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#10b981',
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              borderRadius: 8,
+            }}
+            onPress={() => onSuccess?.()}
+          >
+            <ThemedText style={{ color: '#fff', fontWeight: '600' }}>
+              Close
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
       );
     }
 
     switch (currentStep) {
-      case ApplicationStep.ResumeSelection:
+      case ApplicationStep.CVSelection:
+        if (documentsLoading) {
+          return <JobApplicationSkeleton />;
+        }
         return (
           <>
-            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>Select Your Resume</ThemedText>
-            {selectedResume ? (
-              <View>
-                <DocumentCard document={selectedResume} />
-                <Pressable onPress={() => setShowDocumentPicker(true)} style={{ alignSelf: 'flex-end', padding: 8 }}>
-                  <ThemedText style={{ fontSize: 14, textDecorationLine: 'underline' }}>Change Resume</ThemedText>
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  paddingVertical: 16,
-                  borderWidth: 1,
-                  borderStyle: 'dashed',
-                  borderRadius: 8,
-                  borderColor
-                }}
-                onPress={() => setShowDocumentPicker(true)}
-                disabled={loading || documentsLoading}
-              >
-                {documentsLoading ? (
-                  <ActivityIndicator size="small" color={textColor} />
-                ) : (
-                  <>
-                    <Feather name="file-text" size={18} color={textColor} />
-                    <ThemedText style={{ fontSize: 16 }}>Select Resume</ThemedText>
-                  </>
-                )}
-              </Pressable>
-            )}
+            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>Select Your CV</ThemedText>
+            <DocumentManager
+              userId={user?.id}
+              documentType={DocumentType.CV}
+              selectable
+              onSelect={handleSelectResume}
+              disableScrolling={true}
+            />
           </>
         );
       case ApplicationStep.CoverLetter:
+        if (documentsLoading) {
+          return <CoverLetterSkeleton />;
+        }
         return (
           <>
             <ThemedText type="subtitle" style={{ marginBottom: 16 }}>Cover Letter (Optional)</ThemedText>
@@ -270,33 +242,13 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
 
             <ThemedText style={{ marginBottom: 8, fontSize: 14, fontWeight: '600' }}>Or upload a cover letter document:</ThemedText>
 
-            {selectedCoverLetter ? (
-              <View>
-                <DocumentCard document={selectedCoverLetter} />
-                <Pressable onPress={() => setShowCoverLetterPicker(true)} style={{ alignSelf: 'flex-end', padding: 8 }}>
-                  <ThemedText style={{ fontSize: 14, textDecorationLine: 'underline' }}>Change Document</ThemedText>
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  paddingVertical: 12,
-                  borderWidth: 1,
-                  borderStyle: 'dashed',
-                  borderRadius: 8,
-                  borderColor
-                }}
-                onPress={() => setShowCoverLetterPicker(true)}
-                disabled={loading}
-              >
-                <Feather name="file-text" size={18} color={textColor} />
-                <ThemedText style={{ fontSize: 16 }}>Upload Cover Letter Document</ThemedText>
-              </Pressable>
-            )}
+            <DocumentManager
+              userId={user?.id}
+              documentType={DocumentType.CoverLetter}
+              selectable
+              onSelect={handleSelectCoverLetter}
+              disableScrolling={true}
+            />
           </>
         );
       case ApplicationStep.Review:
@@ -310,7 +262,7 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
             </View>
 
             <View style={{ marginBottom: 12 }}>
-              <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Resume:</ThemedText>
+              <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>CV:</ThemedText>
               {selectedResume && <DocumentCard document={selectedResume} showMenu={false} />}
             </View>
 
@@ -333,8 +285,38 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
     }
   };
 
-  const atFirstStep = currentStep === 0;
-  const atLastStep = currentStep === 2;
+  // Show loading while checking application status
+  if (isChecking) {
+    return <JobApplicationSkeleton />;
+  }
+
+  // Show applied status immediately if user has already applied
+  if (hasApplied) {
+    return (
+      <View style={{ padding: 20, alignItems: 'center' }}>
+        <View style={{
+          backgroundColor: '#10b981',
+          borderRadius: 50,
+          width: 80,
+          height: 80,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 20
+        }}>
+          <ThemedText style={{ color: '#fff', fontSize: 24 }}>✓</ThemedText>
+        </View>
+        <ThemedText type="title" style={{ marginBottom: 8, textAlign: 'center' }}>
+          Application Submitted
+        </ThemedText>
+        <ThemedText style={{ textAlign: 'center', opacity: 0.7 }}>
+          You have already applied to this position. You can track your application progress in the Applications tab or check your email for updates from the employer.
+        </ThemedText>
+      </View>
+    );
+  }
+
+  const atFirstStep = currentStep === ApplicationStep.CVSelection;
+  const atLastStep = currentStep === ApplicationStep.Review;
 
   return (
     <>
@@ -351,10 +333,10 @@ export default function JobApplicationForm({ jobPost, onSuccess }: JobApplicatio
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleNextStep}
-          disabled={loading || (currentStep === 0 && !selectedResume)}
-          style={{ opacity: (loading || (currentStep === 0 && !selectedResume)) ? 0.5 : 1 }}
+          disabled={loading || (currentStep === ApplicationStep.CVSelection && !selectedResume)}
+          style={{ opacity: (loading || (currentStep === ApplicationStep.CVSelection && !selectedResume)) ? 0.5 : 1 }}
         >
-          <ThemedText style={{ color: (loading || (currentStep === 0 && !selectedResume)) ? '#999' : '#007AFF' }}>
+          <ThemedText style={{ color: (loading || (currentStep === ApplicationStep.CVSelection && !selectedResume)) ? '#999' : '#007AFF' }}>
             {atLastStep ? (loading ? 'Submitting...' : 'Submit') : 'Next →'}
           </ThemedText>
         </TouchableOpacity>

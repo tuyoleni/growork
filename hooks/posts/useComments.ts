@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '../auth/useAuth';
+import { sendNotification } from '@/utils/notifications';
 
 export interface Comment {
   id: string;
@@ -160,8 +161,34 @@ export function useComments(postId: string) {
         loading: false
       }));
 
-      // TODO: Send notification when notification system is ready
-      // await notifyPostComment(postId, postOwnerId, userProfile, content);
+      // Send notification to post owner
+      try {
+        // Get post details to find the owner
+        const { data: postData } = await supabase
+          .from('posts')
+          .select('user_id, title')
+          .eq('id', postId)
+          .single();
+
+        if (postData && postData.user_id !== user.id) {
+          const senderName = profile?.name || profile?.username || 'Someone';
+          const postTitle = postData.title || 'your post';
+          const commentPreview = content.trim().length > 50
+            ? content.trim().substring(0, 50) + '...'
+            : content.trim();
+
+          await sendNotification(
+            postData.user_id,
+            'New Comment',
+            `${senderName} commented on ${postTitle}: "${commentPreview}"`,
+            'post_comment',
+            { postId, senderId: user.id, senderName, postTitle, commentId: data.id, commentPreview }
+          );
+        }
+      } catch (notificationError) {
+        console.error('Failed to send comment notification:', notificationError);
+        // Don't fail the comment operation if notification fails
+      }
 
       return { success: true, data: commentWithProfile };
     } catch (err: any) {

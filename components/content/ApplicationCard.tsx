@@ -81,7 +81,9 @@ export function ApplicationCard({
           />
           <View style={styles.applicantDetails}>
             <ThemedText style={[styles.applicantName, { color: textColor }]}>
-              {applicant.full_name || applicant.username || 'Unknown User'}
+              {applicant.name && applicant.surname 
+                ? `${applicant.name} ${applicant.surname}` 
+                : applicant.username || 'Unknown User'}
             </ThemedText>
             <ThemedText style={[styles.postTitle, { color: mutedTextColor }]}>
               {post.title || 'Unknown Job'}
