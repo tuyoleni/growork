@@ -1,6 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { supabase } from '../../utils/supabase';
-import { User, Session } from '@supabase/supabase-js';
 import type { Profile } from '../../types';
 
 export function useAuthOperations() {
@@ -23,6 +22,15 @@ export function useAuthOperations() {
 
       if (error) {
         console.error('Error fetching profile:', error);
+
+        // Check if it's a connection timeout error
+        if (error.message?.includes('upstream connect error') ||
+          error.message?.includes('connection timeout') ||
+          error.message?.includes('disconnect/reset before headers')) {
+          // This will be handled by the calling component with a toast
+          console.warn('Connection timeout detected - should show toast to user');
+        }
+
         return null;
       }
 

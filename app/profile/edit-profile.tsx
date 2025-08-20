@@ -16,8 +16,8 @@ import { supabase } from '@/utils/supabase';
 import { STORAGE_BUCKETS, uploadImage } from '@/utils/uploadUtils';
 import { Feather } from '@expo/vector-icons';
 
-import { ProfileFormData } from '@/types';
-import { checkProfileCompleteness } from '@/hooks';
+import { ProfileFormData, Profile } from '@/types';
+import { checkProfileCompleteness } from '@/hooks/auth';
 import { useFlashToast } from '@/components/ui/Flash';
 
 export default function EditProfileNative() {
@@ -286,7 +286,7 @@ export default function EditProfileNative() {
       // Notify about completeness when opening edit screen
       const completeness = checkProfileCompleteness(profile);
       if (!completeness.isComplete) {
-        const required = completeness.missingRequired.map((k) => String(k)).join(', ');
+        const required = completeness.missingRequired.map((k: keyof Profile) => String(k)).join(', ');
         toast.show({
           type: 'info',
           title: 'Complete your profile',

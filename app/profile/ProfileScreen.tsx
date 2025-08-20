@@ -13,10 +13,11 @@ import { Feather } from '@expo/vector-icons';
 
 import { useAuth } from '@/hooks';
 import { useThemeColor } from '@/hooks';
+import { Profile } from '@/types';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ScreenContainer from '@/components/ScreenContainer';
-import { checkProfileCompleteness } from '@/hooks';
+import { checkProfileCompleteness } from '@/hooks/auth';
 import { supabase } from '@/utils/supabase';
 import { useFlashToast } from '@/components/ui/Flash';
 
@@ -58,7 +59,7 @@ export default function ProfileScreen() {
     if (!profile) return;
     const completeness = checkProfileCompleteness(profile);
     if (!completeness.isComplete) {
-      const required = completeness.missingRequired.map((k) => String(k)).join(', ');
+      const required = completeness.missingRequired.map((k: keyof Profile) => String(k)).join(', ');
       toast.show({
         type: 'info',
         title: 'Complete your profile',

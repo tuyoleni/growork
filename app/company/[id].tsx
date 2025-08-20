@@ -1,34 +1,56 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+    View,
+    ScrollView,
+    ActivityIndicator,
+    RefreshControl,
+    TouchableOpacity,
+    StatusBar,
+    useColorScheme,
+    StyleSheet
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Company } from '../../types/company';
-import { Post } from '../../types/posts';
 import ScreenContainer from '../../components/ScreenContainer';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import ThemedButton from '../../components/ui/ThemedButton';
-import { ThemedAvatar } from '../../components/ui/ThemedAvatar';
-import ContentCard from '../../components/content/ContentCard';
+import {
+    CompanyHeader,
+    CompanyStats,
+    CompanyContact,
+    CompanyOwner,
+    CompanyPosts
+} from '../../components/company';
 import { useCompanies } from '../../hooks/companies';
 import { usePosts } from '../../hooks/posts';
+import { useThemeColor } from '../../hooks';
+import { supabase } from '../../utils/supabase';
 
 
-interface CompanyStats {
-    posts: number;
-    jobs: number;
-    followers: number;
-}
+
 
 export default function CompanyDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
+    const colorScheme = useColorScheme();
     const { getCompanyByIdPublic, getCompanyByUserId, debugCompanyTable } = useCompanies();
-    const { posts: companyPosts, loading: postsLoading } = usePosts({ userId: id });
+    const [companyPosts, setCompanyPosts] = useState<any[]>([]);
+    const [postsLoading, setPostsLoading] = useState(false);
+
+    // Theme colors
+    const textColor = useThemeColor({}, 'text');
+    const borderColor = useThemeColor({}, 'border');
+    const mutedTextColor = useThemeColor({}, 'mutedText');
+    const tintColor = useThemeColor({}, 'tint');
 
     const [company, setCompany] = useState<Company | null>(null);
-    const [stats] = useState<CompanyStats>({ posts: 0, jobs: 0, followers: 0 });
+    const [companyOwner, setCompanyOwner] = useState<any>(null);
+
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [isFollowing, setIsFollowing] = useState(false);
     const functionsRef = useRef({
         getCompanyByIdPublic,
         getCompanyByUserId
@@ -47,6 +69,55 @@ export default function CompanyDetailsScreen() {
         debugCompanyTable();
     }, [debugCompanyTable]);
 
+    const fetchCompanyOwner = useCallback(async (userId: string) => {
+        try {
+            const { data: profileData, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error) {
+                console.error('Error fetching company owner profile:', error);
+                return;
+            }
+
+            if (profileData) {
+                setCompanyOwner(profileData);
+            }
+        } catch (error) {
+            console.error('Error fetching company owner:', error);
+        }
+    }, []);
+
+    const fetchCompanyPosts = useCallback(async (companyId: string, companyUserId: string) => {
+        try {
+            setPostsLoading(true);
+
+            // Fetch posts that are either:
+            // 1. Created by the company (user_id matches company's user_id)
+            // 2. Job posts that target this company (criteria.companyId matches)
+            const { data: postsData, error } = await supabase
+                .from('posts')
+                .select('*')
+                .or(`user_id.eq.${companyUserId},criteria->>companyId.eq.${companyId}`)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching company posts:', error);
+                return;
+            }
+
+            if (postsData) {
+                setCompanyPosts(postsData);
+            }
+        } catch (error) {
+            console.error('Error fetching company posts:', error);
+        } finally {
+            setPostsLoading(false);
+        }
+    }, []);
+
     const fetchCompanyDetails = useCallback(async () => {
         if (!id) return;
 
@@ -64,12 +135,16 @@ export default function CompanyDetailsScreen() {
             if (companyResult) {
                 console.log('Company found:', companyResult.name);
                 setCompany(companyResult);
+
+                // Fetch company owner's profile for contact information
+                await fetchCompanyOwner(companyResult.user_id);
+
+                // Fetch company-specific posts
+                await fetchCompanyPosts(companyResult.id, companyResult.user_id);
             } else {
                 console.log('No company found with ID:', id);
                 throw new Error('Company not found');
             }
-
-            // Posts are now fetched automatically by the usePosts hook
 
         } catch (error: any) {
             console.error('Error fetching company details:', error);
@@ -90,7 +165,7 @@ export default function CompanyDetailsScreen() {
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, fetchCompanyOwner, fetchCompanyPosts]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -105,9 +180,12 @@ export default function CompanyDetailsScreen() {
     if (loading) {
         return (
             <ScreenContainer>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" />
-                    <ThemedText style={{ marginTop: 16 }}>Loading company details...</ThemedText>
+                <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={tintColor} />
+                    <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
+                        Loading company details...
+                    </ThemedText>
                 </View>
             </ScreenContainer>
         );
@@ -116,8 +194,12 @@ export default function CompanyDetailsScreen() {
     if (!company) {
         return (
             <ScreenContainer>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ThemedText>Company not found</ThemedText>
+                <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+                <View style={styles.loadingContainer}>
+                    <Feather name="home" size={48} color={mutedTextColor} style={{ marginBottom: 16 }} />
+                    <ThemedText style={[styles.loadingText, { color: textColor, marginBottom: 16 }]}>
+                        Company not found
+                    </ThemedText>
                     <ThemedButton title="Go Back" onPress={() => router.back()} />
                 </View>
             </ScreenContainer>
@@ -126,78 +208,138 @@ export default function CompanyDetailsScreen() {
 
     return (
         <ScreenContainer>
+            <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+
+            {/* Header */}
+            <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
+                <View style={styles.headerLeft}>
+                    <TouchableOpacity
+                        style={styles.headerButton}
+                        onPress={() => router.back()}
+                    >
+                        <Feather name="arrow-left" size={20} color={textColor} />
+                    </TouchableOpacity>
+                    <ThemedText style={styles.headerTitle}>Company</ThemedText>
+                </View>
+                <View style={styles.headerRight}>
+                    <TouchableOpacity
+                        style={styles.headerButton}
+                        onPress={() => {/* Share company */ }}
+                    >
+                        <Feather name="share" size={20} color={textColor} />
+                    </TouchableOpacity>
+                </View>
+            </ThemedView>
+
             <ScrollView
+                style={styles.container}
+                showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={tintColor}
+                    />
                 }
             >
+
+
                 {/* Company Header */}
-                <ThemedView style={{ padding: 20, alignItems: 'center' }}>
-                    <ThemedAvatar
-                        size={80}
-                        image={company.logo_url || ''}
-                    />
-                    <ThemedText style={{ fontSize: 24, fontWeight: 'bold', marginTop: 16 }}>
-                        {company.name}
-                    </ThemedText>
-                    {company.industry && (
-                        <ThemedText style={{ fontSize: 16, color: '#666', marginTop: 8 }}>
-                            {company.industry}
-                        </ThemedText>
-                    )}
-                    {company.description && (
-                        <ThemedText style={{ textAlign: 'center', marginTop: 16, lineHeight: 22 }}>
-                            {company.description}
-                        </ThemedText>
-                    )}
-                </ThemedView>
+                <CompanyHeader
+                    company={company}
+                    isFollowing={isFollowing}
+                    onFollowToggle={() => setIsFollowing(!isFollowing)}
+                />
 
                 {/* Company Stats */}
-                <ThemedView style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 20 }}>
-                    <View style={{ alignItems: 'center' }}>
-                        <ThemedText style={{ fontSize: 20, fontWeight: 'bold' }}>{companyPosts.length}</ThemedText>
-                        <ThemedText style={{ fontSize: 14, color: '#666' }}>Posts</ThemedText>
-                    </View>
-                    <View style={{ alignItems: 'center' }}>
-                        <ThemedText style={{ fontSize: 20, fontWeight: 'bold' }}>{stats.jobs}</ThemedText>
-                        <ThemedText style={{ fontSize: 14, color: '#666' }}>Jobs</ThemedText>
-                    </View>
-                    <View style={{ alignItems: 'center' }}>
-                        <ThemedText style={{ fontSize: 20, fontWeight: 'bold' }}>{stats.followers}</ThemedText>
-                        <ThemedText style={{ fontSize: 14, color: '#666' }}>Followers</ThemedText>
-                    </View>
-                </ThemedView>
+                <CompanyStats
+                    postsCount={companyPosts.length}
+                    jobsCount={companyPosts.filter(p => p.type === 'job').length}
+                />
+
+                {/* Company Contact */}
+                <CompanyContact
+                    website={company.website}
+                    hasPhone={!!companyOwner?.phone}
+                    onWebsitePress={() => {
+                        // Handle website press
+                        console.log('Website pressed:', company.website);
+                    }}
+                    onPhonePress={() => {
+                        // Handle phone press
+                        console.log('Phone pressed:', companyOwner?.phone);
+                    }}
+                />
+
+                {/* Company Owner */}
+                {companyOwner && (
+                    <CompanyOwner
+                        owner={companyOwner}
+                        onContactPress={() => {
+                            // Navigate to owner profile
+                            console.log('Contact owner:', companyOwner.id);
+                        }}
+                    />
+                )}
 
                 {/* Company Posts */}
-                <ThemedView style={{ padding: 20 }}>
-                    <ThemedText style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
-                        Company Posts
-                    </ThemedText>
-
-                    {postsLoading ? (
-                        <ActivityIndicator size="small" />
-                    ) : companyPosts.length > 0 ? (
-                        companyPosts.map((post) => (
-                            <ContentCard
-                                key={post.id}
-                                id={post.id}
-                                variant={post.type === 'job' ? 'job' : 'news'}
-                                title={post.title || ''}
-                                description={post.content || ''}
-                                mainImage={post.image_url || undefined}
-                                createdAt={post.created_at}
-                                criteria={post.criteria || undefined}
-                                user_id={post.user_id}
-                                compact={true}
-                            />
-                        ))
-                    ) : (
-                        <ThemedText style={{ textAlign: 'center', color: '#666' }}>
-                            No posts from this company yet
-                        </ThemedText>
-                    )}
-                </ThemedView>
+                <CompanyPosts
+                    posts={companyPosts}
+                    isLoading={postsLoading}
+                />
             </ScrollView>
         </ScreenContainer>
     );
-} 
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "#fff",
+    },
+
+    // Header
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        backgroundColor: "rgba(255,255,255,0.9)",
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 1,
+    },
+    headerLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: "600",
+        marginLeft: 10,
+    },
+    headerRight: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    headerButton: {
+        padding: 10,
+        borderRadius: 20,
+    },
+
+    // Loader
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
+    loadingText: {
+        fontSize: 15,
+        opacity: 0.6,
+        marginTop: 12,
+    },
+}); 

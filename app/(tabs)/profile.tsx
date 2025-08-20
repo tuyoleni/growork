@@ -6,9 +6,10 @@ import ScreenContainer from '@/components/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CategorySelector from '@/components/ui/CategorySelector';
+import { useFlashToast } from '@/components/ui/Flash';
 import { useAuth, useThemeColor } from '@/hooks';
 import { useRouter } from 'expo-router';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
@@ -20,13 +21,25 @@ const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
-  const { profile, loading } = useAuth();
+  const { profile, loading, error, isConnectionTimeoutError } = useAuth();
+  const toast = useFlashToast();
   const scrollY = useRef(new Animated.Value(0)).current;
   const iconColor = useThemeColor({}, 'icon');
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
   const textColor = useThemeColor({}, 'text');
   const mutedTextColor = useThemeColor({}, 'mutedText');
+
+  // Show toast for connection timeout errors
+  useEffect(() => {
+    if (error && isConnectionTimeoutError({ message: error })) {
+      toast.show({
+        type: 'danger',
+        title: 'Connection Error',
+        message: 'Network connection issue. Please check your internet connection and try again.',
+      });
+    }
+  }, [error, isConnectionTimeoutError, toast]);
 
   // If loading, you can show a loader or return null
   if (loading) return null;

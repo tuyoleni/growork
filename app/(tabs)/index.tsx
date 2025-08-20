@@ -44,7 +44,6 @@ export default function Home() {
   const filteredPosts = useMemo(
     () =>
       cardPosts.filter((post) => {
-        if (post.variant === 'sponsored') return true;
         if (selectedContentType === 1 && post.variant !== 'job') return false;
         if (selectedContentType === 2 && post.variant !== 'news') return false;
         if (selectedIndustry !== -1) {

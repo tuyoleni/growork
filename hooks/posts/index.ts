@@ -21,6 +21,9 @@ export { useHomeFeed } from './useHomeFeed';
 export { useCommentOperations } from './useCommentOperations';
 export { useTextToSpeech } from './useTextToSpeech';
 
+// Post creation function
+export { addPost } from './usePostOperations';
+
 // Legacy exports for backward compatibility (deprecated)
 export { useBookmarks } from './useBookmarks';
 export { useLikes } from './useLikes';

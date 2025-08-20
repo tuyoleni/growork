@@ -13,6 +13,17 @@ export const supabase = createClient(
             detectSessionInUrl: false,
             lock: processLock,
         },
+        global: {
+            headers: {
+                'X-Client-Info': 'growork-app',
+            },
+        },
+        db: {
+            schema: 'public',
+        },
+        realtime: {
+            timeout: 20000,
+        },
     })
 
 export const clearAllSupabaseData = async () => {

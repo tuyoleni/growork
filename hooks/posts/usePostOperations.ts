@@ -86,13 +86,13 @@ export function usePostOperations() {
 
 
 
-    const convertedPost = {
+    const convertedPost: ExtendedContentCardProps = {
       id: post.id,
       title: post.title || '',
       description: post.content || '',
       mainImage: post.image_url || undefined,
       createdAt: post.created_at,
-      variant,
+      variant: post.type === PostType.Job ? 'job' : 'news',
       user_id: post.user_id,
       ...(post.type === PostType.Job ? {
         criteria: criteria
@@ -183,8 +183,87 @@ export function usePostOperations() {
     }
   }, []);
 
+  const addPost = useCallback(async (postData: {
+    user_id: string;
+    type: PostType;
+    title: string;
+    content: string;
+    image_url?: string | null;
+    industry?: string | null;
+    is_sponsored?: boolean;
+    criteria?: any;
+  }) => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert([{
+          user_id: postData.user_id,
+          type: postData.type,
+          title: postData.title,
+          content: postData.content,
+          image_url: postData.image_url || null,
+          industry: postData.industry || null,
+          is_sponsored: postData.is_sponsored || false,
+          criteria: postData.criteria || null,
+        }])
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('❌ Error creating post:', error);
+        throw error;
+      }
+
+      console.log('✅ Post created successfully:', data);
+      return { data, error: null };
+    } catch (error) {
+      console.error('❌ Error in addPost:', error);
+      return { data: null, error };
+    }
+  }, []);
+
   return {
     convertDbPostToContentCard,
     fetchPostsWithData,
+    addPost,
   };
 }
+
+export const addPost = async (postData: {
+  user_id: string;
+  type: PostType;
+  title: string;
+  content: string;
+  image_url?: string | null;
+  industry?: string | null;
+  is_sponsored?: boolean;
+  criteria?: any;
+}) => {
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .insert([{
+        user_id: postData.user_id,
+        type: postData.type,
+        title: postData.title,
+        content: postData.content,
+        image_url: postData.image_url || null,
+        industry: postData.industry || null,
+        is_sponsored: postData.is_sponsored || false,
+        criteria: postData.criteria || null,
+      }])
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('❌ Error creating post:', error);
+      throw error;
+    }
+
+    console.log('✅ Post created successfully:', data);
+    return { data, error: null };
+  } catch (error) {
+    console.error('❌ Error in addPost:', error);
+    return { data: null, error };
+  }
+};
