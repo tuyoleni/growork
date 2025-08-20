@@ -6,6 +6,7 @@ import {
   NativeSyntheticEvent,
   Pressable,
   View,
+  RefreshControl,
 } from 'react-native';
 
 
@@ -17,6 +18,7 @@ import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 import ContentCard from '@/components/content/ContentCard';
 import { PostType, UserType } from '@/types/enums';
 import { ContentCardSkeleton } from '@/components/ui/Skeleton';
+import NewPostsIndicator from '@/components/ui/NewPostsIndicator';
 
 
 const INDUSTRIES = [
@@ -29,6 +31,9 @@ export default function Home() {
   const { profile } = useAuth();
   const [selectedContentType, setSelectedContentType] = useState(0);
   const [selectedIndustry, setSelectedIndustry] = useState(-1);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasNewPosts, setHasNewPosts] = useState(false);
+  const [lastPostCount, setLastPostCount] = useState(0);
   const headerAnim = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
   const isAnimating = useRef(false);
@@ -96,6 +101,35 @@ export default function Home() {
     fetchPosts();
   }, [fetchPosts]);
 
+  // Handle pull-to-refresh
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchPosts();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchPosts]);
+
+  // Check for new posts
+  const checkForNewPosts = useCallback(() => {
+    if (cardPosts.length > lastPostCount && lastPostCount > 0) {
+      setHasNewPosts(true);
+    }
+    setLastPostCount(cardPosts.length);
+  }, [cardPosts.length, lastPostCount]);
+
+  // Update last post count when posts change
+  React.useEffect(() => {
+    checkForNewPosts();
+  }, [cardPosts.length]);
+
+  // Handle scroll to top to see new posts
+  const handleScrollToTop = useCallback(() => {
+    setHasNewPosts(false);
+    // Scroll to top logic will be handled by the ScrollView
+  }, []);
+
   // --- SHEET OPENERS ---
   const { openCreatePostSheet, openJobApplicationSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });
 
@@ -145,7 +179,6 @@ export default function Home() {
             selectedIndustry={selectedIndustry}
             onIndustryChange={setSelectedIndustry}
             onAddPost={handleShowCreatePost}
-            isBusinessUser={Boolean(profile?.user_type === UserType.Business)}
           />
         </Animated.View>
 
@@ -178,14 +211,28 @@ export default function Home() {
           selectedIndustry={selectedIndustry}
           onIndustryChange={setSelectedIndustry}
           onAddPost={handleShowCreatePost}
-          isBusinessUser={Boolean(profile?.user_type === UserType.Business)}
         />
       </Animated.View>
+
+      {/* New Posts Indicator */}
+      <NewPostsIndicator
+        visible={hasNewPosts}
+        onPress={handleScrollToTop}
+        style={{ top: HEADER_HEIGHT + 20 }}
+      />
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={handleScroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#007AFF"
+            colors={['#007AFF']}
+          />
+        }
         contentContainerStyle={{ paddingTop: 0 }}
       >
         {filteredPosts.length > 0 ? (

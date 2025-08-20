@@ -9,8 +9,8 @@ import CategorySelector from '@/components/ui/CategorySelector';
 import { useFlashToast } from '@/components/ui/Flash';
 import { useAuth, useThemeColor } from '@/hooks';
 import { useRouter } from 'expo-router';
-import React, { useState, useRef, useEffect } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Animated, StyleSheet, View, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
@@ -20,8 +20,18 @@ const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
 
 export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
-  const { profile, loading, error, isConnectionTimeoutError } = useAuth();
+  const { profile, loading, error, isConnectionTimeoutError, refreshProfile } = useAuth();
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshProfile();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshProfile]);
   const toast = useFlashToast();
   const scrollY = useRef(new Animated.Value(0)).current;
   const iconColor = useThemeColor({}, 'icon');
@@ -152,6 +162,14 @@ export default function Profile() {
           { useNativeDriver: false }
         )}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#007AFF"
+            colors={['#007AFF']}
+          />
+        }
       >
         <ThemedView style={styles.container}>
           <Animated.View

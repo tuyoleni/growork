@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { ActivityIndicator, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Document } from '@/types/documents';
 import DocumentCard from '@/components/content/DocumentCard';
 import { Feather } from '@expo/vector-icons';
@@ -20,8 +20,20 @@ export default function SearchClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterKey>('all');
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { results, loading, error, search } = useSearch();
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (searchTerm) {
+        await search(searchTerm);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [searchTerm, search]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -74,6 +86,14 @@ export default function SearchClient() {
         style={styles.container}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#007AFF"
+            colors={['#007AFF']}
+          />
+        }
       >
         <ThemedView style={styles.header}>
           <SearchBar

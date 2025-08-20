@@ -17,14 +17,27 @@ export function useHomeFeed() {
 
       const postsData = await fetchPostsWithData();
       console.log('🏠 Home feed: Raw posts data received:', postsData?.length || 0, 'posts');
+      console.log('🏠 Home feed: Raw posts data:', JSON.stringify(postsData, null, 2));
 
-      // Convert each post to the correct format
-      const convertedPosts = await Promise.all(
+      // Convert each post to the correct format with error handling
+      const convertedPosts = await Promise.allSettled(
         postsData.map(post => convertDbPostToContentCard(post))
       );
 
-      console.log('🏠 Home feed: Posts converted successfully:', convertedPosts?.length || 0, 'posts');
-      setPosts(convertedPosts);
+      // Filter out failed conversions and log errors
+      const successfulPosts = convertedPosts
+        .map((result, index) => {
+          if (result.status === 'fulfilled') {
+            return result.value;
+          } else {
+            console.error(`❌ Failed to convert post ${index}:`, result.reason);
+            return null;
+          }
+        })
+        .filter(post => post !== null) as ExtendedContentCardProps[];
+
+      console.log('🏠 Home feed: Posts converted successfully:', successfulPosts?.length || 0, 'posts');
+      setPosts(successfulPosts);
     } catch (err: any) {
       console.error('❌ Home feed: Error fetching posts:', err);
       setError(err.message);

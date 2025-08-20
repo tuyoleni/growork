@@ -16,7 +16,6 @@ interface HeaderProps {
   selectedIndustry: number;
   onIndustryChange: (index: number) => void;
   onAddPost: () => void;
-  isBusinessUser?: boolean;
 }
 
 const Header = ({
@@ -25,14 +24,13 @@ const Header = ({
   selectedIndustry,
   onIndustryChange,
   onAddPost,
-  isBusinessUser = false,
 }: HeaderProps) => {
   const visibleIndustries = INDUSTRIES;
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const router = useRouter();
   const permissions = usePermissions();
-  const showAdd = isBusinessUser || permissions.isBusinessUser;
+  const showAdd = permissions.isBusinessUser;
 
   return (
     <View

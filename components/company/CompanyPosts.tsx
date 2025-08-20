@@ -14,8 +14,16 @@ export const CompanyPosts: React.FC<CompanyPostsProps> = ({
     posts,
     isLoading,
 }) => {
-    // Filter for only company posts (job posts)
-    const companyPosts = posts.filter(post => post.type === 'job');
+    // Filter for posts that are either:
+    // 1. Job posts (company posts)
+    // 2. News posts created by the company
+    const companyPosts = posts.filter(post => {
+        // Show job posts (company posts)
+        if (post.type === 'job') return true;
+        // Show news posts created by the company
+        if (post.type === 'news') return true;
+        return false;
+    });
 
     if (isLoading) {
         return (
@@ -49,7 +57,7 @@ export const CompanyPosts: React.FC<CompanyPostsProps> = ({
                     <ContentCard
                         key={post.id}
                         id={post.id}
-                        variant="job"
+                        variant={post.type === 'job' ? 'job' : 'news'}
                         title={post.title || ''}
                         description={post.content || ''}
                         mainImage={post.image_url || undefined}

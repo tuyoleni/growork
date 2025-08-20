@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { supabase } from '../../utils/supabase';
+import { ensureUserProfile } from '../../utils/profileUtils';
 import type { Profile } from '../../types';
 
 export function useAuthOperations() {
@@ -29,6 +30,16 @@ export function useAuthOperations() {
           error.message?.includes('disconnect/reset before headers')) {
           // This will be handled by the calling component with a toast
           console.warn('Connection timeout detected - should show toast to user');
+        }
+
+        // If profile doesn't exist, try to create one
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, attempting to create one for user:', userId);
+          const createdProfile = await ensureUserProfile(userId);
+          if (createdProfile) {
+            profileLoaded.current = true;
+            return createdProfile;
+          }
         }
 
         return null;

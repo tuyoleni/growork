@@ -3,10 +3,10 @@ import { useAds } from '../hooks/search';
 import { useApplications } from '../hooks/applications';
 import { useBookmarks, useCommentLikes, usePosts } from '../hooks/posts';
 import { Ad, Application, Post, Profile } from '../types';
-import React, { createContext, useContext, ReactNode, useEffect, useCallback } from 'react';
+import { UserType } from '../types/enums';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { supabase } from './supabase';
 
-// Import the BookmarkState type from useInteractions
 interface BookmarkState {
   loading: boolean;
   error: string | null;
@@ -81,28 +81,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Local state for auth errors
   const [authError, setAuthError] = React.useState<string | null>(null);
 
-  // Memoize the initialization function to prevent infinite loops
-  const initializeData = useCallback(async () => {
-    if (auth.user) {
-      try {
-        await Promise.all([
-          postsHook.refresh(),
-          applicationsHook.fetchApplications(),
-          adsHook.fetchAds()
-        ]);
-        setAuthError(null);
-      } catch (error) {
-        console.error('Error initializing data:', error);
-      }
-    }
-  }, [auth.user]);
-
-  // Initialize state when user changes - only depend on user ID, not hook functions
+  // Initialize state when user changes
   useEffect(() => {
     if (auth.user?.id) {
+      const initializeData = async () => {
+        try {
+          await Promise.all([
+            postsHook.refresh(),
+            applicationsHook.fetchApplications(),
+            adsHook.fetchAds()
+          ]);
+          setAuthError(null);
+        } catch (error) {
+          console.error('Error initializing data:', error);
+        }
+      };
       initializeData();
     }
-  }, [auth.user?.id, initializeData]);
+  }, [auth.user?.id]); // Only depend on user ID
 
   const value: AppContextType = {
     // Auth state and methods
@@ -144,7 +140,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
         if (error) {
           setAuthError(error.message);
+          return { data, error };
         }
+
+        // If signup was successful and we have a user, create a profile
+        if (data?.user?.id) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              username,
+              name,
+              surname,
+              user_type: UserType.User,
+            });
+
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+            // Don't fail the signup if profile creation fails, but log it
+            // The user can still verify their email and complete their profile later
+          }
+        }
+
         return { data, error };
       } catch (error: any) {
         const errorMessage = error.message || 'Sign up failed';

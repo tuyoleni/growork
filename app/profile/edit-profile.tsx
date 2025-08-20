@@ -22,7 +22,7 @@ import { useFlashToast } from '@/components/ui/Flash';
 
 export default function EditProfileNative() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const colorScheme = useColorScheme();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
@@ -245,6 +245,16 @@ export default function EditProfileNative() {
                   }));
                 } else {
                   console.log('User type updated successfully');
+
+                  // Refresh the profile to update the entire app
+                  await refreshProfile();
+
+                  // Show success message
+                  toast.show({
+                    type: 'success',
+                    title: 'Account Updated',
+                    message: value ? 'Your account has been upgraded to Business. You can now create posts and manage companies.' : 'Your account has been changed to Personal.',
+                  });
                 }
               } catch (e) {
                 console.error('Error updating user type:', e);

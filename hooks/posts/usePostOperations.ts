@@ -20,19 +20,15 @@ export interface DbPost {
   updated_at: string | null;
   is_sponsored: boolean;
   industry?: string | null;
-  company?: string | null;
-  company_id?: string | null;
-  salary?: string | null;
-  job_type?: string | null;
-  location?: string | null;
-  source?: string | null;
-  published_at?: string | null;
+  criteria?: any; // JSON field containing criteria data
   likes?: { id: string; user_id: string; post_id: string }[];
   comments?: { id: string; user_id: string; post_id: string; content: string }[];
 }
 
 export function usePostOperations() {
   const convertDbPostToContentCard = useCallback(async (post: DbPost): Promise<ExtendedContentCardProps> => {
+    console.log('🔄 convertDbPostToContentCard: Post ID:', post.id, 'Type:', post.type);
+    console.log('📋 Full post data:', JSON.stringify(post, null, 2));
 
 
     let postProfile: { avatar_url: string | null; name: string; surname: string; username?: string | null } = {
@@ -58,33 +54,38 @@ export function usePostOperations() {
       console.warn('⚠️ Error fetching profile data for post:', post.id, error);
     }
 
-    const newsSource = (post.type === PostType.News && post.source)
-      ? post.source
-      : undefined;
+    // const newsSource = (post.type === PostType.News && post.criteria?.source)
+    //   ? post.criteria.source
+    //   : undefined;
 
-    let variant: 'job' | 'news' | 'sponsored';
-    if (post.is_sponsored) {
-      variant = 'sponsored';
-    } else if (post.type === PostType.Job) {
-      variant = 'job';
-    } else {
-      variant = 'news';
-    }
+    // Determine variant based on post type
+    // const variant: 'job' | 'news' = post.type === PostType.Job ? 'job' : 'news';
 
-    const authorProfile = postProfile && 'id' in postProfile ? {
-      id: postProfile.id,
-      name: postProfile.name,
-      surname: postProfile.surname,
-      username: postProfile.username || undefined,
-      avatar_url: postProfile.avatar_url || undefined,
-      profession: undefined,
-      location: undefined,
-    } : undefined;
+    // const authorProfile = postProfile && 'id' in postProfile ? {
+    //   id: postProfile.id,
+    //   name: postProfile.name,
+    //   surname: postProfile.surname,
+    //   username: postProfile.username || undefined,
+    //   avatar_url: postProfile.avatar_url || undefined,
+    //   profession: undefined,
+    //   location: undefined,
+    // } : undefined;
 
-    const criteria = (post as any).criteria || {};
-    console.log('📋 Criteria data:', criteria);
+    // Build criteria object from JSON criteria field
+    const criteriaData = post.criteria || {};
+    console.log('📋 Raw criteria data from post:', JSON.stringify(criteriaData, null, 2));
 
+    const criteria = {
+      companyId: criteriaData.companyId || undefined,
+      company: criteriaData.company || undefined,
+      location: criteriaData.location || undefined,
+      salary: criteriaData.salary || undefined,
+      jobType: criteriaData.jobType || undefined,
+      source: criteriaData.source || undefined,
+      publication_date: criteriaData.publication_date || undefined,
+    };
 
+    console.log('📋 Built criteria object:', JSON.stringify(criteria, null, 2));
 
     const convertedPost: ExtendedContentCardProps = {
       id: post.id,
@@ -94,15 +95,7 @@ export function usePostOperations() {
       createdAt: post.created_at,
       variant: post.type === PostType.Job ? 'job' : 'news',
       user_id: post.user_id,
-      ...(post.type === PostType.Job ? {
-        criteria: criteria
-      } : {}),
-      ...(post.type === PostType.News ? {
-        criteria: {
-          source: post.source || undefined,
-          publication_date: post.published_at || undefined,
-        }
-      } : {}),
+      criteria: criteria,
     };
 
     return convertedPost;
@@ -117,28 +110,28 @@ export function usePostOperations() {
     try {
 
 
-      const { count: totalPosts, error: countError } = await supabase
-        .from('posts')
-        .select('*', { count: 'exact', head: true });
+      // const { count: totalPosts, error: countError } = await supabase
+      //   .from('posts')
+      //   .select('*', { count: 'exact', head: true });
 
-      if (countError) {
-        console.error('❌ Posts count failed:', countError);
-      } else {
+      // if (countError) {
+      //   console.error('❌ Posts count failed:', countError);
+      // } else {
 
-      }
+      // }
 
-      const { data: testData, error: testError } = await supabase
-        .from('posts')
-        .select('id, title, type')
-        .limit(1);
+      // const { data: testData, error: testError } = await supabase
+      //   .from('posts')
+      //   .select('id, title, type')
+      //   .limit(1);
 
-      if (testError) {
-        console.error('❌ Basic posts table access failed:', testError);
-        console.error('❌ Error details:', testError.message, testError.details, testError.hint);
-        throw testError;
-      } else {
+      // if (testError) {
+      //   console.error('❌ Basic posts table access failed:', testError);
+      //   console.error('❌ Error details:', testError.message, testError.details, testError.hint);
+      //   throw testError;
+      // } else {
 
-      }
+      // }
 
       let query = supabase
         .from('posts')
@@ -168,6 +161,9 @@ export function usePostOperations() {
       }
 
       const { data: postsData, error: postsError } = await query;
+
+      console.log('🔍 fetchPostsWithData: Raw posts query result:', JSON.stringify(postsData, null, 2));
+      console.log('🔍 fetchPostsWithData: Posts error:', JSON.stringify(postsError, null, 2));
 
       if (postsError) {
         console.error('❌ Error fetching posts:', postsError);

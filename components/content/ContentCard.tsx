@@ -13,29 +13,51 @@ import { supabase } from '@/utils/supabase';
 import { useCompanies } from '@/hooks/companies';
 import { useRouter } from 'expo-router';
 
-function CompanyHeader({ companyId }: { companyId?: string }) {
+function CompanyHeader({ companyId, companyName }: { companyId: string; companyName?: string }) {
     const [company, setCompany] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
-    const { getCompanyByIdPublic } = useCompanies();
+    const { getCompanyById } = useCompanies();
 
     useEffect(() => {
-        if (companyId) {
-            getCompanyByIdPublic(companyId)
-                .then(({ company: companyData }) => {
-                    if (companyData) setCompany(companyData);
-                    setLoading(false);
-                });
-        }
+        console.log('🏢 CompanyHeader: Fetching company with ID:', companyId);
+        getCompanyById(companyId)
+            .then(({ company: companyData, error }) => {
+                if (error) {
+                    console.error('❌ CompanyHeader: Error fetching company:', error);
+                }
+                if (companyData) {
+                    console.log('✅ CompanyHeader: Company found:', companyData.name);
+                    setCompany(companyData);
+                }
+                setLoading(false);
+            });
     }, [companyId]);
 
-    if (loading || !company) {
+    if (loading) {
         return (
             <View style={styles.header}>
                 <ThemedAvatar size={32} image="" square={true} />
                 <View style={styles.headerText}>
                     <ThemedText style={[styles.name, { color: mutedTextColor }]}>Loading...</ThemedText>
+                </View>
+            </View>
+        );
+    }
+
+    if (!company) {
+        return (
+            <View style={styles.header}>
+                <ThemedAvatar
+                    size={32}
+                    image={companyName ? `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&size=32` : ""}
+                    square={true}
+                />
+                <View style={styles.headerText}>
+                    <ThemedText style={[styles.name, { color: textColor }]} numberOfLines={1}>
+                        {companyName || 'Unknown Company'}
+                    </ThemedText>
                 </View>
             </View>
         );
@@ -168,6 +190,8 @@ export default function ContentCard({
     compact = false,
     isSponsored = false,
 }: ContentCardProps) {
+    console.log('📋 ContentCard: Received props - variant:', variant, 'criteria:', criteria, 'user_id:', user_id);
+    console.log('📋 ContentCard: Full props:', JSON.stringify({ variant, criteria, user_id, title, description }, null, 2));
     const router = useRouter();
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
@@ -201,13 +225,13 @@ export default function ContentCard({
             },
             style
         ]}>
-            {/* Header - Specific to post type */}
+            {/* Header - Show company if available, otherwise show user */}
             <Pressable
                 style={styles.headerContainer}
-                onPress={variant === 'job' ? handleCompanyPress : handleUserPress}
+                onPress={criteria?.companyId ? handleCompanyPress : handleUserPress}
             >
-                {variant === 'job' ? (
-                    <CompanyHeader companyId={criteria?.companyId} />
+                {criteria?.companyId ? (
+                    <CompanyHeader companyId={criteria?.companyId} companyName={criteria?.company} />
                 ) : (
                     <UserHeader userId={user_id} />
                 )}

@@ -1,3 +1,5 @@
+import { Post } from './posts';
+
 export interface Company {
   id: string; // uuid
   name: string;
@@ -12,6 +14,7 @@ export interface Company {
   status: 'pending' | 'approved' | 'rejected';
   created_at: string; // ISO timestamp
   updated_at: string; // ISO timestamp
+  posts?: Post[]; // Optional posts array
 }
 
 export interface CompanyFormData {

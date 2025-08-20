@@ -4,8 +4,8 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import BookmarksHeader from '@/components/ui/BookmarksHeader';
 import { ContentCardSkeleton } from '@/components/ui/Skeleton';
-import React, { useState } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import BookmarkedContentList from '@/components/content/BookmarkedContentList';
 import { PostType } from '@/types/enums';
 import { useRouter } from 'expo-router';
@@ -21,12 +21,23 @@ interface BookmarkedItem {
 
 export default function Bookmarks() {
   const [selectedCategory, setSelectedCategory] = useState(3); // All category
+  const [refreshing, setRefreshing] = useState(false);
   const {
     bookmarkedItems,
     loading,
     error,
-    toggleBookmark
+    toggleBookmark,
+    refreshBookmarks
   } = useBookmarks();
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshBookmarks();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshBookmarks]);
   const router = useRouter();
 
   // Filter items based on selected category
@@ -103,6 +114,14 @@ export default function Bookmarks() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#007AFF"
+            colors={['#007AFF']}
+          />
+        }
       >
         {/* Bookmarks Content */}
         <ThemedView style={styles.contentSection}>

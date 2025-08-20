@@ -36,8 +36,6 @@ export default function CompanyDetailsScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const { getCompanyByIdPublic, getCompanyByUserId, debugCompanyTable } = useCompanies();
-    const [companyPosts, setCompanyPosts] = useState<any[]>([]);
-    const [postsLoading, setPostsLoading] = useState(false);
 
     // Theme colors
     const textColor = useThemeColor({}, 'text');
@@ -90,34 +88,6 @@ export default function CompanyDetailsScreen() {
         }
     }, []);
 
-    const fetchCompanyPosts = useCallback(async (companyId: string, companyUserId: string) => {
-        try {
-            setPostsLoading(true);
-
-            // Fetch posts that are either:
-            // 1. Created by the company (user_id matches company's user_id)
-            // 2. Job posts that target this company (criteria.companyId matches)
-            const { data: postsData, error } = await supabase
-                .from('posts')
-                .select('*')
-                .or(`user_id.eq.${companyUserId},criteria->>companyId.eq.${companyId}`)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching company posts:', error);
-                return;
-            }
-
-            if (postsData) {
-                setCompanyPosts(postsData);
-            }
-        } catch (error) {
-            console.error('Error fetching company posts:', error);
-        } finally {
-            setPostsLoading(false);
-        }
-    }, []);
-
     const fetchCompanyDetails = useCallback(async () => {
         if (!id) return;
 
@@ -138,9 +108,6 @@ export default function CompanyDetailsScreen() {
 
                 // Fetch company owner's profile for contact information
                 await fetchCompanyOwner(companyResult.user_id);
-
-                // Fetch company-specific posts
-                await fetchCompanyPosts(companyResult.id, companyResult.user_id);
             } else {
                 console.log('No company found with ID:', id);
                 throw new Error('Company not found');
@@ -165,7 +132,7 @@ export default function CompanyDetailsScreen() {
         } finally {
             setLoading(false);
         }
-    }, [id, fetchCompanyOwner, fetchCompanyPosts]);
+    }, [id, fetchCompanyOwner]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -253,8 +220,8 @@ export default function CompanyDetailsScreen() {
 
                 {/* Company Stats */}
                 <CompanyStats
-                    postsCount={companyPosts.length}
-                    jobsCount={companyPosts.filter(p => p.type === 'job').length}
+                    postsCount={company.posts?.length || 0}
+                    jobsCount={company.posts?.length || 0}
                 />
 
                 {/* Company Contact */}
@@ -284,8 +251,8 @@ export default function CompanyDetailsScreen() {
 
                 {/* Company Posts */}
                 <CompanyPosts
-                    posts={companyPosts}
-                    isLoading={postsLoading}
+                    posts={company.posts || []}
+                    isLoading={false} // posts are now directly in company object
                 />
             </ScrollView>
         </ScreenContainer>

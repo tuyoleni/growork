@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { UserType } from '@/types/enums';
+import { UserType } from '../../types/enums';
+
 
 export type PermissionAction =
     | 'create:post'
@@ -8,6 +9,7 @@ export type PermissionAction =
     | 'manage:company'
     | 'view:analytics'
     | string;
+
 
 export interface Permissions {
     isAuthenticated: boolean;
@@ -21,6 +23,8 @@ export interface Permissions {
 /**
  * Global permissions hook derived from the authenticated user's profile.
  * Use anywhere to drive dynamic UI and feature access.
+ * 
+ * @returns Permissions object with user type, authentication status, and permission checks
  */
 export function usePermissions(): Permissions & { refresh: () => Promise<void> } {
     const { user, profile, refreshProfile } = useAuth();
@@ -48,7 +52,6 @@ export function usePermissions(): Permissions & { refresh: () => Promise<void> }
         }
     };
 
-    // Function to refresh permissions by refreshing the profile
     const refresh = useCallback(async () => {
         if (refreshProfile) {
             await refreshProfile();
