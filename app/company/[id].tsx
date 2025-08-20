@@ -24,7 +24,6 @@ import {
     CompanyPosts
 } from '../../components/company';
 import { useCompanies } from '../../hooks/companies';
-import { usePosts } from '../../hooks/posts';
 import { useThemeColor } from '../../hooks';
 import { supabase } from '../../utils/supabase';
 
@@ -220,8 +219,7 @@ export default function CompanyDetailsScreen() {
 
                 {/* Company Stats */}
                 <CompanyStats
-                    postsCount={company.posts?.length || 0}
-                    jobsCount={company.posts?.length || 0}
+                    companyId={id}
                 />
 
                 {/* Company Contact */}
@@ -251,8 +249,7 @@ export default function CompanyDetailsScreen() {
 
                 {/* Company Posts */}
                 <CompanyPosts
-                    posts={company.posts || []}
-                    isLoading={false} // posts are now directly in company object
+                    companyId={id}
                 />
             </ScrollView>
         </ScreenContainer>

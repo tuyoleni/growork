@@ -3,21 +3,25 @@ import { View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/ui/useThemeColor';
+import { useCompanyPosts } from '@/hooks/posts';
 
 interface CompanyStatsProps {
-    postsCount: number;
-    jobsCount: number;
+    companyId: string;
     onPostsPress?: () => void;
     onJobsPress?: () => void;
 }
 
 export const CompanyStats: React.FC<CompanyStatsProps> = ({
-    postsCount,
-    jobsCount,
+    companyId,
     onPostsPress,
     onJobsPress,
 }) => {
+    const { posts } = useCompanyPosts(companyId);
     const mutedTextColor = useThemeColor({}, 'mutedText');
+
+    // Calculate counts from the actual posts data
+    const postsCount = posts?.length || 0;
+    const jobsCount = posts?.filter(post => post.type === 'job').length || 0;
 
     return (
         <ThemedView style={styles.container}>

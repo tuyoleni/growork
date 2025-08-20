@@ -20,6 +20,7 @@ export { usePostById } from './usePostById';
 export { useHomeFeed } from './useHomeFeed';
 export { useCommentOperations } from './useCommentOperations';
 export { useTextToSpeech } from './useTextToSpeech';
+export { useCompanyPosts } from './useCompanyPosts';
 
 // Post creation function
 export { addPost } from './usePostOperations';
