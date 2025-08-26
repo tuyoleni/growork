@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { supabase } from '../../utils/supabase';
+import { supabaseRequest } from '../../utils/supabaseRequest';
 import { ensureUserProfile } from '../../utils/profileUtils';
 import type { Profile } from '../../types';
 
@@ -14,32 +15,28 @@ export function useAuthOperations() {
     try {
       profileFetching.current = true;
 
-      // Always fetch fresh data from database
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // Always fetch fresh data from database (with retry/abort handling)
+      const { data: profile } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'profiles:getForAuth' }
+      );
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-
-        // Check if it's a connection timeout error
-        if (error.message?.includes('upstream connect error') ||
-          error.message?.includes('connection timeout') ||
-          error.message?.includes('disconnect/reset before headers')) {
-          // This will be handled by the calling component with a toast
-          console.warn('Connection timeout detected - should show toast to user');
-        }
-
+      if (!profile) {
         // If profile doesn't exist, try to create one
-        if (error.code === 'PGRST116') {
-          console.log('Profile not found, attempting to create one for user:', userId);
-          const createdProfile = await ensureUserProfile(userId);
-          if (createdProfile) {
-            profileLoaded.current = true;
-            return createdProfile;
-          }
+        // Note: supabaseRequest throws on non-200 errors, so only reach here when data is null
+        // Attempt ensureUserProfile which will internally fetch/create
+        console.warn('Profile not found, attempting to create one for user:', userId);
+        const createdProfile = await ensureUserProfile(userId);
+        if (createdProfile) {
+          profileLoaded.current = true;
+          return createdProfile;
         }
 
         return null;

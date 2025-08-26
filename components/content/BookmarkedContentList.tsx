@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
@@ -8,6 +8,7 @@ import { BookmarkedItem } from '@/hooks/posts/useBookmarks';
 import { PostType, ApplicationStatus } from '@/types/enums';
 
 import ContentCard from './ContentCard';
+import { useInteractions } from '@/hooks/posts/useInteractions';
 
 interface BookmarkedContentListProps {
     items: BookmarkedItem[];
@@ -29,6 +30,22 @@ export default function BookmarkedContentList({
     const borderColor = useThemeColor({}, 'border');
     const backgroundColor = useThemeColor({}, 'background');
     const cardBg = useThemeColor({}, 'backgroundSecondary');
+    const { initializePosts } = useInteractions();
+
+    // Memoize post IDs to avoid effect thrashing
+    const postIds = useMemo(
+        () => items
+            .filter((i: BookmarkedItem) => i.type === 'post')
+            .map((i: BookmarkedItem) => (i.data as any)?.id as string)
+            .filter(Boolean),
+        [items]
+    );
+    const postIdsKey = useMemo(() => postIds.join(','), [postIds]);
+
+    // Batch initialize like/bookmark states only when IDs actually change
+    React.useEffect(() => {
+        if (postIds.length) initializePosts(postIds);
+    }, [postIdsKey, initializePosts]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -75,9 +92,11 @@ export default function BookmarkedContentList({
 
 
 
-    const renderPostItem = (item: BookmarkedItem) => {
+    const renderPostItem = useCallback((item: BookmarkedItem) => {
         const post = item.data as any;
         const profile = post.profiles;
+        const authorName = profile ? `${profile.name ?? ''}${profile.surname ? ' ' + profile.surname : ''}`.trim() : undefined;
+        const authorAvatarUrl = profile?.avatar_url || undefined;
 
         return (
             <ContentCard
@@ -90,11 +109,13 @@ export default function BookmarkedContentList({
                 createdAt={post.created_at}
                 criteria={post.criteria || undefined}
                 user_id={post.user_id}
+                authorName={authorName}
+                authorAvatarUrl={authorAvatarUrl}
             />
         );
-    };
+    }, []);
 
-    const renderApplicationItem = (item: BookmarkedItem) => {
+    const renderApplicationItem = useCallback((item: BookmarkedItem) => {
         const application = item.data as any;
         return (
             <Pressable
@@ -154,7 +175,7 @@ export default function BookmarkedContentList({
                 </View>
             </Pressable>
         );
-    };
+    }, [borderColor, backgroundColor, cardBg, mutedTextColor, textColor]);
 
     return (
         <ThemedView style={styles.container}>

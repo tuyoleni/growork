@@ -2,6 +2,7 @@ import { Post, Comment, Like, PostType } from '@/types';
 import { Profile } from '@/types/profile';
 import { useCallback, useState } from 'react';
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { useDataFetching } from '../data/useDataFetching';
 import { usePostOperations } from './usePostOperations';
 
@@ -138,29 +139,39 @@ export function useSearchPosts() {
         query = query.eq('industry', industryFilter);
       }
 
-      const { data: postsData, error: postsError } = await query;
+      const { data: postsData } = await supabaseRequest<any[]>(
+        async () => {
+          const { data, error, status } = await query;
+          return { data, error, status };
+        },
+        { logTag: 'posts:search' }
+      );
 
-      if (postsError) {
-        throw postsError;
+      // Batch-fetch profiles for all posts in a single request
+      const userIds = Array.from(new Set((postsData || []).map((p: any) => p.user_id).filter(Boolean)));
+      let profilesById: Record<string, any> = {};
+      if (userIds.length) {
+        const { data: profilesData } = await supabaseRequest<any[]>(
+          async () => {
+            const { data, error, status } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('id', userIds);
+            return { data, error, status };
+          },
+          { logTag: 'profiles:listForSearch' }
+        );
+        for (const p of profilesData || []) {
+          if (p?.id) profilesById[p.id] = p;
+        }
       }
 
-      // Process posts to get user profiles
-      const postsWithProfiles = await Promise.all(
-        postsData.map(async (post: any) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', post.user_id)
-            .single();
-
-          return {
-            ...post,
-            profiles: profileData || null,
-            likes: [],
-            comments: []
-          };
-        })
-      );
+      const postsWithProfiles = (postsData || []).map((post: any) => ({
+        ...post,
+        profiles: profilesById[post.user_id] || null,
+        likes: [],
+        comments: []
+      }));
 
       setSearchResults(postsWithProfiles);
     } catch (err: any) {

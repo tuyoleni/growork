@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { useAuth } from '../auth/useAuth';
 import { sendNotification } from '@/utils/notifications';
 
@@ -56,26 +57,32 @@ export function useComments(postId: string) {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
       // First fetch comments
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('post_id', targetPostId)
-        .order('created_at', { ascending: true });
-
-      if (commentsError) throw commentsError;
+      const { data: commentsData } = await supabaseRequest<any[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('comments')
+            .select('*')
+            .eq('post_id', targetPostId)
+            .order('created_at', { ascending: true });
+          return { data, error, status };
+        },
+        { logTag: 'comments:list' }
+      );
 
       // Then fetch profiles for the user IDs
       if (commentsData && commentsData.length > 0) {
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
 
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, name, surname, avatar_url')
-          .in('id', userIds);
-
-        if (profilesError) {
-          console.warn('Error fetching profiles:', profilesError);
-        }
+        const { data: profilesData } = await supabaseRequest<any[]>(
+          async () => {
+            const { data, error, status } = await supabase
+              .from('profiles')
+              .select('id, username, name, surname, avatar_url')
+              .in('id', userIds);
+            return { data, error, status };
+          },
+          { logTag: 'profiles:listForComments' }
+        );
 
         // Create a map of user profiles
         const profilesMap = (profilesData || []).reduce((acc: any, profile: any) => {
@@ -120,28 +127,38 @@ export function useComments(postId: string) {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      const { data, error } = await supabase
-        .from('comments')
-        .insert({
-          post_id: postId,
-          user_id: user.id,
-          content: content.trim()
-        })
-        .select('*')
-        .single();
-
-      if (error) throw error;
+      const { data } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('comments')
+            .insert({
+              post_id: postId,
+              user_id: user.id,
+              content: content.trim()
+            })
+            .select('*')
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'comments:add' }
+      );
 
       // Fetch the user's profile for the new comment
       let profile = null;
       try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, username, name, surname, avatar_url')
-          .eq('id', user.id)
-          .single();
+        const { data: profileData } = await supabaseRequest<any>(
+          async () => {
+            const { data, error, status } = await supabase
+              .from('profiles')
+              .select('id, username, name, surname, avatar_url')
+              .eq('id', user.id)
+              .single();
+            return { data, error, status };
+          },
+          { logTag: 'profiles:getForNewComment' }
+        );
 
-        if (!profileError && profileData) {
+        if (profileData) {
           profile = profileData;
         }
       } catch (profileErr) {
@@ -164,11 +181,17 @@ export function useComments(postId: string) {
       // Send notification to post owner
       try {
         // Get post details to find the owner
-        const { data: postData } = await supabase
-          .from('posts')
-          .select('user_id, title')
-          .eq('id', postId)
-          .single();
+        const { data: postData } = await supabaseRequest<any>(
+          async () => {
+            const { data, error, status } = await supabase
+              .from('posts')
+              .select('user_id, title')
+              .eq('id', postId)
+              .single();
+            return { data, error, status };
+          },
+          { logTag: 'posts:getForCommentNotify' }
+        );
 
         if (postData && postData.user_id !== user.id) {
           const senderName = profile?.name || profile?.username || 'Someone';
@@ -211,13 +234,17 @@ export function useComments(postId: string) {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      const { error } = await supabase
-        .from('comments')
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', user.id); // Ensure user can only delete their own comments
-
-      if (error) throw error;
+      await supabaseRequest<void>(
+        async () => {
+          const { error, status } = await supabase
+            .from('comments')
+            .delete()
+            .eq('id', commentId)
+            .eq('user_id', user.id); // Ensure user can only delete their own comments
+          return { data: null, error, status };
+        },
+        { logTag: 'comments:delete' }
+      );
 
       // Remove comment from local state
       setState(prev => ({
@@ -247,29 +274,39 @@ export function useComments(postId: string) {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      const { data, error } = await supabase
-        .from('comments')
-        .update({
-          content: newContent.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', commentId)
-        .eq('user_id', user.id) // Ensure user can only update their own comments
-        .select('*')
-        .single();
-
-      if (error) throw error;
+      const { data } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('comments')
+            .update({
+              content: newContent.trim(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', commentId)
+            .eq('user_id', user.id) // Ensure user can only update their own comments
+            .select('*')
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'comments:update' }
+      );
 
       // Fetch the user's profile for the updated comment
       let profile = null;
       try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, username, name, surname, avatar_url')
-          .eq('id', user.id)
-          .single();
+        const { data: profileData } = await supabaseRequest<any>(
+          async () => {
+            const { data, error, status } = await supabase
+              .from('profiles')
+              .select('id, username, name, surname, avatar_url')
+              .eq('id', user.id)
+              .single();
+            return { data, error, status };
+          },
+          { logTag: 'profiles:getForUpdatedComment' }
+        );
 
-        if (!profileError && profileData) {
+        if (profileData) {
           profile = profileData;
         }
       } catch (profileErr) {

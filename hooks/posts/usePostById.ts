@@ -1,4 +1,5 @@
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { useCallback, useState } from 'react';
 
 export function usePostById() {
@@ -11,31 +12,34 @@ export function usePostById() {
       setError(null);
 
       // Fetch the post by ID
-      const { data: post, error: postError } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('id', postId)
-        .single();
-
-      if (postError) {
-        throw postError;
-      }
+      const { data: post } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('posts')
+            .select('*')
+            .eq('id', postId)
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'posts:getById' }
+      );
 
       if (!post) {
         throw new Error('Post not found');
       }
 
       // Fetch the user profile for this post
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', post.user_id)
-        .single();
-
-      if (profileError && profileError.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
-        console.warn('Error fetching profile:', profileError);
-        // Continue anyway, we'll just show the post without profile data
-      }
+      const { data: profile } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', post.user_id)
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'profiles:getForPostById' }
+      );
 
       // Return post with profile data
       return {

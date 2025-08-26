@@ -2,6 +2,7 @@ import { useAuth } from '../hooks/auth';
 import { useAds } from '../hooks/search';
 import { useApplications } from '../hooks/applications';
 import { useBookmarks, useCommentLikes, usePosts } from '../hooks/posts';
+import { useInteractions } from '../hooks/posts/useInteractions';
 import { Ad, Application, Post, Profile } from '../types';
 import { UserType } from '../types/enums';
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
@@ -77,6 +78,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const adsHook = useAds();
   const bookmarksHook = useBookmarks();
   const commentLikesHook = useCommentLikes();
+  const interactionsHook = useInteractions();
 
   // Local state for auth errors
   const [authError, setAuthError] = React.useState<string | null>(null);
@@ -215,9 +217,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     bookmarks: [],
     bookmarksLoading: bookmarksHook.loading,
     bookmarksError: bookmarksHook.error,
-    toggleBookmark: bookmarksHook.toggleBookmark,
-    initializePost: bookmarksHook.initializePost,
-    bookmarkStates: bookmarksHook.bookmarkStates,
+    toggleBookmark: interactionsHook.toggleBookmark,
+    initializePost: interactionsHook.initializePost,
+    bookmarkStates: interactionsHook.bookmarkStates,
 
     // Comment Likes state and methods
     commentLikesLoading: commentLikesHook.loading,

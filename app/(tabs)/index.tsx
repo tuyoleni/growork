@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useCallback } from 'react';
+import React, { useMemo, useRef, useState, useCallback, memo } from 'react';
 import {
   Animated,
   Easing,
@@ -19,6 +19,7 @@ import ContentCard from '@/components/content/ContentCard';
 import { PostType, UserType } from '@/types/enums';
 import { ContentCardSkeleton } from '@/components/ui/Skeleton';
 import NewPostsIndicator from '@/components/ui/NewPostsIndicator';
+import { useInteractions } from '@/hooks/posts/useInteractions';
 
 
 const INDUSTRIES = [
@@ -44,6 +45,7 @@ export default function Home() {
     error,
     refresh,
   } = useHomeFeed();
+  const { initializePosts } = useInteractions();
 
   const getIndustryLabel = (index: number) => INDUSTRIES[index] || '';
   const filteredPosts = useMemo(
@@ -59,6 +61,13 @@ export default function Home() {
       }),
     [cardPosts, selectedContentType, selectedIndustry]
   );
+
+  // Initialize likes/bookmarks in batch for current list
+  const postIds = useMemo(() => filteredPosts.map((p: any) => p.id as string).filter(Boolean), [filteredPosts]);
+  const postIdsKey = useMemo(() => postIds.join(','), [postIds]);
+  React.useEffect(() => {
+    if (postIds.length) initializePosts(postIds);
+  }, [postIdsKey, initializePosts]);
 
   // Animated header show/hide logic
   const [headerVisible, setHeaderVisible] = useState(true);
@@ -140,7 +149,7 @@ export default function Home() {
 
 
 
-  function handleApplyToJob(post: any) {
+  const handleApplyToJob = useCallback((post: any) => {
     if (post.variant === 'job' && post.id) {
       const jobPost = {
         id: post.id,
@@ -162,7 +171,7 @@ export default function Home() {
         }
       });
     }
-  }
+  }, [openJobApplicationSheet]);
 
   if (loading && !cardPosts.length) {
     return (
@@ -230,8 +239,25 @@ export default function Home() {
         style={{ top: HEADER_HEIGHT + 20 }}
       />
 
-      <Animated.ScrollView
-        showsVerticalScrollIndicator={false}
+      <Animated.FlatList
+        data={filteredPosts}
+        keyExtractor={(item, index) => `${item.title}-${item.variant}-${index}-${item.id ?? 'unknown'}`}
+        renderItem={({ item, index }) => (
+          <ContentCard
+            {...item}
+            onPressApply={() => handleApplyToJob(item)}
+            style={index === 0 ? { marginTop: HEADER_HEIGHT - 48 } : undefined}
+          />
+        )}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        initialNumToRender={3}
+        getItemLayout={(data, index) => ({
+          length: 300,
+          offset: 300 * index,
+          index,
+        })}
         scrollEventThrottle={16}
         onScroll={handleScroll}
         refreshControl={
@@ -243,17 +269,7 @@ export default function Home() {
           />
         }
         contentContainerStyle={{ paddingTop: 0 }}
-      >
-        {filteredPosts.length > 0 ? (
-          filteredPosts.map((post: any, index: number) => (
-            <ContentCard
-              key={`${post.title}-${post.variant}-${index}-${post.id ?? 'unknown'}`}
-              {...post}
-              onPressApply={() => handleApplyToJob(post)}
-              style={index === 0 ? { marginTop: HEADER_HEIGHT - 48 } : undefined}
-            />
-          ))
-        ) : (
+        ListEmptyComponent={
           <View style={{ flex: 1, padding: 20, alignItems: 'center', marginTop: HEADER_HEIGHT }}>
             <ThemedText style={{ textAlign: 'center', marginTop: 40 }}>
               {loading
@@ -263,25 +279,32 @@ export default function Home() {
                   : 'No posts found'}
             </ThemedText>
           </View>
-        )}
-        {error && (
-          <View style={{ padding: 20, alignItems: 'center' }}>
-            <ThemedText style={{ color: 'red' }}>Error: {error}</ThemedText>
-            <Pressable
-              style={{
-                marginTop: 10,
-                paddingVertical: 8,
-                paddingHorizontal: 16,
-                backgroundColor: '#3b82f6',
-                borderRadius: 8
-              }}
-              onPress={() => refresh()}
-            >
-              <ThemedText style={{ color: '#fff' }}>Retry</ThemedText>
-            </Pressable>
-          </View>
-        )}
-      </Animated.ScrollView>
+        }
+        ListFooterComponent={
+          error ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ThemedText style={{ color: 'red', textAlign: 'center', marginBottom: 12 }}>Error: {error}</ThemedText>
+              <Pressable
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  backgroundColor: '#007AFF',
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8
+                }}
+                onPress={() => refresh()}
+                accessibilityLabel="Retry loading posts"
+                accessibilityRole="button"
+              >
+                <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Retry</ThemedText>
+              </Pressable>
+            </View>
+          ) : null
+        }
+        showsVerticalScrollIndicator={false}
+      />
     </ScreenContainer>
   );
 }

@@ -3,6 +3,7 @@ import {
   View,
   FlatList,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   RefreshControl,
   Alert,
@@ -90,6 +91,27 @@ export default function MyPostsList() {
     );
   }
 
+  // If there are no posts, show empty state
+  if (posts.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <Feather name="file-text" size={48} color={mutedTextColor} />
+        <ThemedText style={[styles.emptyTitle, { color: textColor, marginTop: 16 }]}>
+          No Posts Yet
+        </ThemedText>
+        <ThemedText style={[styles.emptyDescription, { color: mutedTextColor, marginTop: 8 }]}>
+          You haven't created any posts yet.
+        </ThemedText>
+        <Pressable
+          style={[styles.createPostButton, { backgroundColor: tintColor, marginTop: 16 }]}
+          onPress={() => openCreatePostSheet()}
+        >
+          <ThemedText style={styles.createPostButtonText}>Create Your First Post</ThemedText>
+        </Pressable>
+      </View>
+    );
+  }
+
   if (error) {
     return (
       <View style={styles.centerContainer}>
@@ -111,41 +133,61 @@ export default function MyPostsList() {
   }
 
   return (
-    <FlatList
-      data={posts}
-      keyExtractor={(item) => item.id}
-      renderItem={renderPostItem}
-      contentContainerStyle={styles.listContainer}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-      ListEmptyComponent={
-        <View style={styles.emptyContainer}>
-          <Feather name="file-text" size={64} color={mutedTextColor} />
-          <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
-            No posts yet
-          </ThemedText>
-          <ThemedText style={[styles.emptySubtext, { color: mutedTextColor }]}>
-            Create your first job post to get started
-          </ThemedText>
-          <TouchableOpacity
-            style={[styles.createPostButton, { backgroundColor: tintColor }]}
-            onPress={openCreatePostSheet}
-          >
-            <ThemedText style={styles.createPostButtonText}>Create Post</ThemedText>
-          </TouchableOpacity>
-        </View>
-      }
-    />
+    <View style={styles.container}>
+      <FlatList
+        data={posts}
+        renderItem={renderPostItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={tintColor}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: '100%',
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    width: '100%',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  emptyDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  createPostButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  createPostButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   listContainer: {
     padding: 16,
@@ -180,26 +222,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 60,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
-  },
   emptySubtext: {
     fontSize: 16,
     textAlign: 'center',
     maxWidth: 280,
     marginBottom: 20,
-  },
-  createPostButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  createPostButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

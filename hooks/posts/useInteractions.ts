@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { useAuth } from '../auth/useAuth';
 import { sendNotification } from '@/utils/notifications';
 
@@ -32,17 +33,80 @@ export function useInteractions() {
     if (!user) return false;
 
     try {
-      const { data } = await supabase
-        .from('likes')
-        .select('id')
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
-        .single();
+      const { data } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('likes')
+            .select('id')
+            .eq('post_id', postId)
+            .eq('user_id', user.id)
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'likes:isLiked', retries: 0 }
+      );
 
       return !!data;
     } catch {
       return false;
     }
+  }, [user]);
+
+  // Batched like aggregates for a list of posts
+  const getLikeAggregates = useCallback(async (postIds: string[]): Promise<{ counts: Record<string, number>; likedSet: Set<string> }> => {
+    const counts: Record<string, number> = {};
+    const likedSet = new Set<string>();
+    if (!postIds?.length) return { counts, likedSet };
+
+    try {
+      const { data } = await supabaseRequest<{ post_id: string; user_id: string }[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('likes')
+            .select('post_id, user_id')
+            .in('post_id', postIds);
+          return { data, error, status };
+        },
+        { logTag: 'likes:listByPosts', retries: 1 }
+      );
+
+      for (const row of data || []) {
+        counts[row.post_id] = (counts[row.post_id] || 0) + 1;
+        if (user && row.user_id === user.id) likedSet.add(row.post_id);
+      }
+    } catch {
+      // fallback: empty results
+    }
+
+    // Ensure all postIds have a count
+    for (const id of postIds) if (!(id in counts)) counts[id] = 0;
+    return { counts, likedSet };
+  }, [user]);
+
+  // Batched bookmarks for a list of posts for the current user
+  const getBookmarksForPosts = useCallback(async (postIds: string[]): Promise<Set<string>> => {
+    const set = new Set<string>();
+    if (!user || !postIds?.length) return set;
+
+    try {
+      const { data } = await supabaseRequest<{ post_id: string }[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('bookmarks')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds);
+          return { data, error, status };
+        },
+        { logTag: 'bookmarks:listByPosts', retries: 1 }
+      );
+
+      for (const row of data || []) set.add(row.post_id);
+    } catch {
+      // ignore
+    }
+
+    return set;
   }, [user]);
 
   const getLikeCount = useCallback(async (postId: string): Promise<number> => {
@@ -67,37 +131,47 @@ export function useInteractions() {
         [postId]: { ...prev[postId], loading: true, error: null }
       }));
 
-      const { error } = await supabase
-        .from('likes')
-        .insert({
-          post_id: postId,
-          user_id: user.id,
-        });
-
-      if (error) {
-        setLikeStates(prev => ({
-          ...prev,
-          [postId]: { ...prev[postId], loading: false, error: error.message }
-        }));
-        return { success: false, error: error.message };
-      }
+      await supabaseRequest<void>(
+        async () => {
+          const { error, status } = await supabase
+            .from('likes')
+            .insert({
+              post_id: postId,
+              user_id: user.id,
+            });
+          return { data: null, error, status };
+        },
+        { logTag: 'likes:like' }
+      );
 
       // Send notification to post owner
       try {
         // Get post details to find the owner
-        const { data: postData } = await supabase
-          .from('posts')
-          .select('user_id, title')
-          .eq('id', postId)
-          .single();
+        const { data: postData } = await supabaseRequest<any>(
+          async () => {
+            const { data, error, status } = await supabase
+              .from('posts')
+              .select('user_id, title')
+              .eq('id', postId)
+              .single();
+            return { data, error, status };
+          },
+          { logTag: 'posts:getForLikeNotify' }
+        );
 
         if (postData && postData.user_id !== user.id) {
           // Get user profile for notification
-          const { data: userProfile } = await supabase
-            .from('profiles')
-            .select('name, username')
-            .eq('id', user.id)
-            .single();
+          const { data: userProfile } = await supabaseRequest<any>(
+            async () => {
+              const { data, error, status } = await supabase
+                .from('profiles')
+                .select('name, username')
+                .eq('id', user.id)
+                .single();
+              return { data, error, status };
+            },
+            { logTag: 'profiles:getForLikeNotify' }
+          );
 
           const senderName = userProfile?.name || userProfile?.username || 'Someone';
           const postTitle = postData.title || 'your post';
@@ -145,19 +219,17 @@ export function useInteractions() {
         [postId]: { ...prev[postId], loading: true, error: null }
       }));
 
-      const { error } = await supabase
-        .from('likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        setLikeStates(prev => ({
-          ...prev,
-          [postId]: { ...prev[postId], loading: false, error: error.message }
-        }));
-        return { success: false, error: error.message };
-      }
+      await supabaseRequest<void>(
+        async () => {
+          const { error, status } = await supabase
+            .from('likes')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', user.id);
+          return { data: null, error, status };
+        },
+        { logTag: 'likes:unlike' }
+      );
 
       const newLikeCount = await getLikeCount(postId);
       setLikeStates(prev => ({
@@ -198,12 +270,18 @@ export function useInteractions() {
     if (!user) return false;
 
     try {
-      const { data } = await supabase
-        .from('bookmarks')
-        .select('id')
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
-        .single();
+      const { data } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('bookmarks')
+            .select('id')
+            .eq('post_id', postId)
+            .eq('user_id', user.id)
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'bookmarks:isBookmarked', retries: 0 }
+      );
 
       return !!data;
     } catch {
@@ -224,19 +302,17 @@ export function useInteractions() {
 
       if (isBookmarked) {
         // Remove bookmark
-        const { error } = await supabase
-          .from('bookmarks')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id);
-
-        if (error) {
-          setBookmarkStates(prev => ({
-            ...prev,
-            [postId]: { ...prev[postId], loading: false, error: error.message }
-          }));
-          return { success: false, error: error.message };
-        }
+        await supabaseRequest<void>(
+          async () => {
+            const { error, status } = await supabase
+              .from('bookmarks')
+              .delete()
+              .eq('post_id', postId)
+              .eq('user_id', user.id);
+            return { data: null, error, status };
+          },
+          { logTag: 'bookmarks:remove' }
+        );
 
         setBookmarkStates(prev => ({
           ...prev,
@@ -248,20 +324,18 @@ export function useInteractions() {
         }));
       } else {
         // Add bookmark
-        const { error } = await supabase
-          .from('bookmarks')
-          .insert({
-            post_id: postId,
-            user_id: user.id,
-          });
-
-        if (error) {
-          setBookmarkStates(prev => ({
-            ...prev,
-            [postId]: { ...prev[postId], loading: false, error: error.message }
-          }));
-          return { success: false, error: error.message };
-        }
+        await supabaseRequest<void>(
+          async () => {
+            const { error, status } = await supabase
+              .from('bookmarks')
+              .insert({
+                post_id: postId,
+                user_id: user.id,
+              });
+            return { data: null, error, status };
+          },
+          { logTag: 'bookmarks:add' }
+        );
 
         setBookmarkStates(prev => ({
           ...prev,
@@ -341,6 +415,48 @@ export function useInteractions() {
     }
   }, [user, checkLikeStatus, getLikeCount, checkBookmarkStatus]);
 
+  // Batched initializer for multiple posts (preferred for lists)
+  const initializePosts = useCallback(async (postIds: string[]) => {
+    try {
+      if (!postIds?.length) return;
+
+      // Likes aggregates and user like set
+      const [{ counts, likedSet }, bookmarkSet] = await Promise.all([
+        getLikeAggregates(postIds),
+        getBookmarksForPosts(postIds)
+      ]);
+
+      // Apply like states
+      setLikeStates(prev => {
+        const next = { ...prev };
+        for (const id of postIds) {
+          next[id] = {
+            loading: false,
+            error: null,
+            isLiked: user ? likedSet.has(id) : false,
+            likeCount: counts[id] || 0,
+          };
+        }
+        return next;
+      });
+
+      // Apply bookmark states
+      setBookmarkStates(prev => {
+        const next = { ...prev };
+        for (const id of postIds) {
+          next[id] = {
+            loading: false,
+            error: null,
+            isBookmarked: user ? bookmarkSet.has(id) : false,
+          };
+        }
+        return next;
+      });
+    } catch (error) {
+      console.error('Error initializing posts batch:', error);
+    }
+  }, [user, getLikeAggregates, getBookmarksForPosts]);
+
   return {
     likeStates,
     bookmarkStates,
@@ -349,5 +465,6 @@ export function useInteractions() {
     toggleLike,
     toggleBookmark,
     initializePost,
+    initializePosts,
   };
 }

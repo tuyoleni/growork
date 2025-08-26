@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -48,24 +48,25 @@ export const CompanyContact: React.FC<CompanyContactProps> = ({
     );
 };
 
-const styles = {
+const styles = StyleSheet.create({
     contactSection: {
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        marginBottom: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
     contactRow: {
-        flexDirection: 'row' as const,
+        flexDirection: 'row',
         gap: 24,
     },
     contactLink: {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 8,
-        paddingVertical: 4,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
     },
     linkText: {
         fontSize: 14,
-        fontWeight: '400' as const,
+        fontWeight: '500',
     },
-};
+});

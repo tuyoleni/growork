@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { useAuth } from '../auth/useAuth';
 
 export function useCommentLikes() {
@@ -12,16 +13,18 @@ export function useCommentLikes() {
     if (!user) return false;
 
     try {
-      const { data, error } = await supabase
-        .from('comment_likes')
-        .select('id')
-        .eq('comment_id', commentId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        return false;
-      }
+      const { data } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('comment_likes')
+            .select('id')
+            .eq('comment_id', commentId)
+            .eq('user_id', user.id)
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'comment_likes:isLiked' }
+      );
 
       return !!data;
     } catch (err) {
@@ -65,18 +68,18 @@ export function useCommentLikes() {
       }
 
       // Add like
-      const { error } = await supabase
-        .from('comment_likes')
-        .insert({
-          comment_id: commentId,
-          user_id: user.id,
-        });
-
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return { success: false, error: error.message };
-      }
+      await supabaseRequest<void>(
+        async () => {
+          const { error, status } = await supabase
+            .from('comment_likes')
+            .insert({
+              comment_id: commentId,
+              user_id: user.id,
+            });
+          return { data: null, error, status };
+        },
+        { logTag: 'comment_likes:like' }
+      );
 
       setLoading(false);
       return { success: true };
@@ -106,17 +109,17 @@ export function useCommentLikes() {
       }
 
       // Remove like
-      const { error } = await supabase
-        .from('comment_likes')
-        .delete()
-        .eq('comment_id', commentId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return { success: false, error: error.message };
-      }
+      await supabaseRequest<void>(
+        async () => {
+          const { error, status } = await supabase
+            .from('comment_likes')
+            .delete()
+            .eq('comment_id', commentId)
+            .eq('user_id', user.id);
+          return { data: null, error, status };
+        },
+        { logTag: 'comment_likes:unlike' }
+      );
 
       setLoading(false);
       return { success: true };

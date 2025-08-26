@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Platform, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useThemeColor, useCustomCommentsBottomSheet, useLikes } from '@/hooks';
-import { useAppContext } from '@/utils/AppContext';
+import { useThemeColor, useCustomCommentsBottomSheet } from '@/hooks';
+import { useInteractions } from '@/hooks/posts/useInteractions';
 import { ThemedText } from '@/components/ThemedText';
 
 
@@ -22,14 +22,16 @@ export default function PostInteractionBar({
   size = 'medium', // ignored for icon size, always 20
   containerStyle,
 }: PostInteractionBarProps) {
-  const { isLiked, toggleLike, likeStates, initializePost } = useLikes();
-  const { toggleBookmark, bookmarkStates } = useAppContext();
+  const { 
+    toggleLike, 
+    toggleBookmark, 
+    likeStates, 
+    bookmarkStates, 
+    initializePost 
+  } = useInteractions();
   const { openCommentsSheet } = useCustomCommentsBottomSheet();
 
-  // UI state
-  const [liked, setLiked] = useState(false);
-  const [bookmarked, setBookmarked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  // UI state - now directly synced with global state
   const [commentCount, setCommentCount] = useState(0);
 
   // Theme
@@ -39,38 +41,16 @@ export default function PostInteractionBar({
   const iconSize = 20;
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function syncState() {
-      if (!postId) {
-        setLiked(false);
-        setBookmarked(false);
-        setLikeCount(0);
-        return;
-      }
-
+    if (postId) {
       // Initialize post state if not already done
-      await initializePost(postId);
-
-      // Get current like state
-      const isLikedValue = await isLiked(postId);
-      if (!cancelled) {
-        setLiked(!!isLikedValue);
-        setLikeCount(likeStates[postId]?.likeCount || 0);
-      }
-
-      // Get current bookmark state
-      if (!cancelled) {
-        setBookmarked(bookmarkStates[postId]?.isBookmarked || false);
-      }
+      initializePost(postId);
     }
+  }, [postId, initializePost]);
 
-    syncState();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [postId, initializePost, isLiked, likeStates, bookmarkStates]);
+  // Get current states directly from global state
+  const liked = likeStates[postId]?.isLiked || false;
+  const likeCount = likeStates[postId]?.likeCount || 0;
+  const bookmarked = bookmarkStates[postId]?.isBookmarked || false;
 
   // Handle like action
   const handleLike = async () => {
@@ -80,26 +60,9 @@ export default function PostInteractionBar({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    // Optimistic update
-    const newLiked = !liked;
-    const newLikeCount = newLiked ? likeCount + 1 : likeCount - 1;
-
-    setLiked(newLiked);
-    setLikeCount(newLikeCount);
-
     try {
-      const result = await toggleLike(postId);
-
-      if (!result.success) {
-        // Revert on failure
-        setLiked(!newLiked);
-        setLikeCount(likeCount);
-        console.error('Like toggle failed:', result.error);
-      }
+      await toggleLike(postId);
     } catch (error) {
-      // Revert on error
-      setLiked(!newLiked);
-      setLikeCount(likeCount);
       console.error('Like toggle error:', error);
     }
   };
@@ -112,21 +75,9 @@ export default function PostInteractionBar({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    // Optimistic update
-    const newBookmarked = !bookmarked;
-    setBookmarked(newBookmarked);
-
     try {
-      const result = await toggleBookmark(postId);
-
-      if (!result.success) {
-        // Revert on failure
-        setBookmarked(!newBookmarked);
-        console.error('Bookmark toggle failed:', result.error);
-      }
+      await toggleBookmark(postId);
     } catch (error) {
-      // Revert on error
-      setBookmarked(!newBookmarked);
       console.error('Bookmark toggle error:', error);
     }
   };
@@ -161,7 +112,12 @@ export default function PostInteractionBar({
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <View style={styles.likeContainer}>
-          <Feather name="heart" size={iconSize} color={liked ? '#f43f5e' : iconColor} />
+          <Feather 
+            name={liked ? "heart" : "heart"} 
+            size={iconSize} 
+            color={liked ? '#f43f5e' : iconColor}
+            fill={liked ? '#f43f5e' : 'transparent'}
+          />
           {likeCount > 0 && (
             <ThemedText style={[styles.likeCount, { color: iconColor }]}>
               {likeCount}
@@ -198,7 +154,12 @@ export default function PostInteractionBar({
         onPress={handleBookmark}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Feather name="bookmark" size={iconSize} color={bookmarked ? tintColor : iconColor} />
+        <Feather 
+          name={bookmarked ? "bookmark" : "bookmark"} 
+          size={iconSize} 
+          color={bookmarked ? tintColor : iconColor}
+          fill={bookmarked ? tintColor : 'transparent'}
+        />
       </TouchableOpacity>
     </View>
   );

@@ -3,6 +3,22 @@ import { createClient, processLock } from '@supabase/supabase-js'
 import 'react-native-url-polyfill/auto'
 import { checkNetworkStatus } from './networkUtils'
 
+
+const withTimeout = async (
+    input: RequestInfo | URL | string,
+    init: RequestInit = {},
+    timeoutMs = 15000
+): Promise<Response> => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(input as any, { ...init, signal: controller.signal });
+        return res;
+    } finally {
+        clearTimeout(id);
+    }
+}
+
 export const supabase = createClient(
     process.env.EXPO_PUBLIC_SUPABASE_URL!,
     process.env.EXPO_PUBLIC_SUPABASE_KEY!,
@@ -18,6 +34,7 @@ export const supabase = createClient(
             headers: {
                 'X-Client-Info': 'growork-app',
             },
+            fetch: (input: RequestInfo | URL | string, init?: RequestInit) => withTimeout(input, init, 15000),
         },
         db: {
             schema: 'public',

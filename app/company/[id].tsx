@@ -20,7 +20,6 @@ import {
     CompanyHeader,
     CompanyStats,
     CompanyContact,
-    CompanyOwner,
     CompanyPosts
 } from '../../components/company';
 import { useCompanies } from '../../hooks/companies';
@@ -43,7 +42,6 @@ export default function CompanyDetailsScreen() {
     const tintColor = useThemeColor({}, 'tint');
 
     const [company, setCompany] = useState<Company | null>(null);
-    const [companyOwner, setCompanyOwner] = useState<any>(null);
 
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -66,26 +64,6 @@ export default function CompanyDetailsScreen() {
         debugCompanyTable();
     }, [debugCompanyTable]);
 
-    const fetchCompanyOwner = useCallback(async (userId: string) => {
-        try {
-            const { data: profileData, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (error) {
-                console.error('Error fetching company owner profile:', error);
-                return;
-            }
-
-            if (profileData) {
-                setCompanyOwner(profileData);
-            }
-        } catch (error) {
-            console.error('Error fetching company owner:', error);
-        }
-    }, []);
 
     const fetchCompanyDetails = useCallback(async () => {
         if (!id) return;
@@ -105,8 +83,6 @@ export default function CompanyDetailsScreen() {
                 console.log('Company found:', companyResult.name);
                 setCompany(companyResult);
 
-                // Fetch company owner's profile for contact information
-                await fetchCompanyOwner(companyResult.user_id);
             } else {
                 console.log('No company found with ID:', id);
                 throw new Error('Company not found');
@@ -131,7 +107,7 @@ export default function CompanyDetailsScreen() {
         } finally {
             setLoading(false);
         }
-    }, [id, fetchCompanyOwner]);
+    }, [id]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -198,7 +174,6 @@ export default function CompanyDetailsScreen() {
             </ThemedView>
 
             <ScrollView
-                style={styles.container}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
@@ -208,8 +183,6 @@ export default function CompanyDetailsScreen() {
                     />
                 }
             >
-
-
                 {/* Company Header */}
                 <CompanyHeader
                     company={company}
@@ -225,27 +198,14 @@ export default function CompanyDetailsScreen() {
                 {/* Company Contact */}
                 <CompanyContact
                     website={company.website}
-                    hasPhone={!!companyOwner?.phone}
+                    hasPhone={false}
                     onWebsitePress={() => {
-                        // Handle website press
                         console.log('Website pressed:', company.website);
                     }}
                     onPhonePress={() => {
-                        // Handle phone press
-                        console.log('Phone pressed:', companyOwner?.phone);
+                        console.log('Phone contact not available');
                     }}
                 />
-
-                {/* Company Owner */}
-                {companyOwner && (
-                    <CompanyOwner
-                        owner={companyOwner}
-                        onContactPress={() => {
-                            // Navigate to owner profile
-                            console.log('Contact owner:', companyOwner.id);
-                        }}
-                    />
-                )}
 
                 {/* Company Posts */}
                 <CompanyPosts
@@ -259,21 +219,14 @@ export default function CompanyDetailsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
     },
-
-    // Header
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 16,
         paddingVertical: 14,
-        backgroundColor: "rgba(255,255,255,0.9)",
-        shadowColor: "#000",
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 1,
+        borderBottomWidth: StyleSheet.hairlineWidth,
     },
     headerLeft: {
         flexDirection: "row",
@@ -293,8 +246,6 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 20,
     },
-
-    // Loader
     loadingContainer: {
         flex: 1,
         justifyContent: "center",

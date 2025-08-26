@@ -36,7 +36,7 @@ const CategorySelector: React.FC<SegmentedControlProps> = ({ options, selectedIn
       tabsContainerStyle={{
         backgroundColor: backgroundSecondary,
         borderRadius: 8,
-        marginHorizontal: 12,
+        marginHorizontal: 0,
         height: 40,
         borderWidth: 0,
       }}

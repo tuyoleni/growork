@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { supabase } from './supabase';
+import { supabaseRequest } from './supabaseRequest';
 
 // Notification types - using string literals to match the database schema
 export enum NotificationType {
@@ -108,20 +109,21 @@ export async function saveNotificationToDatabase(
     data?: any
 ) {
     try {
-        const { error } = await supabase
-            .from('notifications')
-            .insert({
-                user_id: userId,
-                title,
-                body,
-                type,
-                data: data || {},
-            });
-
-        if (error) {
-            console.error('Error saving notification to database:', error);
-            throw error;
-        }
+        await supabaseRequest<void>(
+            async () => {
+                const { error, status } = await supabase
+                    .from('notifications')
+                    .insert({
+                        user_id: userId,
+                        title,
+                        body,
+                        type,
+                        data: data || {},
+                    });
+                return { data: null, error, status };
+            },
+            { logTag: 'notifications:save' }
+        );
     } catch (error) {
         console.error('Error saving notification to database:', error);
         throw error;
@@ -201,15 +203,16 @@ export async function sendApplicationStatusNotification(
 // Mark notification as read
 export async function markNotificationAsRead(notificationId: string) {
     try {
-        const { error } = await supabase
-            .from('notifications')
-            .update({ read: true })
-            .eq('id', notificationId);
-
-        if (error) {
-            console.error('Error marking notification as read:', error);
-            throw error;
-        }
+        await supabaseRequest<void>(
+            async () => {
+                const { error, status } = await supabase
+                    .from('notifications')
+                    .update({ read: true })
+                    .eq('id', notificationId);
+                return { data: null, error, status };
+            },
+            { logTag: 'notifications:markRead' }
+        );
     } catch (error) {
         console.error('Error marking notification as read:', error);
         throw error;
@@ -219,16 +222,17 @@ export async function markNotificationAsRead(notificationId: string) {
 // Mark all notifications as read for a user
 export async function markAllNotificationsAsRead(userId: string) {
     try {
-        const { error } = await supabase
-            .from('notifications')
-            .update({ read: true })
-            .eq('user_id', userId)
-            .eq('read', false);
-
-        if (error) {
-            console.error('Error marking all notifications as read:', error);
-            throw error;
-        }
+        await supabaseRequest<void>(
+            async () => {
+                const { error, status } = await supabase
+                    .from('notifications')
+                    .update({ read: true })
+                    .eq('user_id', userId)
+                    .eq('read', false);
+                return { data: null, error, status };
+            },
+            { logTag: 'notifications:markAllRead' }
+        );
     } catch (error) {
         console.error('Error marking all notifications as read:', error);
         throw error;
@@ -259,17 +263,18 @@ export async function sendTestNotification(userId: string) {
 // Get notifications for a user
 export async function getNotifications(userId: string, limit = 50) {
     try {
-        const { data, error } = await supabase
-            .from('notifications')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-
-        if (error) {
-            console.error('Error fetching notifications:', error);
-            throw error;
-        }
+        const { data } = await supabaseRequest<any[]>(
+            async () => {
+                const { data, error, status } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(limit);
+                return { data, error, status };
+            },
+            { logTag: 'notifications:list' }
+        );
 
         return data || [];
     } catch (error) {

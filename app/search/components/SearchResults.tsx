@@ -10,6 +10,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
 import { SearchResultsSkeleton } from '@/components/ui/Skeleton';
 import ContentCard from '@/components/content/ContentCard';
+import { useInteractions } from '@/hooks/posts/useInteractions';
 
 interface PostWithProfile extends Post {
   profiles?: Profile | null;
@@ -21,6 +22,7 @@ interface SearchResultsProps {
 }
 
 export default function SearchResults({ results, loading }: SearchResultsProps) {
+  const { initializePosts } = useInteractions();
   if (loading) {
     return <SearchResultsSkeleton />;
   }
@@ -40,6 +42,10 @@ export default function SearchResults({ results, loading }: SearchResultsProps) 
   }
 
   const postResults = results.filter(item => item._type === 'post') as (PostWithProfile & { _type: 'post' })[];
+  React.useEffect(() => {
+    const ids = postResults.map(p => p.id as string).filter(Boolean);
+    if (ids.length) initializePosts(ids);
+  }, [postResults, initializePosts]);
   const documentResults = results.filter(item => item._type === 'document') as (Document & { _type: 'document' })[];
 
   return (
@@ -103,6 +109,10 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
 
   const mainImage = getMainImage();
 
+  // Author props from profile
+  const authorName = post.profiles ? `${post.profiles.name ?? ''}${post.profiles.surname ? ' ' + post.profiles.surname : ''}`.trim() : undefined;
+  const authorAvatarUrl = post.profiles?.avatar_url || undefined;
+
   const handleApplyToJob = () => {
     if (post.type === PostType.Job) {
       openJobApplicationSheet(post, {
@@ -124,6 +134,8 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
       criteria={post.criteria || undefined}
       onPressApply={handleApplyToJob}
       user_id={post.user_id}
+      authorName={authorName}
+      authorAvatarUrl={authorAvatarUrl}
     />
   );
 }

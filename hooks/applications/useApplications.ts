@@ -1,5 +1,6 @@
 import { Application, ApplicationStatus } from '@/types';
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { sendApplicationStatusNotification } from '@/utils/notifications';
 
@@ -13,20 +14,18 @@ export function useApplications(userId?: string) {
       setLoading(true);
       setError(null);
 
-      let query = supabase
-        .from('applications')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (userId) {
-        query = query.eq('user_id', userId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        throw error;
-      }
+      const { data } = await supabaseRequest<Application[]>(
+        async () => {
+          let query = supabase
+            .from('applications')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (userId) query = query.eq('user_id', userId);
+          const { data, error, status } = await query;
+          return { data, error, status };
+        },
+        { logTag: 'applications:list' }
+      );
 
       setApplications(data || []);
     } catch (err: any) {
@@ -44,14 +43,16 @@ export function useApplications(userId?: string) {
       setError(null);
 
       // First, get all posts created by the current user
-      const { data: myPosts, error: postsError } = await supabase
-        .from('posts')
-        .select('id')
-        .eq('user_id', currentUserId);
-
-      if (postsError) {
-        throw postsError;
-      }
+      const { data: myPosts } = await supabaseRequest<{ id: string }[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('posts')
+            .select('id')
+            .eq('user_id', currentUserId);
+          return { data, error, status };
+        },
+        { logTag: 'posts:mine' }
+      );
 
       if (!myPosts || myPosts.length === 0) {
         setApplications([]);
@@ -62,31 +63,33 @@ export function useApplications(userId?: string) {
       const postIds = myPosts.map(post => post.id);
 
       // Fetch applications for these posts
-      const { data: applicationsData, error: applicationsError } = await supabase
-        .from('applications')
-        .select(`
-          *,
-          posts (
-            id,
-            title,
-            type,
-            industry,
-            criteria
-          ),
-          profiles!applications_user_id_fkey (
-            id,
-            username,
-            full_name,
-            avatar_url,
-            bio
-          )
-        `)
-        .in('post_id', postIds)
-        .order('created_at', { ascending: false });
-
-      if (applicationsError) {
-        throw applicationsError;
-      }
+      const { data: applicationsData } = await supabaseRequest<any[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('applications')
+            .select(`
+              *,
+              posts (
+                id,
+                title,
+                type,
+                industry,
+                criteria
+              ),
+              profiles!applications_user_id_fkey (
+                id,
+                username,
+                full_name,
+                avatar_url,
+                bio
+              )
+            `)
+            .in('post_id', postIds)
+            .order('created_at', { ascending: false });
+          return { data, error, status };
+        },
+        { logTag: 'applications:byPosts' }
+      );
 
       setApplications(applicationsData || []);
     } catch (err: any) {
@@ -106,14 +109,16 @@ export function useApplications(userId?: string) {
   const addApplication = useCallback(async (applicationData: Partial<Application>) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('applications')
-        .insert([applicationData])
-        .select();
-
-      if (error) {
-        throw error;
-      }
+      const { data } = await supabaseRequest<Application[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('applications')
+            .insert([applicationData])
+            .select();
+          return { data, error, status };
+        },
+        { logTag: 'applications:create' }
+      );
 
       // Refresh the applications by calling fetchApplications directly
       // instead of depending on it in the dependency array
@@ -121,20 +126,18 @@ export function useApplications(userId?: string) {
         setLoading(true);
         setError(null);
 
-        let query = supabase
-          .from('applications')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (userId) {
-          query = query.eq('user_id', userId);
-        }
-
-        const { data: refreshData, error: refreshError } = await query;
-
-        if (refreshError) {
-          throw refreshError;
-        }
+        const { data: refreshData } = await supabaseRequest<Application[]>(
+          async () => {
+            let query = supabase
+              .from('applications')
+              .select('*')
+              .order('created_at', { ascending: false });
+            if (userId) query = query.eq('user_id', userId);
+            const { data, error, status } = await query;
+            return { data, error, status };
+          },
+          { logTag: 'applications:list:refresh' }
+        );
 
         setApplications(refreshData || []);
       } catch (err: any) {
@@ -157,15 +160,17 @@ export function useApplications(userId?: string) {
   const updateApplicationStatus = useCallback(async (applicationId: string, status: ApplicationStatus) => {
     try {
       // First, get the application details to send notification
-      const { data: applicationData, error: fetchError } = await supabase
-        .from('applications')
-        .select('*')
-        .eq('id', applicationId)
-        .single();
-
-      if (fetchError) {
-        throw fetchError;
-      }
+      const { data: applicationData } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status: httpStatus } = await supabase
+            .from('applications')
+            .select('*')
+            .eq('id', applicationId)
+            .single();
+          return { data, error, status: httpStatus };
+        },
+        { logTag: 'applications:get' }
+      );
 
       // Fetch post and profile data separately
       let postData = null;
@@ -174,40 +179,48 @@ export function useApplications(userId?: string) {
       if (applicationData) {
         try {
           // Fetch post data
-          const { data: post, error: postError } = await supabase
-            .from('posts')
-            .select('id, title')
-            .eq('id', applicationData.post_id)
-            .single();
-
-          if (!postError && post) {
-            postData = post;
-          }
+          const { data: post } = await supabaseRequest<any>(
+            async () => {
+              const { data, error, status: httpStatus } = await supabase
+                .from('posts')
+                .select('id, title')
+                .eq('id', applicationData.post_id)
+                .single();
+              return { data, error, status: httpStatus };
+            },
+            { logTag: 'posts:get' }
+          );
+          if (post) postData = post;
 
           // Fetch profile data
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id, username, name, surname')
-            .eq('id', applicationData.user_id)
-            .single();
-
-          if (!profileError && profile) {
-            profileData = profile;
-          }
+          const { data: profile } = await supabaseRequest<any>(
+            async () => {
+              const { data, error, status: httpStatus } = await supabase
+                .from('profiles')
+                .select('id, username, name, surname')
+                .eq('id', applicationData.user_id)
+                .single();
+              return { data, error, status: httpStatus };
+            },
+            { logTag: 'profiles:get' }
+          );
+          if (profile) profileData = profile;
         } catch (err) {
           console.warn('Error fetching related data:', err);
         }
       }
 
       // Update the application status
-      const { error } = await supabase
-        .from('applications')
-        .update({ status })
-        .eq('id', applicationId);
-
-      if (error) {
-        throw error;
-      }
+      await supabaseRequest<null>(
+        async () => {
+          const { data, error, status: httpStatus } = await supabase
+            .from('applications')
+            .update({ status })
+            .eq('id', applicationId);
+          return { data: null, error, status: httpStatus };
+        },
+        { logTag: 'applications:updateStatus' }
+      );
 
       // Send notification to the applicant
       if (applicationData) {
@@ -221,9 +234,6 @@ export function useApplications(userId?: string) {
           applicantName
         );
       }
-
-      // Refresh the applications by calling fetchApplications directly
-      // instead of depending on it in the dependency array
       try {
         setLoading(true);
         setError(null);
@@ -260,16 +270,18 @@ export function useApplications(userId?: string) {
 
   const checkIfApplied = useCallback(async (userId: string, postId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('post_id', postId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
+      const { data } = await supabaseRequest<{ id: string } | null>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('applications')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('post_id', postId)
+            .maybeSingle();
+          return { data, error, status };
+        },
+        { logTag: 'applications:check' }
+      );
 
       return { hasApplied: !!data, error: null };
     } catch (err: any) {

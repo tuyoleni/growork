@@ -240,7 +240,9 @@ export default function Profile() {
             {selectedIndex === 0 && <DocumentsList />}
             {selectedIndex === 1 && <CompaniesList />}
             {selectedIndex === 2 && <FollowingGrid />}
-            {selectedIndex === 3 && isBusinessUser && <MyPostsList />}
+            {selectedIndex === 3 && isBusinessUser && (
+              <MyPostsList />
+            )}
           </ThemedView>
         </ThemedView>
       </Animated.ScrollView>
@@ -251,6 +253,7 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    minHeight: 200, // Ensure minimum height for empty states
   },
   compactHeader: {
     position: 'absolute',
@@ -301,6 +304,7 @@ const styles = StyleSheet.create({
   contentSection: {
     marginTop: 16,
     flex: 1,
+    width: '100%',
   },
   testButton: {
     marginTop: 16,

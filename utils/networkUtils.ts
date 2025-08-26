@@ -26,6 +26,7 @@ export const checkNetworkStatus = async (): Promise<NetworkStatus> => {
 
 export const getNetworkErrorMessage = (error: any): string => {
     const errorMessage = error?.message?.toLowerCase() || '';
+    const errorName = (error?.name || '').toLowerCase();
 
     if (errorMessage.includes('network request failed')) {
         return 'Network connection failed. Please check your internet connection and try again.';
@@ -33,6 +34,11 @@ export const getNetworkErrorMessage = (error: any): string => {
 
     if (errorMessage.includes('timeout')) {
         return 'Request timed out. Please check your connection and try again.';
+    }
+
+    // Handle fetch aborts coming from AbortController / whatwg-fetch (often surfaced as DOMException: Aborted)
+    if (errorName === 'aborterror' || errorMessage.includes('aborted') || errorMessage.includes('abort')) {
+        return 'Request was canceled or timed out. Please try again.';
     }
 
     if (errorMessage.includes('upstream connect error') ||
@@ -50,7 +56,11 @@ export const getNetworkErrorMessage = (error: any): string => {
 
 export const isNetworkError = (error: any): boolean => {
     const errorMessage = error?.message?.toLowerCase() || '';
-    return errorMessage.includes('network') ||
+    const errorName = (error?.name || '').toLowerCase();
+    return errorName === 'aborterror' ||
+        errorMessage.includes('aborted') ||
+        errorMessage.includes('abort') ||
+        errorMessage.includes('network') ||
         errorMessage.includes('timeout') ||
         errorMessage.includes('connection') ||
         errorMessage.includes('upstream');

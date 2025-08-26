@@ -4,6 +4,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ContentCard from '@/components/content/ContentCard';
 import { useCompanyPosts } from '@/hooks/posts';
+import { useInteractions } from '@/hooks/posts/useInteractions';
 
 interface CompanyPostsProps {
     companyId: string;
@@ -13,6 +14,7 @@ export const CompanyPosts: React.FC<CompanyPostsProps> = ({
     companyId,
 }) => {
     const { posts, loading, error } = useCompanyPosts(companyId);
+    const { initializePosts } = useInteractions();
 
     // Filter for posts that are either:
     // 1. Job posts (company posts)
@@ -24,6 +26,11 @@ export const CompanyPosts: React.FC<CompanyPostsProps> = ({
         if (post.type === 'news') return true;
         return false;
     }) || [];
+
+    React.useEffect(() => {
+        const ids = companyPosts.map(p => p.id as string).filter(Boolean);
+        if (ids.length) initializePosts(ids);
+    }, [companyPosts, initializePosts]);
 
     if (loading) {
         return (
@@ -66,20 +73,28 @@ export const CompanyPosts: React.FC<CompanyPostsProps> = ({
         <ThemedView style={styles.container}>
             <ThemedText style={styles.title}>Posts</ThemedText>
             <View style={styles.postsContainer}>
-                {companyPosts.map((post) => (
-                    <ContentCard
-                        key={post.id}
-                        id={post.id}
-                        variant={post.type === 'job' ? 'job' : 'news'}
-                        title={post.title || ''}
-                        description={post.content || ''}
-                        mainImage={post.image_url || undefined}
-                        createdAt={post.created_at}
-                        criteria={post.criteria || undefined}
-                        user_id={post.user_id}
-                        compact={true}
-                    />
-                ))}
+                {companyPosts.map((post: any) => {
+                    const profile = post.profiles;
+                    const authorName = profile ? `${profile.name ?? ''}${profile.surname ? ' ' + profile.surname : ''}`.trim() : undefined;
+                    const authorAvatarUrl = profile?.avatar_url || undefined;
+
+                    return (
+                        <ContentCard
+                            key={post.id}
+                            id={post.id}
+                            variant={post.type === 'job' ? 'job' : 'news'}
+                            title={post.title || ''}
+                            description={post.content || ''}
+                            mainImage={post.image_url || undefined}
+                            createdAt={post.created_at}
+                            criteria={post.criteria || undefined}
+                            user_id={post.user_id}
+                            authorName={authorName}
+                            authorAvatarUrl={authorAvatarUrl}
+                            compact={true}
+                        />
+                    );
+                })}
             </View>
         </ThemedView>
     );

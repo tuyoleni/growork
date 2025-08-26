@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { PostType } from '@/types';
 import { ContentCardProps } from '@/components/content/ContentCard';
 
@@ -37,17 +38,20 @@ export function usePostOperations() {
     };
 
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, avatar_url, username, name, surname')
-        .eq('id', post.user_id)
-        .maybeSingle();
+      const { data: profileData } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('profiles')
+            .select('id, avatar_url, username, name, surname')
+            .eq('id', post.user_id)
+            .maybeSingle();
+          return { data, error, status };
+        },
+        { logTag: 'profiles:getForPost' }
+      );
 
-      if (!profileError && profileData) {
+      if (profileData) {
         postProfile = profileData;
-
-      } else if (profileError) {
-        console.warn('⚠️ Profile fetch error for post:', post.id, profileError);
       }
     } catch (error) {
       console.warn('⚠️ Error fetching profile data for post:', post.id, error);
@@ -83,6 +87,8 @@ export function usePostOperations() {
       publication_date: criteriaData.publication_date || undefined,
     };
 
+    const fullName = `${postProfile.name ?? ''}${postProfile.surname ? ' ' + postProfile.surname : ''}`.trim() || undefined;
+
     const convertedPost: ExtendedContentCardProps = {
       id: post.id,
       title: post.title || '',
@@ -92,6 +98,8 @@ export function usePostOperations() {
       variant: post.type === PostType.Job ? 'job' : 'news',
       user_id: post.user_id,
       criteria: criteria,
+      authorName: fullName,
+      authorAvatarUrl: postProfile.avatar_url || undefined,
     };
 
     return convertedPost;
@@ -156,16 +164,13 @@ export function usePostOperations() {
         query = query.limit(filters.limit);
       }
 
-      const { data: postsData, error: postsError } = await query;
-
-
-
-      if (postsError) {
-        console.error('❌ Error fetching posts:', postsError);
-        throw postsError;
-      }
-
-
+      const { data: postsData } = await supabaseRequest<any[]>(
+        async () => {
+          const { data, error, status } = await query;
+          return { data, error, status };
+        },
+        { logTag: 'posts:listWithRelations' }
+      );
 
       return postsData || [];
     } catch (error) {
@@ -185,25 +190,26 @@ export function usePostOperations() {
     criteria?: any;
   }) => {
     try {
-      const { data, error } = await supabase
-        .from('posts')
-        .insert([{
-          user_id: postData.user_id,
-          type: postData.type,
-          title: postData.title,
-          content: postData.content,
-          image_url: postData.image_url || null,
-          industry: postData.industry || null,
-          is_sponsored: postData.is_sponsored || false,
-          criteria: postData.criteria || null,
-        }])
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error('❌ Error creating post:', error);
-        throw error;
-      }
+      const { data } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('posts')
+            .insert([{
+              user_id: postData.user_id,
+              type: postData.type,
+              title: postData.title,
+              content: postData.content,
+              image_url: postData.image_url || null,
+              industry: postData.industry || null,
+              is_sponsored: postData.is_sponsored || false,
+              criteria: postData.criteria || null,
+            }])
+            .select('*')
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'posts:create' }
+      );
 
       console.log('✅ Post created successfully:', data);
       return { data, error: null };
@@ -231,25 +237,26 @@ export const addPost = async (postData: {
   criteria?: any;
 }) => {
   try {
-    const { data, error } = await supabase
-      .from('posts')
-      .insert([{
-        user_id: postData.user_id,
-        type: postData.type,
-        title: postData.title,
-        content: postData.content,
-        image_url: postData.image_url || null,
-        industry: postData.industry || null,
-        is_sponsored: postData.is_sponsored || false,
-        criteria: postData.criteria || null,
-      }])
-      .select('*')
-      .single();
-
-    if (error) {
-      console.error('❌ Error creating post:', error);
-      throw error;
-    }
+    const { data } = await supabaseRequest<any>(
+      async () => {
+        const { data, error, status } = await supabase
+          .from('posts')
+          .insert([{
+            user_id: postData.user_id,
+            type: postData.type,
+            title: postData.title,
+            content: postData.content,
+            image_url: postData.image_url || null,
+            industry: postData.industry || null,
+            is_sponsored: postData.is_sponsored || false,
+            criteria: postData.criteria || null,
+          }])
+          .select('*')
+          .single();
+        return { data, error, status };
+      },
+      { logTag: 'posts:create' }
+    );
 
     console.log('✅ Post created successfully:', data);
     return { data, error: null };

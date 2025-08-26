@@ -9,7 +9,7 @@ import { BadgeCheck } from 'lucide-react-native';
 import { ThemedAvatar } from '../ui/ThemedAvatar';
 import ThemedButton from '../ui/ThemedButton';
 import PostInteractionBar from './PostInteractionBar';
-import { supabase } from '@/utils/supabase';
+// Removed direct Supabase calls; author data is passed via props to avoid duplicate fetches
 import { useCompanies } from '@/hooks/companies';
 import { useRouter } from 'expo-router';
 
@@ -89,64 +89,22 @@ function CompanyHeader({ companyId, companyName }: { companyId: string; companyN
 }
 
 // User Header for News Posts
-function UserHeader({ userId }: { userId?: string }) {
-    const [profile, setProfile] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+function UserHeader({ authorName, authorAvatarUrl }: { authorName?: string; authorAvatarUrl?: string }) {
     const textColor = useThemeColor({}, 'text');
     const mutedTextColor = useThemeColor({}, 'mutedText');
 
-    useEffect(() => {
-        if (userId) {
-            fetchUserProfile();
-        }
-    }, [userId]);
-
-    const fetchUserProfile = async () => {
-        try {
-            const { data: profileData } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (profileData) setProfile(profileData);
-        } catch (err) {
-            console.error('Error fetching profile:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading || !profile) {
-        return (
-            <View style={styles.header}>
-                <ThemedAvatar size={32} image="" />
-                <View style={styles.headerText}>
-                    <ThemedText style={[styles.name, { color: mutedTextColor }]}>Loading...</ThemedText>
-                </View>
-            </View>
-        );
-    }
-
-    const displayName = `${profile?.name} ${profile?.surname}`;
+    const displayName = authorName || 'Unknown User';
+    const avatar = authorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=32`;
 
     return (
         <View style={styles.header}>
-            <ThemedAvatar
-                size={32}
-                image={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=32`}
-            />
+            <ThemedAvatar size={32} image={avatar} />
             <View style={styles.headerText}>
                 <View style={styles.nameRow}>
                     <ThemedText style={[styles.name, { color: textColor }]} numberOfLines={1}>
                         {displayName}
                     </ThemedText>
                 </View>
-                {profile?.profession && (
-                    <ThemedText style={[styles.subtitle, { color: mutedTextColor }]} numberOfLines={1}>
-                        {profile.profession}
-                    </ThemedText>
-                )}
             </View>
         </View>
     );
@@ -172,6 +130,8 @@ export interface ContentCardProps {
     onPressApply?: () => void;
     hasApplied?: boolean;
     user_id?: string;
+    authorName?: string;
+    authorAvatarUrl?: string;
     style?: any;
     compact?: boolean;
     isSponsored?: boolean;
@@ -187,6 +147,8 @@ export default function ContentCard({
     onPressApply,
     hasApplied = false,
     user_id,
+    authorName,
+    authorAvatarUrl,
     style,
     compact = false,
     isSponsored = false,
@@ -234,7 +196,7 @@ export default function ContentCard({
                 {criteria?.companyId ? (
                     <CompanyHeader companyId={criteria?.companyId} companyName={criteria?.company} />
                 ) : (
-                    <UserHeader userId={user_id} />
+                    <UserHeader authorName={authorName} authorAvatarUrl={authorAvatarUrl} />
                 )}
             </Pressable>
 
@@ -382,7 +344,7 @@ const styles = StyleSheet.create({
     },
     image: {
         width: '100%',
-        height: 200,
+        height: 400,
         borderRadius: 8,
         marginBottom: 12,
     },

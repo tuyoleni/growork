@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/ui/useThemeColor';
@@ -40,25 +40,26 @@ export const CompanyStats: React.FC<CompanyStatsProps> = ({
     );
 };
 
-const styles = {
+const styles = StyleSheet.create({
     container: {
-        paddingVertical: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
     statsRow: {
-        flexDirection: 'row' as const,
-        gap: 24,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
     },
     statItem: {
-        alignItems: 'center' as const,
+        alignItems: 'center',
         flex: 1,
     },
     statNumber: {
         fontSize: 20,
-        fontWeight: '600' as const,
+        fontWeight: '600',
         marginBottom: 2,
     },
     statLabel: {
         fontSize: 13,
-        fontWeight: '500' as const,
+        fontWeight: '500',
     },
-};
+});

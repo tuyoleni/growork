@@ -1,29 +1,53 @@
-'use client'
-import { useBookmarks } from '@/hooks';
+import React, { useState, useMemo, useCallback } from 'react';
+import { FlatList, RefreshControl, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import BookmarksHeader from '@/components/ui/BookmarksHeader';
-import { ContentCardSkeleton } from '@/components/ui/Skeleton';
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import BookmarkedContentList from '@/components/content/BookmarkedContentList';
-import { PostType } from '@/types/enums';
+import { Colors } from '@/constants/Colors';
+import ContentCard from '@/components/content/ContentCard';
+import { useBookmarks } from '@/hooks';
 import { useRouter } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
-
-// Import BookmarkedItem type from the hook
-import { BookmarkedItem } from '@/hooks/posts/useBookmarks';
-
+import { useInteractions } from '@/hooks/posts/useInteractions';
+import { PostSkeleton } from '@/components/ui/SkeletonLoader';
+import CategorySelector from '@/components/ui/CategorySelector';
 export default function Bookmarks() {
-  const [selectedCategory, setSelectedCategory] = useState(3); // All category
   const [refreshing, setRefreshing] = useState(false);
-  const {
-    bookmarkedItems,
-    loading,
-    error,
-    removeBookmark,
-    refreshBookmarks
-  } = useBookmarks();
+  const [selectedContentType, setSelectedContentType] = useState(0);
+  const { bookmarkedItems, loading, error, refreshBookmarks } = useBookmarks();
+  const { initializePost } = useInteractions();
+  const router = useRouter();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+
+  // Convert bookmarked posts to the same format as home feed
+  const allBookmarkedPosts = useMemo(() => {
+    return bookmarkedItems
+      .filter(item => item.type === 'post')
+      .map(item => {
+        const post = item.data;
+        return {
+          id: post.id,
+          variant: post.type === 'job' ? 'job' : 'news',
+          title: post.title,
+          description: post.content,
+          mainImage: post.image_url,
+          user_id: post.user_id,
+          criteria: post.criteria,
+          createdAt: post.created_at,
+          industry: post.criteria?.industry || post.industry,
+        };
+      });
+  }, [bookmarkedItems]);
+
+  // Apply content type filtering only
+  const filteredPosts = useMemo(() => {
+    return allBookmarkedPosts.filter((post) => {
+      if (selectedContentType === 1 && post.variant !== 'job') return false;
+      if (selectedContentType === 2 && post.variant !== 'news') return false;
+      return true;
+    });
+  }, [allBookmarkedPosts, selectedContentType]);
+
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -33,135 +57,143 @@ export default function Bookmarks() {
       setRefreshing(false);
     }
   }, [refreshBookmarks]);
-  const router = useRouter();
 
-  // Filter items based on selected category
-  const getFilteredItems = (): BookmarkedItem[] => {
-    if (selectedCategory === 3) { // All
-      return bookmarkedItems as BookmarkedItem[];
-    } else if (selectedCategory === 0) { // Jobs
-      return (bookmarkedItems as BookmarkedItem[]).filter(item =>
-        item.type === 'post' && (item.data as any).type === PostType.Job
-      );
-    } else if (selectedCategory === 1) { // News
-      return (bookmarkedItems as BookmarkedItem[]).filter(item =>
-        item.type === 'post' && (item.data as any).type === PostType.News
-      );
-    } else if (selectedCategory === 2) { // Applications
-      return (bookmarkedItems as BookmarkedItem[]).filter(item => item.type === 'application');
+  const handlePostPress = useCallback((post: any) => {
+    router.push(`/post/${post.id}`);
+  }, [router]);
+
+  const handleApplyToJob = useCallback((post: any) => {
+    // Handle job application logic
+    console.log('Apply to job:', post.id);
+  }, []);
+
+  // Initialize interactions for all bookmarked posts (not just filtered)
+  const allPostIds = useMemo(() => allBookmarkedPosts.map(p => p.id).filter(Boolean), [allBookmarkedPosts]);
+  React.useEffect(() => {
+    if (allPostIds.length) {
+      // Use batch initialization for better performance
+      allPostIds.forEach(postId => initializePost(postId));
     }
-    return bookmarkedItems as BookmarkedItem[];
-  };
+  }, [allPostIds.join(','), initializePost]);
 
-  const filteredItems = getFilteredItems();
+  const renderPost = useCallback(({ item: post }: { item: any }) => (
+    <ContentCard
+      key={post.id}
+      id={post.id}
+      variant={post.variant}
+      title={post.title}
+      description={post.description}
+      mainImage={post.mainImage}
+      user_id={post.user_id}
+      criteria={post.criteria}
+      createdAt={post.createdAt}
+      onPressApply={() => handleApplyToJob(post)}
+    />
+  ), [handleApplyToJob]);
 
-  const handleItemPress = (item: BookmarkedItem) => {
-    if (item.type === 'post') {
-      // Navigate to post detail
-      router.push(`/post/${item.id}`);
-    } else if (item.type === 'application') {
-      // Navigate to application detail or show application info
-
-    }
-  };
-
-  const handleRemoveBookmark = async (item: BookmarkedItem) => {
-    await removeBookmark(item);
-  };
-
-  const getCategorySubtitle = () => {
-    const count = filteredItems.length;
-    if (selectedCategory === 0) { // Jobs
-      return `${count} saved job${count !== 1 ? 's' : ''}`;
-    } else if (selectedCategory === 1) { // News
-      return `${count} saved news item${count !== 1 ? 's' : ''}`;
-    } else if (selectedCategory === 2) { // Applications
-      return `${count} job application${count !== 1 ? 's' : ''}`;
-    } else { // All
-      return `${count} total bookmark${count !== 1 ? 's' : ''}`;
-    }
-  };
-
-  const getEmptyText = () => {
-    if (selectedCategory === 0) { // Jobs
-      return 'No saved jobs yet';
-    } else if (selectedCategory === 1) { // News
-      return 'No saved news yet';
-    } else if (selectedCategory === 2) { // Applications
-      return 'No job applications yet';
-    } else { // All
-      return 'No bookmarks yet';
-    }
-  };
+  const styles = createStyles(colors);
 
   return (
     <ScreenContainer>
-      <BookmarksHeader
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        subtitle={getCategorySubtitle()}
-      />
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+        ]}
+      >
+        <ThemedText style={styles.title}>Bookmarks</ThemedText>
+        
+        {/* Content Type Filter */}
+        <CategorySelector
+          selectedIndex={selectedContentType}
+          onChange={setSelectedContentType}
+          options={['All', 'Jobs', 'News']}
+        />
+      </View>
 
-      <ScrollView
+      <FlatList
+        data={filteredPosts}
+        keyExtractor={(post) => post.id}
+        renderItem={renderPost}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 8 }}
+        ListHeaderComponent={
+          loading ? (
+            <ThemedView style={styles.loadingContainer}>
+              {[1, 2, 3].map((index) => (
+                <PostSkeleton key={`bookmark-skeleton-${index}`} />
+              ))}
+            </ThemedView>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#007AFF"
-            colors={['#007AFF']}
+            tintColor={colors.tint}
+            colors={[colors.tint]}
           />
         }
-      >
-        {/* Bookmarks Content */}
-        <ThemedView style={styles.contentSection}>
-          {loading && (
-            <ThemedView style={styles.loadingContainer}>
-              {[1, 2, 3].map((index) => (
-                <ContentCardSkeleton key={`bookmark-skeleton-${index}`} />
-              ))}
+        ListEmptyComponent={
+          !loading ? (
+            <ThemedView style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>
+                {allBookmarkedPosts.length === 0 
+                  ? 'No bookmarks yet' 
+                  : 'No bookmarks match your filters'
+                }
+              </ThemedText>
+              <ThemedText style={styles.emptySubtext}>
+                {allBookmarkedPosts.length === 0
+                  ? 'Bookmark posts to save them for later'
+                  : 'Try adjusting your content type or industry filters'
+                }
+              </ThemedText>
             </ThemedView>
-          )}
-
-          {error && (
-            <ThemedView style={styles.errorContainer}>
-              <ThemedText style={styles.errorText}>Error: {error}</ThemedText>
-            </ThemedView>
-          )}
-
-          <BookmarkedContentList
-            items={filteredItems}
-            subtitle={getCategorySubtitle()}
-            onItemPress={handleItemPress}
-            onRemoveBookmark={handleRemoveBookmark}
-            emptyText={getEmptyText()}
-          />
-        </ThemedView>
-      </ScrollView>
+          ) : null
+        }
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={5}
+      />
     </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+const createStyles = (colors: any) => StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  contentSection: {
-    flex: 1,
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   loadingContainer: {
-    marginBottom: 16,
+    paddingHorizontal: 16,
   },
-  errorContainer: {
-    padding: 16,
-    marginBottom: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 64,
   },
-  errorText: {
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtext: {
     fontSize: 14,
-    color: '#dc2626',
+    opacity: 0.7,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
 });

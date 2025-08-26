@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -42,15 +42,20 @@ export default function ApplicationsScreen() {
     }
   }, [user?.id, fetchApplicationsForMyPosts]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    if (user) {
-      await fetchApplicationsForMyPosts(user.id);
+    try {
+      if (user) {
+        await fetchApplicationsForMyPosts(user.id);
+      }
+    } catch (error) {
+      console.error('Error refreshing applications:', error);
+    } finally {
+      setRefreshing(false);
     }
-    setRefreshing(false);
-  };
+  }, [user, fetchApplicationsForMyPosts]);
 
-  const handleApplicationStatusUpdate = async (applicationId: string, newStatus: ApplicationStatus) => {
+  const handleApplicationStatusUpdate = useCallback(async (applicationId: string, newStatus: ApplicationStatus) => {
     Alert.alert(
       'Update Status',
       `Are you sure you want to mark this application as ${newStatus}?`,
@@ -59,15 +64,19 @@ export default function ApplicationsScreen() {
         {
           text: 'Update',
           onPress: async () => {
-            const result = await updateApplicationStatus(applicationId, newStatus);
-            if (result.error) {
-              Alert.alert('Error', 'Failed to update application status');
+            try {
+              const result = await updateApplicationStatus(applicationId, newStatus);
+              if (result.error) {
+                Alert.alert('Error', 'Failed to update application status');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'An unexpected error occurred');
             }
           },
         },
       ]
     );
-  };
+  }, [updateApplicationStatus]);
 
   const loading = applicationsLoading;
   const error = applicationsError;
@@ -100,6 +109,8 @@ export default function ApplicationsScreen() {
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: tintColor }]}
             onPress={() => user && handleRefresh()}
+            accessibilityLabel="Retry loading applications"
+            accessibilityRole="button"
           >
             <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
           </TouchableOpacity>
@@ -132,8 +143,17 @@ export default function ApplicationsScreen() {
         )}
         contentContainerStyle={styles.listContainer}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor="#007AFF"
+            colors={['#007AFF']}
+          />
         }
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={8}
+        windowSize={10}
+        initialNumToRender={5}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Feather name="users" size={64} color={mutedTextColor} />

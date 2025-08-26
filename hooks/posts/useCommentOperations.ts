@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { Comment } from '@/types';
 
 export interface CommentWithProfile extends Comment {
@@ -18,26 +19,32 @@ export function useCommentOperations() {
   const fetchComments = useCallback(async (postId: string): Promise<CommentWithProfile[]> => {
     try {
       // First fetch comments
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('post_id', postId)
-        .order('created_at', { ascending: false });
-
-      if (commentsError) throw commentsError;
+      const { data: commentsData } = await supabaseRequest<any[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('comments')
+            .select('*')
+            .eq('post_id', postId)
+            .order('created_at', { ascending: false });
+          return { data, error, status };
+        },
+        { logTag: 'comments:listForPost' }
+      );
 
       // Then fetch profiles for the user IDs
       if (commentsData && commentsData.length > 0) {
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
 
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, name, surname, avatar_url')
-          .in('id', userIds);
-
-        if (profilesError) {
-          console.warn('Error fetching profiles:', profilesError);
-        }
+        const { data: profilesData } = await supabaseRequest<any[]>(
+          async () => {
+            const { data, error, status } = await supabase
+              .from('profiles')
+              .select('id, name, surname, avatar_url')
+              .in('id', userIds);
+            return { data, error, status };
+          },
+          { logTag: 'profiles:listForComments' }
+        );
 
         // Create a map of user profiles
         const profilesMap = (profilesData || []).reduce((acc: any, profile: any) => {
@@ -66,24 +73,34 @@ export function useCommentOperations() {
   // Add a new comment
   const addComment = useCallback(async (postId: string, userId: string, content: string): Promise<CommentWithProfile> => {
     try {
-      const { data, error } = await supabase
-        .from('comments')
-        .insert([{ post_id: postId, user_id: userId, content }])
-        .select('*')
-        .single();
-
-      if (error) throw error;
+      const { data } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('comments')
+            .insert([{ post_id: postId, user_id: userId, content }])
+            .select('*')
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'comments:add' }
+      );
 
       // Fetch the user's profile for the new comment
       let profile = null;
       try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, name, surname, avatar_url')
-          .eq('id', userId)
-          .single();
+        const { data: profileData } = await supabaseRequest<any>(
+          async () => {
+            const { data, error, status } = await supabase
+              .from('profiles')
+              .select('id, name, surname, avatar_url')
+              .eq('id', userId)
+              .single();
+            return { data, error, status };
+          },
+          { logTag: 'profiles:getForNewComment' }
+        );
 
-        if (!profileError && profileData) {
+        if (profileData) {
           profile = profileData;
         }
       } catch (profileErr) {
@@ -109,12 +126,16 @@ export function useCommentOperations() {
   // Delete a comment
   const deleteComment = useCallback(async (commentId: string): Promise<void> => {
     try {
-      const { error } = await supabase
-        .from('comments')
-        .delete()
-        .eq('id', commentId);
-
-      if (error) throw error;
+      await supabaseRequest<void>(
+        async () => {
+          const { error, status } = await supabase
+            .from('comments')
+            .delete()
+            .eq('id', commentId);
+          return { data: null, error, status };
+        },
+        { logTag: 'comments:delete' }
+      );
 
       // Remove the comment from the list
       setComments(prev => prev.filter(c => c.id !== commentId));

@@ -118,14 +118,14 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
               </ThemedText>
             </View>
           )}
-          {filteredOptions.map((option) => {
+          {filteredOptions.map((option, index) => {
             const isVisible = internalVisibleOptions.some(opt => opt.label === option.label);
             const isAtMax = internalVisibleOptions.length >= maxVisibleOptions;
             const isAtMin = internalVisibleOptions.length <= minVisibleOptions;
             const canToggle = isVisible ? !isAtMin : !isAtMax;
             return (
               <TouchableOpacity
-                key={option.label}
+                key={`${option.label}-${index}`}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -206,7 +206,7 @@ const CustomOptionStrip: React.FC<CustomOptionStripProps> = ({
         const selected = idx === selectedIndex;
         return (
           <Pressable
-            key={option.label}
+            key={`${option.label}-${idx}`}
             onPress={() => handlePress(idx)}
             style={({ pressed }) => [
               styles.badge,

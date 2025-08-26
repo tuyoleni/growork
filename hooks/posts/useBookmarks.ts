@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
+import { supabaseRequest } from '@/utils/supabaseRequest';
 import { useAuth } from '../auth/useAuth';
 import { useInteractions } from './useInteractions';
 
@@ -23,27 +24,31 @@ export function useBookmarks() {
     if (!user) return [];
 
     try {
-      const { data: bookmarks, error: bookmarksError } = await supabase
-        .from('bookmarks')
-        .select(`
-          id,
-          created_at,
-          post_id,
-          posts (
-            id,
-            title,
-            content,
-            type,
-            image_url,
-            created_at,
-            user_id,
-            criteria
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (bookmarksError) throw bookmarksError;
+      const { data: bookmarks } = await supabaseRequest<any[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('bookmarks')
+            .select(`
+              id,
+              created_at,
+              post_id,
+              posts (
+                id,
+                title,
+                content,
+                type,
+                image_url,
+                created_at,
+                user_id,
+                criteria
+              )
+            `)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          return { data, error, status };
+        },
+        { logTag: 'bookmarks:list' }
+      );
 
       // Get unique user IDs from posts
       const userIds = [...new Set(bookmarks
@@ -53,14 +58,16 @@ export function useBookmarks() {
       )];
 
       // Fetch profiles for all users
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, name, surname, username, avatar_url')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      }
+      const { data: profiles } = await supabaseRequest<any[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('profiles')
+            .select('id, name, surname, username, avatar_url')
+            .in('id', userIds);
+          return { data, error, status };
+        },
+        { logTag: 'profiles:listForBookmarks' }
+      );
 
       // Create a map of user profiles
       const profileMap = new Map();
@@ -92,28 +99,32 @@ export function useBookmarks() {
     if (!user) return [];
 
     try {
-      const { data: applications, error: applicationsError } = await supabase
-        .from('applications')
-        .select(`
-          id,
-          created_at,
-          status,
-          cover_letter,
-          cover_letter_id,
-          resume_id,
-          post_id,
-          posts (
-            id,
-            title,
-            content,
-            type,
-            criteria
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (applicationsError) throw applicationsError;
+      const { data: applications } = await supabaseRequest<any[]>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('applications')
+            .select(`
+              id,
+              created_at,
+              status,
+              cover_letter,
+              cover_letter_id,
+              resume_id,
+              post_id,
+              posts (
+                id,
+                title,
+                content,
+                type,
+                criteria
+              )
+            `)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          return { data, error, status };
+        },
+        { logTag: 'applications:listForBookmarks' }
+      );
 
       return applications.map(application => ({
         id: application.id,

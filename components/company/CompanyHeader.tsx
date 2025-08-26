@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Image } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import ThemedButton from '@/components/ui/ThemedButton';
 import { useThemeColor } from '@/hooks/ui/useThemeColor';
 import { Company } from '@/types/company';
@@ -22,11 +23,10 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
     return (
         <ThemedView style={styles.container}>
             <View style={styles.content}>
-                <Image
-                    source={{
-                        uri: company.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&size=60&background=random`
-                    }}
-                    style={styles.avatar}
+                <ThemedAvatar
+                    size={60}
+                    image={company.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&size=60`}
+                    square={true}
                 />
                 <View style={styles.info}>
                     <ThemedText style={styles.name}>{company.name}</ThemedText>
@@ -48,27 +48,22 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
     );
 };
 
-const styles = {
+const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 16,
         paddingVertical: 16,
     },
     content: {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
-    },
-    avatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 8,
-        marginRight: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     info: {
         flex: 1,
     },
     name: {
         fontSize: 20,
-        fontWeight: '600' as const,
+        fontWeight: '600',
         marginBottom: 2,
     },
     subtitle: {
@@ -78,4 +73,4 @@ const styles = {
         paddingHorizontal: 8,
         paddingVertical: 4,
     },
-};
+});
