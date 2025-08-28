@@ -16,9 +16,8 @@ import { Feather } from '@expo/vector-icons';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
 import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
 import { calculateProfileStrength } from '@/utils/utils';
-import { sendTestNotification } from '@/utils/notifications';
 
-const CATEGORY_OPTIONS = ['Documents', 'Companies', 'Media'];
+const CATEGORY_OPTIONS = ['Documents', 'Companies'];
 
 export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -30,8 +29,8 @@ export default function Profile() {
 
   // Define category options based on user type
   const CATEGORY_OPTIONS = isBusinessUser
-    ? ['Documents', 'Companies', 'Media', 'My Posts']
-    : ['Documents', 'Companies', 'Media'];
+    ? ['Documents', 'Companies', 'My Posts']
+    : ['Documents', 'Companies'];
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -42,32 +41,6 @@ export default function Profile() {
     }
   }, [refreshProfile]);
 
-  const handleTestNotification = useCallback(async () => {
-    if (!profile?.id) return;
-
-    try {
-      const success = await sendTestNotification(profile.id);
-      if (success) {
-        toast.show({
-          type: 'success',
-          title: 'Test Notification Sent',
-          message: 'Check your notifications!'
-        });
-      } else {
-        toast.show({
-          type: 'danger',
-          title: 'Test Failed',
-          message: 'Failed to send test notification'
-        });
-      }
-    } catch (error) {
-      toast.show({
-        type: 'danger',
-        title: 'Error',
-        message: 'Failed to send test notification'
-      });
-    }
-  }, [profile?.id, toast]);
   const scrollY = useRef(new Animated.Value(0)).current;
   const iconColor = useThemeColor({}, 'icon');
   const backgroundColor = useThemeColor({}, 'background');
@@ -226,21 +199,12 @@ export default function Profile() {
               selectedIndex={selectedIndex}
               onChange={setSelectedIndex}
             />
-
-            {/* Test Notification Button */}
-            <TouchableOpacity
-              style={[styles.testButton, { backgroundColor: tintColor }]}
-              onPress={handleTestNotification}
-            >
-              <ThemedText style={styles.testButtonText}>Test Notification</ThemedText>
-            </TouchableOpacity>
           </ThemedView>
 
           <ThemedView style={styles.contentSection}>
             {selectedIndex === 0 && <DocumentsList />}
             {selectedIndex === 1 && <CompaniesList />}
-            {selectedIndex === 2 && <FollowingGrid />}
-            {selectedIndex === 3 && isBusinessUser && (
+            {selectedIndex === 2 && isBusinessUser && (
               <MyPostsList />
             )}
           </ThemedView>

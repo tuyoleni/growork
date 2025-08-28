@@ -20,19 +20,27 @@ export interface Permissions {
     can: (action: PermissionAction, resource?: unknown) => boolean;
 }
 
-/**
- * Global permissions hook derived from the authenticated user's profile.
- * Use anywhere to drive dynamic UI and feature access.
- * 
- * @returns Permissions object with user type, authentication status, and permission checks
- */
 export function usePermissions(): Permissions & { refresh: () => Promise<void> } {
     const { user, profile, refreshProfile } = useAuth();
 
     const isAuthenticated = Boolean(user);
-    const userType = profile?.user_type as UserType | undefined;
+    // Safely get and validate the user type
+    const userType = (() => {
+      const type = profile?.user_type?.toLowerCase();
+      if (type === UserType.Business) return UserType.Business;
+      if (type === UserType.User) return UserType.User;
+      return undefined;
+    })();
+    
     const isBusinessUser = userType === UserType.Business;
     const isRegularUser = userType === UserType.User;
+    
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Profile user_type:', profile?.user_type);
+      console.log('Normalized userType:', userType);
+      console.log('isBusinessUser:', isBusinessUser, 'isRegularUser:', isRegularUser);
+    }
 
     const hasUserType = (type: UserType) => userType === type;
 

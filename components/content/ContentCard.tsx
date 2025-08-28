@@ -180,7 +180,6 @@ export default function ContentCard({
 
     return (
         <ThemedView style={[
-            styles.container,
             {
                 borderBottomColor: borderColor + '20',
                 paddingHorizontal: compact ? 0 : 16,
@@ -254,14 +253,6 @@ export default function ContentCard({
                     ) : (
                         // News-specific details
                         <>
-                            {criteria?.source && (
-                                <View style={styles.detail}>
-                                    <Feather name="external-link" size={12} color={mutedTextColor} />
-                                    <ThemedText style={[styles.detailText, { color: mutedTextColor }]} numberOfLines={1}>
-                                        {criteria.source}
-                                    </ThemedText>
-                                </View>
-                            )}
                             {criteria?.publication_date && (
                                 <View style={styles.detail}>
                                     <Feather name="calendar" size={12} color={mutedTextColor} />
@@ -312,9 +303,6 @@ export default function ContentCard({
 }
 
 const styles = StyleSheet.create({
-    container: {
-        borderBottomWidth: 0.5,
-    },
     headerContainer: {
         marginBottom: 12,
     },
@@ -344,7 +332,7 @@ const styles = StyleSheet.create({
     },
     image: {
         width: '100%',
-        height: 400,
+        height: 250,
         borderRadius: 8,
         marginBottom: 12,
     },

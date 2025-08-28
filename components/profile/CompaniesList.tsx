@@ -15,7 +15,7 @@ import { useCompanies } from '@/hooks';
 export default function CompaniesList() {
   const { user } = useAuth();
   const router = useRouter();
-  const { isBusinessUser } = usePermissions();
+  // Removed isBusinessUser restriction to allow all users to create companies
   const { companies, fetchCompanies } = useCompanies();
   const colorScheme = useColorScheme() ?? 'light';
   const borderColor = useThemeColor({}, 'border');
@@ -33,7 +33,6 @@ export default function CompaniesList() {
 
 
   const handleCreateCompany = () => {
-    if (!isBusinessUser) return;
     router.push('/profile/CompanyManagement');
   };
 
@@ -43,7 +42,6 @@ export default function CompaniesList() {
     <ThemedView style={styles.container}>
       <View style={styles.headerRow}>
         <ThemedText style={styles.headerTitle}>Companies</ThemedText>
-        {isBusinessUser && (
           <Pressable
             onPress={() => {
               if (process.env.EXPO_OS === 'ios') {
@@ -54,15 +52,14 @@ export default function CompaniesList() {
           >
             <ThemedText style={[styles.addButtonText, { color: tintColor }]}>Add New</ThemedText>
           </Pressable>
-        )}
       </View>
 
       {companies.length === 0 ? (
         <View style={styles.emptyState}>
           <Feather name="briefcase" size={48} color={mutedTextColor} />
-          <ThemedText style={[styles.emptyTitle, { color: textColor }]}>No Companies Yet</ThemedText>
+          <ThemedText style={[styles.emptyTitle, { color: textColor }]}>Get started with your companies</ThemedText>
           <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }]}>
-            {isBusinessUser ? 'Tap the Add New button to create your first company profile' : 'Only business accounts can create company profiles.'}
+            Tap the Add New button to create your first company profile
           </ThemedText>
         </View>
       ) : (
