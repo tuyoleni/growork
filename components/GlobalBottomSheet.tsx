@@ -1,6 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import { forwardRef } from "react";
-import { StyleSheet, Platform, KeyboardAvoidingView } from "react-native";
+import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -9,19 +9,53 @@ import {
   BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { useThemeColor } from "@/hooks";
+import { useDynamicSnapPoint } from "@/hooks/ui/useDynamicSnapPoint";
 
 export interface SimpleBottomSheetProps {
-  snapPoints: string[];
+  snapPoints?: string[];
   onDismiss?: () => void;
   children: React.ReactNode;
+  dynamicSnapPoint?: boolean;
+  dynamicOptions?: {
+    minHeight?: number;
+    maxHeight?: number;
+    padding?: number;
+  };
 }
 
 const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
-  function SimpleBottomSheet({ snapPoints, onDismiss, children }, ref) {
+  function SimpleBottomSheet(
+    {
+      snapPoints = ["50%"],
+      onDismiss,
+      children,
+      dynamicSnapPoint = false,
+      dynamicOptions = {},
+    },
+    ref
+  ) {
     const backgroundSecondary = useThemeColor({}, "backgroundSecondary");
     const borderColor = useThemeColor({}, "border");
     const textColor = useThemeColor({}, "text");
     const mutedText = useThemeColor({}, "mutedText");
+
+    const {
+      snapPoint: dynamicSnapPointValue,
+      isCalculating,
+      contentRef,
+      onLayout,
+    } = useDynamicSnapPoint({
+      defaultSnapPoint: snapPoints[0] || "50%",
+      ...dynamicOptions,
+    });
+
+    // Use dynamic snap point if enabled, otherwise use provided snap points
+    const finalSnapPoints = useMemo(() => {
+      if (dynamicSnapPoint) {
+        return [dynamicSnapPointValue];
+      }
+      return snapPoints;
+    }, [dynamicSnapPoint, dynamicSnapPointValue, snapPoints]);
 
     const backgroundStyle = useMemo(
       () => ({
@@ -63,17 +97,33 @@ const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
       []
     );
 
+    // Wrap children with measurement view if dynamic snap point is enabled
+    const measuredChildren = useMemo(() => {
+      if (dynamicSnapPoint) {
+        return (
+          <View
+            ref={contentRef}
+            onLayout={onLayout}
+            style={styles.measurementContainer}
+          >
+            {children}
+          </View>
+        );
+      }
+      return children;
+    }, [dynamicSnapPoint, children, contentRef, onLayout]);
+
     return (
       <BottomSheetModal
         ref={ref}
-        snapPoints={snapPoints}
+        snapPoints={finalSnapPoints}
         onDismiss={onDismiss}
         backgroundStyle={backgroundStyle}
         handleIndicatorStyle={handleIndicatorStyle}
         backdropComponent={renderBackdrop}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
-        enableDynamicSizing={true}
+        enableDynamicSizing={false}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -84,7 +134,7 @@ const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {children}
+            {measuredChildren}
           </BottomSheetScrollView>
         </KeyboardAvoidingView>
       </BottomSheetModal>
@@ -96,6 +146,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingVertical: 16,
+  },
+  measurementContainer: {
+    // This container is used for measuring content height
+    // No additional styling needed
   },
 });
 

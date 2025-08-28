@@ -1,14 +1,14 @@
-import CategorySelector from '@/components/ui/CategorySelector';
-import { Colors } from '@/constants/Colors';
-import { INDUSTRIES } from '@/dataset/industries';
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React from 'react';
-import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
-import { ThemedText } from '../ThemedText';
-import CustomOptionStrip from '@/components/ui/CustomOptionStrip';
-import NotificationBadge from '@/components/ui/NotificationBadge';
-import { usePermissions } from '@/hooks';
+import CategorySelector from "@/components/ui/CategorySelector";
+import { Colors } from "@/constants/Colors";
+import { INDUSTRIES } from "@/dataset/industries";
+import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React from "react";
+import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
+import { ThemedText } from "../ThemedText";
+import CustomOptionStrip from "@/components/ui/CustomOptionStrip";
+import NotificationBadge from "@/components/ui/NotificationBadge";
+import { usePermissions } from "@/hooks";
 
 interface HeaderProps {
   selectedContentType: number;
@@ -26,7 +26,7 @@ const Header = ({
   onAddPost,
 }: HeaderProps) => {
   const visibleIndustries = INDUSTRIES;
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
   const router = useRouter();
   const permissions = usePermissions();
@@ -47,16 +47,20 @@ const Header = ({
         <ThemedText style={styles.appName} numberOfLines={1}>
           Growork
         </ThemedText>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
           {showAdd && (
-            <Pressable style={styles.iconButton} onPress={onAddPost} hitSlop={8}>
+            <Pressable
+              style={styles.iconButton}
+              onPress={onAddPost}
+              hitSlop={8}
+            >
               <Feather name="plus" size={22} color={theme.icon} />
             </Pressable>
           )}
           <View style={styles.notificationContainer}>
             <Pressable
               style={styles.iconButton}
-              onPress={() => router.push('/notifications')}
+              onPress={() => router.push("/notifications")}
               hitSlop={12}
             >
               <Feather name="bell" size={22} color={theme.icon} />
@@ -66,7 +70,7 @@ const Header = ({
         </View>
       </View>
       <CategorySelector
-        options={['All', 'Jobs', 'News']}
+        options={["All", "Jobs", "News"]}
         selectedIndex={selectedContentType}
         onChange={onContentTypeChange}
       />
@@ -85,19 +89,19 @@ const Header = ({
 
 const styles = StyleSheet.create({
   topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
     paddingHorizontal: 16,
   },
   appName: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     letterSpacing: 0.5,
   },
   notificationContainer: {
-    position: 'relative',
+    position: "relative",
     marginLeft: 8,
   },
   iconButton: {
@@ -109,7 +113,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 10,
     paddingBottom: 8,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   industrySelector: {
     marginTop: 8,
@@ -117,7 +121,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const HEADER_HEIGHT = 190;
+const HEADER_HEIGHT = 200;
 
 export { HEADER_HEIGHT };
 export default Header;

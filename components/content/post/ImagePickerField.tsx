@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
-import { useImageUpload } from './useImageUpload';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React from "react";
+import { View, Image, ActivityIndicator, Alert } from "react-native";
+import { useImageUpload } from "./useImageUpload";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import Button from "@/components/ui/Button";
+import { Spacing, BorderRadius } from "@/constants/DesignSystem";
 
 interface ImagePickerFieldProps {
   selectedImage: string | null;
@@ -13,7 +15,7 @@ interface ImagePickerFieldProps {
 export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   selectedImage,
   onImageSelected,
-  label = 'Add Image'
+  label = "Add Image",
 }) => {
   const { pickImage, uploading, error } = useImageUpload();
 
@@ -24,7 +26,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
         onImageSelected(imageUrl);
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert("Error", "Failed to pick image");
     }
   };
 
@@ -33,75 +35,66 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   };
 
   return (
-    <ThemedView style={{ marginVertical: 10 }}>
+    <View style={{ marginVertical: Spacing.xs }}>
       {label && (
-        <ThemedText style={{ marginBottom: 8, fontWeight: '500' }}>
+        <ThemedText style={{ marginBottom: Spacing.sm, fontWeight: "500" }}>
           {label}
         </ThemedText>
       )}
-      
+
       {selectedImage ? (
-        <View style={{ position: 'relative' }}>
+        <View style={{ position: "relative" }}>
           <Image
             source={{ uri: selectedImage }}
             style={{
-              width: '100%',
-              height: 200,
-              borderRadius: 8,
-              marginBottom: 8
+              width: "100%",
+              height: 100,
+              borderRadius: BorderRadius.md,
+              marginBottom: Spacing.sm,
             }}
             resizeMode="cover"
           />
-          <TouchableOpacity
+          <Button
+            title="×"
             onPress={removeImage}
+            variant="danger"
+            size="sm"
             style={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              backgroundColor: 'rgba(0,0,0,0.7)',
-              borderRadius: 15,
+              position: "absolute",
+              top: Spacing.sm,
+              right: Spacing.sm,
               width: 30,
               height: 30,
-              justifyContent: 'center',
-              alignItems: 'center'
+              borderRadius: 15,
             }}
-          >
-            <Text style={{ color: 'white', fontSize: 16 }}>×</Text>
-          </TouchableOpacity>
+            textStyle={{ fontSize: 16, fontWeight: "bold" }}
+          />
         </View>
       ) : (
-        <TouchableOpacity
+        <Button
+          title="Add image"
           onPress={handleImagePick}
+          variant="outline"
           disabled={uploading}
+          loading={uploading}
           style={{
-            borderWidth: 2,
-            borderColor: '#ddd',
-            borderStyle: 'dashed',
-            borderRadius: 8,
-            padding: 20,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#f9f9f9'
+            borderStyle: "dashed",
+            padding: Spacing.lg,
+            minHeight: 60,
+            justifyContent: "center",
+            alignItems: "center",
           }}
-        >
-          {uploading ? (
-            <ActivityIndicator size="large" color="#2563eb" />
-          ) : (
-            <>
-              <Text style={{ fontSize: 48, color: '#999' }}>📷</Text>
-              <ThemedText style={{ marginTop: 8, color: '#666' }}>
-                Tap to add image
-              </ThemedText>
-            </>
-          )}
-        </TouchableOpacity>
+          textStyle={{ fontSize: 16 }}
+        />
       )}
-      
+
       {error && (
-        <Text style={{ color: 'red', marginTop: 8, fontSize: 12 }}>
+        <ThemedText
+          style={{ color: "red", marginTop: Spacing.sm, fontSize: 12 }}
+        >
           {error}
-        </Text>
+        </ThemedText>
       )}
-    </ThemedView>
+    </View>
   );
 };

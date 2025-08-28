@@ -145,12 +145,6 @@ export default function NotificationsScreen() {
             icon={<Ionicons name="arrow-back" size={24} color={textColor} />}
             onPress={() => router.back()}
           />
-          <ThemedText
-            type="title"
-            style={[styles.headerTitle, { color: textColor }]}
-          >
-            Notifications
-          </ThemedText>
         </View>
         <View style={styles.errorContainer}>
           <ThemedText style={[styles.errorText, { color: textColor }]}>
@@ -169,24 +163,9 @@ export default function NotificationsScreen() {
           onPress={() => router.back()}
         />
 
-        <ThemedText
-          type="title"
-          style={[styles.headerTitle, { color: textColor }]}
-        >
-          Notifications
-          {unreadCount > 0 && (
-            <ThemedText style={[styles.unreadCount, { color: "#007AFF" }]}>
-              {" "}
-              ({unreadCount})
-            </ThemedText>
-          )}
-        </ThemedText>
-
         {unreadCount > 0 && markAllAsRead && (
           <ThemedIconButton
-            icon={
-              <Ionicons name="checkmark-done" size={20} color={textColor} />
-            }
+            icon={<Ionicons name="checkmark" size={20} color={textColor} />}
             onPress={markAllAsRead}
           />
         )}

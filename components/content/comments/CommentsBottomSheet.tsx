@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Platform,
@@ -10,17 +10,19 @@ import {
   Modal,
   Animated,
 } from "react-native";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { useActionSheet } from "@expo/react-native-action-sheet";
+import { Feather } from "@expo/vector-icons";
+
 import { useAuth, useComments, usePosts, useThemeColor } from "@/hooks";
 import { useAppContext } from "@/utils/AppContext";
+import { useCustomCommentsBottomSheet } from "@/hooks/ui/useBottomSheet";
+
 import { ThemedText } from "../../ThemedText";
 import { CommentItem } from "./CommentItem";
 import { EmojiBar } from "./EmojiBar";
 import { CommentsInputBar } from "./CommentsInputBar";
-import { Feather } from "@expo/vector-icons";
+
 import { Colors } from "@/constants/Colors";
-import { useCustomCommentsBottomSheet } from "@/hooks/ui/useBottomSheet";
 import {
   Spacing,
   BorderRadius,
@@ -38,16 +40,12 @@ interface CommentsBottomSheetProps {
   onClose?: () => void;
 }
 
-// Component that uses the context to render the bottom sheet
+// Context wrapper
 export function CommentsBottomSheetWithContext() {
   const { isVisible, currentPostId, currentPostOwnerId, closeCommentsSheet } =
     useCustomCommentsBottomSheet();
 
-  console.log("CommentsBottomSheetWithContext:", { isVisible, currentPostId });
-
-  if (!isVisible || !currentPostId) {
-    return null;
-  }
+  if (!isVisible || !currentPostId) return null;
 
   return (
     <CommentsBottomSheet
@@ -77,6 +75,7 @@ export default function CommentsBottomSheet({
 
   const { showActionSheetWithOptions } = useActionSheet();
 
+  // UI state
   const [commentText, setCommentText] = useState<string>("");
   const [isSending, setIsSending] = useState(false);
   const [likedComments, setLikedComments] = useState<LikeMap>({});
@@ -85,186 +84,177 @@ export default function CommentsBottomSheet({
 
   const inputRef = useRef<any>(null);
 
-  // Animation values
+  // Animations
   const slideAnim = useRef(new Animated.Value(0)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
 
-  // Theme colors
+  // Theme
   const textColor = useThemeColor({}, "text");
   const borderColor = useThemeColor({}, "border");
   const mutedText = useThemeColor({}, "mutedText");
   const backgroundSecondary = useThemeColor({}, "backgroundSecondary");
 
-  // Utility function for formatting comment dates
-  const formatCommentDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) {
-      return "Just now";
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
-  };
-
-  // Handle animations
+  // Lifecycle guards
+  const mounted = useRef(true);
   useEffect(() => {
-    console.log("CommentsBottomSheet: visible changed to", visible);
-    if (visible) {
-      // Reset animation values first
-      slideAnim.setValue(0);
-      backdropOpacity.setValue(0);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
-      console.log("CommentsBottomSheet: Starting animations");
-      // Start animations
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 1,
-          duration: Animation.duration.normal,
-          useNativeDriver: true,
-        }),
-        Animated.timing(backdropOpacity, {
-          toValue: 0.5,
-          duration: Animation.duration.normal,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        console.log("CommentsBottomSheet: Animations completed");
-      });
-    } else {
-      console.log("CommentsBottomSheet: Closing animations");
-      // Animate out
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: Animation.duration.normal,
-          useNativeDriver: true,
-        }),
-        Animated.timing(backdropOpacity, {
-          toValue: 0,
-          duration: Animation.duration.normal,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
+  // Animate open/close
+  useEffect(() => {
+    const open = Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: Animation.duration.normal,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0.5,
+        duration: Animation.duration.normal,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    const close = Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: Animation.duration.normal,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: Animation.duration.normal,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    (visible ? open : close).start();
   }, [visible, slideAnim, backdropOpacity]);
 
-  // Load comments and post data
+  // Load comments + post metadata when visible
   useEffect(() => {
-    if (postId && visible) {
-      fetchComments(postId);
+    if (!postId || !visible) return;
+
+    (async () => {
+      await fetchComments(postId);
+      if (!mounted.current) return;
       setCommentText("");
 
-      // Get post creator ID
       const post = posts.find((p) => p.id === postId);
-      if (post) {
-        setPostCreatorId(post.user_id);
-      }
-    }
+      if (mounted.current) setPostCreatorId(post ? post.user_id : null);
+    })();
   }, [postId, visible, posts, fetchComments]);
 
-  // Load like data for comments
+  // Load like states/counts
   useEffect(() => {
-    const loadLikeData = async () => {
-      if (comments.length > 0) {
-        const validComments = comments.filter(
-          (comment) => comment && comment.id && typeof comment.id === "string"
-        );
-        const likeStates: LikeMap = {};
-        const counts: CountMap = {};
+    if (!comments?.length) return;
 
-        for (const comment of validComments) {
-          try {
-            const [liked, count] = await Promise.all([
-              isLiked(comment.id),
-              getLikeCount(comment.id),
-            ]);
-            likeStates[comment.id] = liked;
-            counts[comment.id] = count;
-          } catch (error) {
-            console.error(
-              `Error loading like data for comment ${comment.id}:`,
-              error
-            );
-            likeStates[comment.id] = false;
-            counts[comment.id] = 0;
-          }
+    let cancelled = false;
+    (async () => {
+      const valid = comments.filter((c) => c && typeof c.id === "string");
+      const likeStates: LikeMap = {};
+      const counts: CountMap = {};
+
+      for (const c of valid) {
+        try {
+          const [liked, count] = await Promise.all([
+            isLiked(c.id),
+            getLikeCount(c.id),
+          ]);
+          if (cancelled) return;
+          likeStates[c.id] = !!liked;
+          counts[c.id] = count ?? 0;
+        } catch {
+          if (cancelled) return;
+          likeStates[c.id] = false;
+          counts[c.id] = 0;
         }
+      }
+      if (!cancelled && mounted.current) {
         setLikedComments(likeStates);
         setLikeCounts(counts);
       }
-    };
+    })();
 
-    if (comments.length > 0) {
-      loadLikeData();
-    }
+    return () => {
+      cancelled = true;
+    };
   }, [comments, isLiked, getLikeCount]);
 
-  const handleSubmitComment = async () => {
-    if (!profile || !commentText.trim()) return;
+  // Handlers
+  const handleSubmitComment = useCallback(async () => {
+    if (!profile || !commentText.trim() || isSending) return;
     setIsSending(true);
-    await addComment(commentText);
-    setCommentText("");
-    setIsSending(false);
-  };
+    try {
+      await addComment(commentText);
+      if (mounted.current) setCommentText("");
+    } finally {
+      if (mounted.current) setIsSending(false);
+    }
+  }, [profile, commentText, isSending, addComment]);
 
-  const handleToggleLike = async (commentId: string) => {
-    const prevLiked = likedComments[commentId];
-    setLikedComments((prev) => ({ ...prev, [commentId]: !prevLiked }));
-    setLikeCounts((prev) => ({
-      ...prev,
-      [commentId]: prev[commentId] + (prevLiked ? -1 : 1),
-    }));
-    const result = await toggleLike(commentId);
-    if (!result.success) {
-      setLikedComments((prev) => ({ ...prev, [commentId]: prevLiked }));
+  const handleToggleLike = useCallback(
+    async (commentId: string) => {
+      const prevLiked = !!likedComments[commentId];
+      const prevCount = likeCounts[commentId] ?? 0;
+
+      setLikedComments((prev) => ({ ...prev, [commentId]: !prevLiked }));
       setLikeCounts((prev) => ({
         ...prev,
-        [commentId]: prev[commentId] + (prevLiked ? 1 : -1),
+        [commentId]: prevCount + (prevLiked ? -1 : 1),
       }));
-    }
-  };
 
-  const handleMenu = (commentId: string) => {
-    const options = ["Delete", "Cancel"];
-    showActionSheetWithOptions(
-      {
-        options,
-        destructiveButtonIndex: 0,
-        cancelButtonIndex: 1,
-        title: "Comment Options",
-        message: "Delete this comment?",
-      },
-      (selectedIndex?: number) => {
-        if (selectedIndex === 0) {
-          deleteComment(commentId);
-        }
+      const result = await toggleLike(commentId);
+      if (!result?.success && mounted.current) {
+        setLikedComments((prev) => ({ ...prev, [commentId]: prevLiked }));
+        setLikeCounts((prev) => ({ ...prev, [commentId]: prevCount }));
       }
-    );
-  };
+    },
+    [likedComments, likeCounts, toggleLike]
+  );
 
-  const emojiReactions = ["❤️", "👏", "🔥", "🙏", "😢", "😊", "😮", "😂"];
+  const handleMenu = useCallback(
+    (commentId: string) => {
+      const options = ["Delete", "Cancel"];
+      showActionSheetWithOptions(
+        {
+          options,
+          destructiveButtonIndex: 0,
+          cancelButtonIndex: 1,
+          title: "Comment Options",
+          message: "Delete this comment?",
+        },
+        (selectedIndex?: number) => {
+          if (selectedIndex === 0) {
+            deleteComment(commentId);
+          }
+        }
+      );
+    },
+    [showActionSheetWithOptions, deleteComment]
+  );
 
-  const handleBackdropPress = () => {
+  const handleBackdropPress = useCallback(() => {
     Keyboard.dismiss();
     onClose?.();
-  };
+  }, [onClose]);
 
+  const handleClosePress = useCallback(() => {
+    onClose?.();
+  }, [onClose]);
+
+  // Animations
   const translateY = slideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [600, 0],
   });
 
-  // Debug animation values
-  useEffect(() => {
-    const listener = slideAnim.addListener(({ value }) => {
-      console.log("CommentsBottomSheet: slideAnim value:", value);
-    });
-    return () => slideAnim.removeListener(listener);
-  }, [slideAnim]);
+  // KeyboardAvoidingView tuning
+  const kavBehavior = Platform.OS === "ios" ? "padding" : "height";
+  const kavOffset = Platform.OS === "ios" ? 80 : 80;
 
   return (
     <Modal
@@ -320,61 +310,28 @@ export default function CommentsBottomSheet({
               </ThemedText>
             </View>
             <Pressable
-              onPress={onClose || (() => {})}
+              onPress={handleClosePress}
               style={styles.closeButton}
+              accessibilityLabel="Close comments"
             >
               <Feather name="x" size={24} color={textColor} />
             </Pressable>
           </View>
 
-          {/* Content with Keyboard Avoidance */}
+          {/* Keyboard-aware column: Scroll + Input */}
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-            style={styles.keyboardAvoidingView}
+            style={styles.kav}
+            behavior={kavBehavior}
+            keyboardVerticalOffset={kavOffset}
           >
-            {/* Comments List */}
             <ScrollView
               style={styles.commentList}
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
+              contentInsetAdjustmentBehavior="always"
               showsVerticalScrollIndicator={false}
             >
-              {loading && (
-                <View style={styles.skeletonContainer}>
-                  {[1, 2, 3].map((index) => (
-                    <View key={`skeleton-${index}`} style={styles.skeletonItem}>
-                      <View style={styles.skeletonHeader}>
-                        <Skeleton
-                          width={32}
-                          height={32}
-                          borderRadius={16}
-                          style={styles.skeletonAvatar}
-                        />
-                        <View style={styles.skeletonText}>
-                          <Skeleton
-                            width={80}
-                            height={12}
-                            borderRadius={4}
-                            style={styles.skeletonName}
-                          />
-                          <Skeleton width={60} height={10} borderRadius={4} />
-                        </View>
-                      </View>
-                      <View style={styles.skeletonContent}>
-                        <Skeleton
-                          width="90%"
-                          height={12}
-                          borderRadius={4}
-                          style={styles.skeletonLine}
-                        />
-                        <Skeleton width="70%" height={12} borderRadius={4} />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-              {!loading && comments.length === 0 && (
+              {comments.length === 0 && (
                 <View style={styles.emptyContainer}>
                   <Feather
                     name="message-circle"
@@ -392,27 +349,31 @@ export default function CommentsBottomSheet({
                   </ThemedText>
                 </View>
               )}
-              {comments &&
-                comments.length > 0 &&
-                comments
-                  .filter(
-                    (item) => item && item.id && typeof item.id === "string"
-                  )
-                  .map((item) => (
-                    <CommentItem
-                      key={item.id}
-                      item={item}
-                      isOwn={profile ? item.user_id === profile.id : false}
-                      isAuthor={
-                        postCreatorId ? item.user_id === postCreatorId : false
-                      }
-                      liked={likedComments[item.id] || false}
-                      likeCount={likeCounts[item.id] || 0}
-                      onLike={() => handleToggleLike(item.id)}
-                      onMenu={() => handleMenu(item.id)}
-                      formatDate={formatCommentDate}
-                    />
-                  ))}
+
+              {comments
+                .filter((item) => item && typeof item.id === "string")
+                .map((item) => (
+                  <CommentItem
+                    key={item.id}
+                    item={item}
+                    isOwn={!!profile && item.user_id === profile.id}
+                    isAuthor={!!postCreatorId && item.user_id === postCreatorId}
+                    liked={!!likedComments[item.id]}
+                    likeCount={likeCounts[item.id] ?? 0}
+                    onLike={() => handleToggleLike(item.id)}
+                    onMenu={() => handleMenu(item.id)}
+                    formatDate={(dateString) => {
+                      const date = new Date(dateString);
+                      const now = new Date();
+                      const diffInHours =
+                        (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+                      if (diffInHours < 1) return "Just now";
+                      if (diffInHours < 24)
+                        return `${Math.floor(diffInHours)}h ago`;
+                      return date.toLocaleDateString();
+                    }}
+                  />
+                ))}
             </ScrollView>
 
             {/* Input Section */}
@@ -426,8 +387,8 @@ export default function CommentsBottomSheet({
               ]}
             >
               <EmojiBar
-                emojis={emojiReactions}
-                onEmoji={(e) => setCommentText((prev) => prev + e)}
+                emojis={["❤️", "👏", "🔥", "🙏", "😢", "😊", "😮", "😂"]}
+                onEmoji={(e) => setCommentText((p) => p + e)}
               />
               <CommentsInputBar
                 profile={profile}
@@ -440,8 +401,8 @@ export default function CommentsBottomSheet({
               />
             </View>
 
-            {/* Error Display */}
-            {error && (
+            {/* Error */}
+            {!!error && (
               <View style={styles.errorContainer}>
                 <ThemedText
                   style={[
@@ -485,16 +446,10 @@ const styles = StyleSheet.create({
     height: "90%",
     borderTopLeftRadius: BorderRadius["2xl"],
     borderTopRightRadius: BorderRadius["2xl"],
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 10,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
   },
   handleBar: {
     width: 40,
@@ -526,38 +481,15 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: Spacing.xs,
   },
+  kav: {
+    flex: 1, // critical for proper resizing with the keyboard
+  },
   commentList: {
     flex: 1,
   },
   scrollContent: {
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
-  },
-  skeletonContainer: {
-    padding: Spacing.md,
-  },
-  skeletonItem: {
-    marginBottom: Spacing.md,
-  },
-  skeletonHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.xs,
-  },
-  skeletonAvatar: {
-    marginRight: Spacing.sm,
-  },
-  skeletonText: {
-    flex: 1,
-  },
-  skeletonName: {
-    marginBottom: Spacing.xs,
-  },
-  skeletonContent: {
-    marginLeft: Spacing["2xl"],
-  },
-  skeletonLine: {
-    marginBottom: Spacing.xs,
   },
   emptyContainer: {
     flex: 1,
@@ -580,7 +512,7 @@ const styles = StyleSheet.create({
   inputSection: {
     borderTopWidth: 1,
     paddingTop: Spacing.sm,
-    paddingBottom: Platform.OS === "ios" ? Spacing.lg : Spacing.sm,
+    paddingBottom: Spacing.sm, // minimal, let KAV manage bottom space
     paddingHorizontal: Spacing.sm,
   },
   errorContainer: {

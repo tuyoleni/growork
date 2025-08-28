@@ -4,15 +4,21 @@ import PostForm from './post/PostForm';
 
 interface CreatePostSheetUIProps {
   onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-export default function CreatePostSheetUI({ onSuccess }: CreatePostSheetUIProps) {
+export default function CreatePostSheetUI({ onSuccess, onCancel }: CreatePostSheetUIProps) {
   const handleSuccess = () => {
     openGlobalSheet({ snapPoints: ['1%'], children: <></> });
     onSuccess?.();
   };
 
+  const handleCancel = () => {
+    openGlobalSheet({ snapPoints: ['1%'], children: <></> });
+    onCancel?.();
+  };
+
   return (
-    <PostForm onSuccess={handleSuccess} />
+    <PostForm onSuccess={handleSuccess} onCancel={handleCancel} />
   );
 }

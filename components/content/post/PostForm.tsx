@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Keyboard, TouchableOpacity, View } from "react-native";
+import { Animated, View, ScrollView, Image, StyleSheet } from "react-native";
 import { ThemedInput } from "@/components/ThemedInput";
 import { ThemedText } from "@/components/ThemedText";
+import Button from "@/components/ui/Button";
 import { PostType } from "@/types";
 import { usePostForm } from "./usePostForm";
 import PostTypeSelector from "./PostTypeSelector";
@@ -9,8 +10,9 @@ import JobFields from "./JobFields";
 import ArticleFields from "./ArticleFields";
 import { ImagePickerField } from "./ImagePickerField";
 import * as Haptics from "expo-haptics";
-import { Feather } from "@expo/vector-icons";
 import { useFlashToast } from "@/components/ui/Flash";
+import { Spacing, Typography, BorderRadius } from "@/constants/DesignSystem";
+import { useThemeColor } from "@/hooks";
 
 export enum WizardStep {
   BasicInfo = 0,
@@ -20,10 +22,10 @@ export enum WizardStep {
 
 interface PostFormProps {
   onSuccess?: () => void;
-  style?: any;
+  onCancel?: () => void;
 }
 
-export default function PostForm({ onSuccess }: PostFormProps) {
+export default function PostForm({ onSuccess, onCancel }: PostFormProps) {
   const toast = useFlashToast();
   const [currentStep, setCurrentStep] = useState<WizardStep>(
     WizardStep.BasicInfo
@@ -87,20 +89,40 @@ export default function PostForm({ onSuccess }: PostFormProps) {
   };
 
   const handlePrevStep = () => {
-    if (currentStep === WizardStep.DetailsInfo) {
+    if (currentStep > 0) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCurrentStep(WizardStep.BasicInfo);
-    } else if (currentStep === WizardStep.Review) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCurrentStep(WizardStep.DetailsInfo);
+      setCurrentStep(currentStep - 1);
     }
   };
+
+  const handleCancel = () => {
+    onCancel?.();
+  };
+
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case WizardStep.BasicInfo:
+        return "Create Post";
+      case WizardStep.DetailsInfo:
+        return postType === PostType.Job ? "Job Details" : "Article Details";
+      case WizardStep.Review:
+        return "Review Post";
+      default:
+        return "Create Post";
+    }
+  };
+
+  // Theme colors for review step
+  const textColor = useThemeColor({}, "text");
+  const mutedTextColor = useThemeColor({}, "mutedText");
+  const borderColor = useThemeColor({}, "border");
+  const backgroundColor = useThemeColor({}, "background");
 
   const renderStepContent = () => {
     switch (currentStep) {
       case WizardStep.BasicInfo:
         return (
-          <>
+          <View style={{ gap: Spacing.md }}>
             <PostTypeSelector
               selectedPostType={postType}
               onPostTypeChange={handlePostTypeChange}
@@ -117,13 +139,14 @@ export default function PostForm({ onSuccess }: PostFormProps) {
               onChangeText={setContent}
               multiline
               textAlignVertical="top"
+              style={{ minHeight: 80, maxHeight: 120 }}
             />
             <ImagePickerField
               selectedImage={imageUrl}
               onImageSelected={handleImageSelected}
               label="Add Image"
             />
-          </>
+          </View>
         );
       case WizardStep.DetailsInfo:
         return postType === PostType.Job ? (
@@ -133,89 +156,144 @@ export default function PostForm({ onSuccess }: PostFormProps) {
         );
       case WizardStep.Review:
         return (
-          <View style={{ padding: 16 }}>
-            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>
-              Review Your Post
-            </ThemedText>
-
-            <View style={{ marginBottom: 12 }}>
-              <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
-                Title:
-              </ThemedText>
-              <ThemedText>{title}</ThemedText>
-            </View>
-
-            <View style={{ marginBottom: 12 }}>
-              <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
-                Content:
-              </ThemedText>
-              <ThemedText>{content}</ThemedText>
-            </View>
-
+          <View style={[styles.reviewContainer]}>
+            {/* Image */}
             {imageUrl && (
-              <View style={{ marginBottom: 12 }}>
-                <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
-                  Image:
-                </ThemedText>
-                <ThemedText style={{ color: "#666" }}>
-                  Image attached
-                </ThemedText>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={styles.reviewImage}
+                  resizeMode="cover"
+                />
               </View>
             )}
 
-            {postType === PostType.Job && (
-              <View style={{ marginBottom: 12 }}>
-                <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
-                  Job Details:
-                </ThemedText>
-                <ThemedText>
-                  Company: {jobFields.company || "Not specified"}
-                </ThemedText>
-                {jobFields.companyId && (
-                  <ThemedText
-                    style={{ color: "#666", fontSize: 12, marginLeft: 8 }}
-                  >
-                    (Linked to company profile)
-                  </ThemedText>
-                )}
-                <ThemedText>
-                  Location: {jobFields.location || "Not specified"}
-                </ThemedText>
-                <ThemedText>
-                  Salary: {jobFields.salary || "Not specified"}
-                </ThemedText>
-                <ThemedText>
-                  Job Type: {jobFields.jobType || "Not specified"}
-                </ThemedText>
-                <ThemedText>
-                  Industry: {jobFields.industry || "Not specified"}
-                </ThemedText>
-              </View>
-            )}
+            {/* Content */}
+            <View style={styles.contentSection}>
+              <ThemedText
+                style={[styles.contentText, { color: textColor }]}
+                numberOfLines={2}
+              >
+                {title}
+              </ThemedText>
+            </View>
 
-            {postType === PostType.News && (
-              <View style={{ marginBottom: 12 }}>
-                <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
-                  Article Details:
-                </ThemedText>
-                <ThemedText>
-                  Company: {articleFields.company || "Not specified"}
-                </ThemedText>
-                {articleFields.companyId && (
+            <View style={styles.contentSection}>
+              <ThemedText
+                style={[styles.contentText, { color: mutedTextColor }]}
+                numberOfLines={3}
+              >
+                {content}
+              </ThemedText>
+            </View>
+
+            {/* Post Details */}
+            <View style={styles.detailsSection}>
+              <View style={styles.detailsGrid}>
+                <View style={styles.detailItem}>
                   <ThemedText
-                    style={{ color: "#666", fontSize: 12, marginLeft: 8 }}
+                    style={[styles.detailLabel, { color: mutedTextColor }]}
                   >
-                    (Linked to company profile)
+                    Type
                   </ThemedText>
+                  <ThemedText
+                    style={[styles.detailValue, { color: textColor }]}
+                  >
+                    {postType === PostType.Job ? "Job Posting" : "News Article"}
+                  </ThemedText>
+                </View>
+
+                {postType === PostType.Job && jobFields.company && (
+                  <View style={styles.detailItem}>
+                    <ThemedText
+                      style={[styles.detailLabel, { color: mutedTextColor }]}
+                    >
+                      Company
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.detailValue, { color: textColor }]}
+                    >
+                      {jobFields.company}
+                    </ThemedText>
+                  </View>
                 )}
-                <ThemedText>
-                  Industry: {articleFields.industry || "Not specified"}
-                </ThemedText>
-                <ThemedText>
-                  Source: {articleFields.source || "Not specified"}
-                </ThemedText>
+
+                {postType === PostType.News && articleFields.company && (
+                  <View style={styles.detailItem}>
+                    <ThemedText
+                      style={[styles.detailLabel, { color: mutedTextColor }]}
+                    >
+                      Company
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.detailValue, { color: textColor }]}
+                    >
+                      {articleFields.company}
+                    </ThemedText>
+                  </View>
+                )}
+
+                {postType === PostType.Job && jobFields.location && (
+                  <View style={styles.detailItem}>
+                    <ThemedText
+                      style={[styles.detailLabel, { color: mutedTextColor }]}
+                    >
+                      Location
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.detailValue, { color: textColor }]}
+                    >
+                      {jobFields.location}
+                    </ThemedText>
+                  </View>
+                )}
+
+                {postType === PostType.Job && jobFields.salary && (
+                  <View style={styles.detailItem}>
+                    <ThemedText
+                      style={[styles.detailLabel, { color: mutedTextColor }]}
+                    >
+                      Salary
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.detailValue, { color: textColor }]}
+                    >
+                      {jobFields.salary}
+                    </ThemedText>
+                  </View>
+                )}
+
+                {postType === PostType.News && articleFields.industry && (
+                  <View style={styles.detailItem}>
+                    <ThemedText
+                      style={[styles.detailLabel, { color: mutedTextColor }]}
+                    >
+                      Industry
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.detailValue, { color: textColor }]}
+                    >
+                      {articleFields.industry}
+                    </ThemedText>
+                  </View>
+                )}
+
+                {postType === PostType.News && articleFields.source && (
+                  <View style={styles.detailItem}>
+                    <ThemedText
+                      style={[styles.detailLabel, { color: mutedTextColor }]}
+                    >
+                      Source
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.detailValue, { color: textColor }]}
+                    >
+                      {articleFields.source}
+                    </ThemedText>
+                  </View>
+                )}
               </View>
-            )}
+            </View>
           </View>
         );
       default:
@@ -227,37 +305,113 @@ export default function PostForm({ onSuccess }: PostFormProps) {
   const atLastStep = currentStep === 2;
 
   return (
-    <>
-      {renderStepContent()}
+    <View style={{ flex: 1 }}>
+      {/* Progress Indicator */}
       <View
         style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          paddingHorizontal: 16,
-          paddingVertical: 12,
+          paddingVertical: Spacing.sm,
         }}
       >
-        <TouchableOpacity
-          onPress={atFirstStep ? undefined : handlePrevStep}
-          disabled={atFirstStep}
-          style={{ opacity: atFirstStep ? 0.5 : 1 }}
+        <View
+          style={{
+            flexDirection: "row",
+            gap: Spacing.xs,
+            marginBottom: Spacing.md,
+          }}
         >
-          <ThemedText style={{ color: atFirstStep ? "#999" : "#007AFF" }}>
-            {atFirstStep ? "Previous" : "← Previous"}
-          </ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleNextStep}
-          disabled={loading || !isFormValid()}
-          style={{ opacity: loading || !isFormValid() ? 0.5 : 1 }}
-        >
-          <ThemedText
-            style={{ color: loading || !isFormValid() ? "#999" : "#007AFF" }}
-          >
-            {atLastStep ? "Post" : "Next →"}
-          </ThemedText>
-        </TouchableOpacity>
+          {[0, 1, 2].map((step) => (
+            <View
+              key={step}
+              style={{
+                flex: 1,
+                height: 3,
+                backgroundColor: step <= currentStep ? "#007AFF" : "#333",
+                borderRadius: 2,
+              }}
+            />
+          ))}
+        </View>
       </View>
-    </>
+
+      {/* Content */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingBottom: Spacing.lg,
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {renderStepContent()}
+      </ScrollView>
+
+      {/* Navigation */}
+      <View
+        style={{
+          padding: Spacing.lg,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <ThemedText
+          style={{
+            color: atFirstStep ? "#666" : "#007AFF",
+            fontSize: 16,
+            fontWeight: "500",
+          }}
+          onPress={atFirstStep ? handleCancel : handlePrevStep}
+        >
+          {atFirstStep ? "Cancel" : "Back"}
+        </ThemedText>
+
+        <Button
+          title={atLastStep ? "Post" : "Next"}
+          onPress={handleNextStep}
+          loading={loading}
+          disabled={!isFormValid}
+          variant="ghost"
+        />
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  reviewContainer: {
+    gap: Spacing.md,
+  },
+  imageContainer: {
+    width: "100%",
+    height: 200,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+  },
+  reviewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  contentSection: {},
+  contentText: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+  },
+  detailsSection: {},
+  detailsGrid: {
+    gap: Spacing.sm,
+  },
+  detailItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: BorderRadius.md,
+  },
+  detailLabel: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.medium,
+  },
+  detailValue: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semibold,
+  },
+});

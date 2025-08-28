@@ -1,10 +1,25 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
-import { useCompanies , useThemeColor } from '@/hooks';
-import { Feather } from '@expo/vector-icons';
-import { Company } from '@/types';
+import React, { useState } from "react";
+import {
+  StyleSheet,
+  View,
+  Modal,
+  FlatList,
+  TouchableOpacity,
+  StatusBar,
+  SafeAreaView,
+} from "react-native";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
+import Button from "@/components/ui/Button";
+import { useCompanies, useThemeColor } from "@/hooks";
+import { Feather } from "@expo/vector-icons";
+import { Company } from "@/types";
+import {
+  Spacing,
+  BorderRadius,
+  Typography,
+  Shadows,
+} from "@/constants/DesignSystem";
 
 export interface CompanySelectorData {
   company: string;
@@ -17,13 +32,19 @@ interface CompanySelectorProps {
   style?: any;
 }
 
-export default function CompanySelector({ values, onChange, style }: CompanySelectorProps) {
+export default function CompanySelector({
+  values,
+  onChange,
+  style,
+}: CompanySelectorProps) {
   const { companies } = useCompanies();
   const [showCompanySelector, setShowCompanySelector] = useState(false);
-  const textColor = useThemeColor({}, 'text');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
-  const borderColor = useThemeColor({}, 'border');
-  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, "text");
+  const mutedTextColor = useThemeColor({}, "mutedText");
+  const borderColor = useThemeColor({}, "border");
+  const backgroundColor = useThemeColor({}, "background");
+  const backgroundSecondary = useThemeColor({}, "backgroundSecondary");
+  const tintColor = useThemeColor({}, "tint");
 
   const handleCompanySelect = (company: Company) => {
     onChange({
@@ -33,66 +54,52 @@ export default function CompanySelector({ values, onChange, style }: CompanySele
     setShowCompanySelector(false);
   };
 
-  const selectedCompany = companies.find(c => c.id === values.companyId);
+  const selectedCompany = companies.find((c) => c.id === values.companyId);
 
   return (
     <View style={[styles.container, style]}>
-      <ThemedText style={[styles.sectionLabel, { color: textColor }]}>Company</ThemedText>
+      <ThemedText style={[styles.sectionLabel, { color: textColor }]}>
+        Company
+      </ThemedText>
 
-      {selectedCompany ? (
-        // Show selected company with details
-        <TouchableOpacity
-          style={[styles.selectedCompany, { borderColor }]}
-          onPress={() => setShowCompanySelector(true)}
-        >
-          <ThemedAvatar
-            size={40}
-            image={selectedCompany.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedCompany.name)}&size=40`}
-          />
-          <View style={styles.companyInfo}>
-            <ThemedText style={[styles.companyName, { color: textColor }]}>
-              {selectedCompany.name}
-            </ThemedText>
-            <View style={styles.companyMeta}>
-              {selectedCompany.industry && (
-                <ThemedText style={[styles.companyMetaText, { color: mutedTextColor }]}>
-                  {selectedCompany.industry}
-                </ThemedText>
-              )}
-              {selectedCompany.location && (
-                <ThemedText style={[styles.companyMetaText, { color: mutedTextColor }]}>
-                  {selectedCompany.location}
-                </ThemedText>
-              )}
-            </View>
-          </View>
-          <Feather name="chevron-down" size={16} color={mutedTextColor} />
-        </TouchableOpacity>
-      ) : (
-        // Show company selector button
-        <TouchableOpacity
-          style={[styles.selectCompanyButton, { borderColor }]}
-          onPress={() => setShowCompanySelector(true)}
-        >
-          <Feather name="briefcase" size={16} color={textColor} />
-          <ThemedText style={[styles.selectCompanyText, { color: textColor }]}>
-            Select from my companies
-          </ThemedText>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={[styles.selectorButton, { borderColor }]}
+        onPress={() => setShowCompanySelector(true)}
+      >
+        <ThemedText style={[styles.selectorText, { color: textColor }]}>
+          {selectedCompany ? selectedCompany.name : "Select Company"}
+        </ThemedText>
+        <Feather name="chevron-down" size={16} color={mutedTextColor} />
+      </TouchableOpacity>
 
-      {/* Company Selector Modal */}
+      {/* Enhanced Company Selector Modal */}
       <Modal
         visible={showCompanySelector}
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={[styles.modalContainer, { backgroundColor }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: borderColor }]}>
-            <TouchableOpacity onPress={() => setShowCompanySelector(false)}>
-              <ThemedText style={[styles.modalButton, { color: textColor }]}>Cancel</ThemedText>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor }]}>
+          <StatusBar barStyle="dark-content" />
+
+          {/* Enhanced Modal Header */}
+          <View
+            style={[styles.modalHeader, { borderBottomColor: borderColor }]}
+          >
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setShowCompanySelector(false)}
+            >
+              <ThemedText
+                style={[styles.modalButtonText, { color: tintColor }]}
+              >
+                Cancel
+              </ThemedText>
             </TouchableOpacity>
-            <ThemedText style={[styles.modalTitle, { color: textColor }]}>Select Company</ThemedText>
+
+            <ThemedText style={[styles.modalTitle, { color: textColor }]}>
+              Select Company
+            </ThemedText>
+
             <View style={{ width: 60 }} />
           </View>
 
@@ -105,133 +112,148 @@ export default function CompanySelector({ values, onChange, style }: CompanySele
                 onPress={() => handleCompanySelect(item)}
               >
                 <ThemedAvatar
-                  size={50}
-                  image={item.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&size=50`}
+                  size={48}
+                  image={
+                    item.logo_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      item.name
+                    )}&size=48&background=2563eb&color=ffffff`
+                  }
                 />
                 <View style={styles.companyItemInfo}>
-                  <ThemedText style={[styles.companyItemName, { color: textColor }]}>
+                  <ThemedText
+                    style={[styles.companyItemName, { color: textColor }]}
+                  >
                     {item.name}
                   </ThemedText>
-                  {item.description && (
-                    <ThemedText style={[styles.companyItemDescription, { color: mutedTextColor }]} numberOfLines={2}>
-                      {item.description}
+                  {item.industry && (
+                    <ThemedText
+                      style={[
+                        styles.companyItemMeta,
+                        { color: mutedTextColor },
+                      ]}
+                    >
+                      {item.industry}
                     </ThemedText>
                   )}
-                  <View style={styles.companyItemMeta}>
-                    {item.industry && (
-                      <ThemedText style={[styles.companyItemMetaText, { color: mutedTextColor }]}>
-                        {item.industry}
-                      </ThemedText>
-                    )}
-                    {item.location && (
-                      <ThemedText style={[styles.companyItemMetaText, { color: mutedTextColor }]}>
-                        {item.location}
-                      </ThemedText>
-                    )}
-                  </View>
                 </View>
+                <Feather
+                  name="chevron-right"
+                  size={16}
+                  color={mutedTextColor}
+                />
               </TouchableOpacity>
             )}
-            contentContainerStyle={styles.modalContent}
+            showsVerticalScrollIndicator={false}
           />
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    gap: 8,
+    width: "100%",
+    gap: Spacing.sm,
   },
   sectionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+    marginBottom: Spacing.xs,
   },
   selectedCompany: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 8,
-    gap: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   companyInfo: {
     flex: 1,
   },
   companyName: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 2,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
   },
   companyMeta: {
-    flexDirection: 'row',
-    gap: 8,
+    flexDirection: "row",
+    gap: Spacing.sm,
+    flexWrap: "wrap",
+    marginTop: Spacing.xs,
   },
-  companyMetaText: {
-    fontSize: 12,
+  metaChipText: {
+    fontSize: Typography.xs,
+    color: "gray",
+  },
+  chevronContainer: {
+    marginLeft: Spacing.sm,
   },
   selectCompanyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 8,
-    gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  selectCompanyText: {
-    fontSize: 14,
-    fontWeight: '500',
+  buttonIcon: {
+    marginRight: Spacing.sm,
+  },
+  buttonContent: {
+    flex: 1,
+  },
+  buttonTitle: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+  },
+  buttonSubtitle: {
+    fontSize: Typography.sm,
+    color: "gray",
   },
   modalContainer: {
     flex: 1,
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: Typography.lg,
+    fontWeight: Typography.bold,
   },
   modalButton: {
-    fontSize: 16,
-    fontWeight: '500',
+    padding: Spacing.sm,
+  },
+  modalButtonText: {
+    fontSize: Typography.base,
   },
   modalContent: {
-    padding: 16,
+    paddingVertical: Spacing.sm,
   },
   companyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 12,
   },
   companyItemInfo: {
     flex: 1,
+    marginLeft: Spacing.sm,
   },
   companyItemName: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  companyItemDescription: {
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
   },
   companyItemMeta: {
-    flexDirection: 'row',
-    gap: 8,
+    fontSize: Typography.sm,
+    marginTop: Spacing.xs,
   },
-  companyItemMetaText: {
-    fontSize: 12,
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.sm, // not fully round, just slightly
   },
-}); 
+});

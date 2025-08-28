@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -7,26 +7,26 @@ import {
   TouchableOpacity,
   useColorScheme,
   Alert,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 
-import { useAuth , useThemeColor , useDocuments } from '@/hooks';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import ScreenContainer from '@/components/ScreenContainer';
-import DocumentManager from '@/components/content/DocumentManager';
-import DocumentCard from '@/components/content/DocumentCard';
-import { Document, DocumentType } from '@/types';
-import { useFlashToast } from '@/components/ui/Flash';
-import { openGlobalSheet } from '@/utils/globalSheet';
+import { useAuth, useThemeColor, useDocuments } from "@/hooks";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import ScreenContainer from "@/components/ScreenContainer";
+import DocumentManager from "@/components/content/DocumentManager";
+import DocumentCard from "@/components/content/DocumentCard";
+import { Document, DocumentType } from "@/types";
+import { useFlashToast } from "@/components/ui/Flash";
+import { openGlobalSheet } from "@/utils/globalSheet";
 
 const DOCUMENT_CATEGORIES = [
-  { id: DocumentType.CV, label: 'CV/Resume', icon: 'briefcase' },
-  { id: DocumentType.CoverLetter, label: 'Cover Letter', icon: 'mail' },
-  { id: DocumentType.Certificate, label: 'Certificates', icon: 'award' },
-  { id: DocumentType.Other, label: 'Other', icon: 'file' },
+  { id: DocumentType.CV, label: "CV/Resume", icon: "briefcase" },
+  { id: DocumentType.CoverLetter, label: "Cover Letter", icon: "mail" },
+  { id: DocumentType.Certificate, label: "Certificates", icon: "award" },
+  { id: DocumentType.Other, label: "Other", icon: "file" },
 ];
 
 export default function DocumentsManagement() {
@@ -34,26 +34,31 @@ export default function DocumentsManagement() {
   const { user } = useAuth();
   const toast = useFlashToast();
   const colorScheme = useColorScheme();
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
-  const tintColor = useThemeColor({}, 'tint');
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
+  const borderColor = useThemeColor({}, "border");
+  const mutedTextColor = useThemeColor({}, "mutedText");
+  const tintColor = useThemeColor({}, "tint");
 
-  const [selectedCategory, setSelectedCategory] = useState<DocumentType | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [selectedCategory, setSelectedCategory] = useState<
+    DocumentType | "all"
+  >("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
-  const { documents, loading, fetchDocuments, deleteDocument } = useDocuments(user?.id);
+  const { documents, loading, fetchDocuments, deleteDocument } = useDocuments(
+    user?.id
+  );
 
   useEffect(() => {
     if (user?.id) {
-      fetchDocuments(selectedCategory === 'all' ? undefined : selectedCategory);
+      fetchDocuments(selectedCategory === "all" ? undefined : selectedCategory);
     }
   }, [user?.id, selectedCategory, fetchDocuments]);
 
-  const filteredDocuments = selectedCategory === 'all'
-    ? documents
-    : documents.filter(doc => doc.type === selectedCategory);
+  const filteredDocuments =
+    selectedCategory === "all"
+      ? documents
+      : documents.filter((doc) => doc.type === selectedCategory);
 
   const handleViewDocument = async (document: Document) => {
     try {
@@ -61,42 +66,42 @@ export default function DocumentsManagement() {
         await Linking.openURL(document.file_url);
       } else {
         toast.show({
-          type: 'info',
-          title: 'Document Unavailable',
-          message: 'This document is not available for viewing.'
+          type: "info",
+          title: "Document Unavailable",
+          message: "This document is not available for viewing.",
         });
       }
     } catch (error) {
       toast.show({
-        type: 'danger',
-        title: 'Error',
-        message: 'Failed to open document. Please try again.'
+        type: "danger",
+        title: "Error",
+        message: "Failed to open document. Please try again.",
       });
     }
   };
 
   const handleDeleteDocument = async (document: Document) => {
     Alert.alert(
-      'Delete Document',
+      "Delete Document",
       `Are you sure you want to delete "${document.name}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteDocument(document.id);
               toast.show({
-                type: 'success',
-                title: 'Success',
-                message: 'Document deleted successfully.'
+                type: "success",
+                title: "Success",
+                message: "Document deleted successfully.",
               });
             } catch (error: any) {
               toast.show({
-                type: 'danger',
-                title: 'Error',
-                message: 'Failed to delete document. Please try again.'
+                type: "danger",
+                title: "Error",
+                message: "Failed to delete document. Please try again.",
               });
             }
           },
@@ -106,22 +111,24 @@ export default function DocumentsManagement() {
   };
 
   const getCategoryIcon = (category: DocumentType) => {
-    const cat = DOCUMENT_CATEGORIES.find(c => c.id === category);
-    return cat?.icon || 'file';
+    const cat = DOCUMENT_CATEGORIES.find((c) => c.id === category);
+    return cat?.icon || "file";
   };
 
   const getCategoryLabel = (category: DocumentType) => {
-    const cat = DOCUMENT_CATEGORIES.find(c => c.id === category);
-    return cat?.label || 'Other';
+    const cat = DOCUMENT_CATEGORIES.find((c) => c.id === category);
+    return cat?.label || "Other";
   };
 
   const getCategoryCount = (category: DocumentType) => {
-    return documents.filter(doc => doc.type === category).length;
+    return documents.filter((doc) => doc.type === category).length;
   };
 
   return (
     <ScreenContainer>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <StatusBar
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+      />
 
       {/* Header */}
       <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
@@ -131,15 +138,13 @@ export default function DocumentsManagement() {
         >
           <Feather name="arrow-left" size={24} color={textColor} />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>
-          My Documents
-        </ThemedText>
+        <ThemedText style={styles.headerTitle}>My Documents</ThemedText>
         <TouchableOpacity
           style={styles.viewModeButton}
-          onPress={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+          onPress={() => setViewMode(viewMode === "list" ? "grid" : "list")}
         >
           <Feather
-            name={viewMode === 'list' ? 'grid' : 'list'}
+            name={viewMode === "list" ? "grid" : "list"}
             size={20}
             color={textColor}
           />
@@ -152,26 +157,44 @@ export default function DocumentsManagement() {
           <ThemedText style={styles.sectionTitle}>Document Overview</ThemedText>
           <View style={styles.statsGrid}>
             <ThemedView style={[styles.statCard, { borderColor }]}>
-              <ThemedText style={styles.statNumber}>{documents.length}</ThemedText>
-              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Total Documents</ThemedText>
+              <ThemedText style={styles.statNumber}>
+                {documents.length}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>
+                Total Documents
+              </ThemedText>
             </ThemedView>
             <ThemedView style={[styles.statCard, { borderColor }]}>
               <ThemedText style={styles.statNumber}>
-                {documents.filter(doc => doc.type === DocumentType.CV).length}
+                {documents.filter((doc) => doc.type === DocumentType.CV).length}
               </ThemedText>
-              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Resumes</ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>
+                Resumes
+              </ThemedText>
             </ThemedView>
             <ThemedView style={[styles.statCard, { borderColor }]}>
               <ThemedText style={styles.statNumber}>
-                {documents.filter(doc => doc.type === DocumentType.CoverLetter).length}
+                {
+                  documents.filter(
+                    (doc) => doc.type === DocumentType.CoverLetter
+                  ).length
+                }
               </ThemedText>
-              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Cover Letters</ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>
+                Cover Letters
+              </ThemedText>
             </ThemedView>
             <ThemedView style={[styles.statCard, { borderColor }]}>
               <ThemedText style={styles.statNumber}>
-                {documents.filter(doc => doc.type === DocumentType.Certificate).length}
+                {
+                  documents.filter(
+                    (doc) => doc.type === DocumentType.Certificate
+                  ).length
+                }
               </ThemedText>
-              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Certificates</ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>
+                Certificates
+              </ThemedText>
             </ThemedView>
           </View>
         </ThemedView>
@@ -186,14 +209,16 @@ export default function DocumentsManagement() {
           <TouchableOpacity
             style={[
               styles.categoryChip,
-              selectedCategory === 'all' && { backgroundColor: tintColor }
+              selectedCategory === "all" && { backgroundColor: tintColor },
             ]}
-            onPress={() => setSelectedCategory('all')}
+            onPress={() => setSelectedCategory("all")}
           >
-            <ThemedText style={[
-              styles.categoryChipText,
-              selectedCategory === 'all' && { color: backgroundColor }
-            ]}>
+            <ThemedText
+              style={[
+                styles.categoryChipText,
+                selectedCategory === "all" && { color: backgroundColor },
+              ]}
+            >
               All ({documents.length})
             </ThemedText>
           </TouchableOpacity>
@@ -203,19 +228,27 @@ export default function DocumentsManagement() {
               key={category.id}
               style={[
                 styles.categoryChip,
-                selectedCategory === category.id && { backgroundColor: tintColor }
+                selectedCategory === category.id && {
+                  backgroundColor: tintColor,
+                },
               ]}
               onPress={() => setSelectedCategory(category.id)}
             >
               <Feather
                 name={category.icon as any}
                 size={16}
-                color={selectedCategory === category.id ? backgroundColor : textColor}
+                color={
+                  selectedCategory === category.id ? backgroundColor : textColor
+                }
               />
-              <ThemedText style={[
-                styles.categoryChipText,
-                selectedCategory === category.id && { color: backgroundColor }
-              ]}>
+              <ThemedText
+                style={[
+                  styles.categoryChipText,
+                  selectedCategory === category.id && {
+                    color: backgroundColor,
+                  },
+                ]}
+              >
                 {category.label} ({getCategoryCount(category.id)})
               </ThemedText>
             </TouchableOpacity>
@@ -224,8 +257,12 @@ export default function DocumentsManagement() {
 
         {/* Upload Section */}
         <ThemedView style={styles.uploadSection}>
-          <ThemedText style={styles.sectionTitle}>Upload New Document</ThemedText>
-          <ThemedText style={[styles.sectionSubtitle, { color: mutedTextColor }]}>
+          <ThemedText style={styles.sectionTitle}>
+            Upload New Document
+          </ThemedText>
+          <ThemedText
+            style={[styles.sectionSubtitle, { color: mutedTextColor }]}
+          >
             Choose a category and upload your document
           </ThemedText>
 
@@ -237,7 +274,12 @@ export default function DocumentsManagement() {
                 onPress={() => {
                   // Open DocumentManager for specific category
                   openGlobalSheet({
-                    snapPoints: ['90%'],
+                    dynamicSnapPoint: true,
+                    dynamicOptions: {
+                      minHeight: 250,
+                      maxHeight: 0.85,
+                      padding: 50,
+                    },
                     children: (
                       <DocumentManager
                         userId={user?.id}
@@ -248,8 +290,14 @@ export default function DocumentsManagement() {
                   });
                 }}
               >
-                <Feather name={category.icon as any} size={24} color={tintColor} />
-                <ThemedText style={styles.uploadCardText}>{category.label}</ThemedText>
+                <Feather
+                  name={category.icon as any}
+                  size={24}
+                  color={tintColor}
+                />
+                <ThemedText style={styles.uploadCardText}>
+                  {category.label}
+                </ThemedText>
               </TouchableOpacity>
             ))}
           </View>
@@ -259,18 +307,25 @@ export default function DocumentsManagement() {
         <ThemedView style={styles.documentsSection}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>
-              {selectedCategory === 'all' ? 'All Documents' : getCategoryLabel(selectedCategory)} ({filteredDocuments.length})
+              {selectedCategory === "all"
+                ? "All Documents"
+                : getCategoryLabel(selectedCategory)}{" "}
+              ({filteredDocuments.length})
             </ThemedText>
             {filteredDocuments.length > 0 && (
               <TouchableOpacity
                 style={styles.uploadButton}
                 onPress={() => {
                   openGlobalSheet({
-                    snapPoints: ['90%'],
+                    snapPoints: ["90%"],
                     children: (
                       <DocumentManager
                         userId={user?.id}
-                        documentType={selectedCategory === 'all' ? undefined : selectedCategory}
+                        documentType={
+                          selectedCategory === "all"
+                            ? undefined
+                            : selectedCategory
+                        }
                         disableScrolling={true}
                       />
                     ),
@@ -285,7 +340,9 @@ export default function DocumentsManagement() {
 
           {loading ? (
             <ThemedView style={styles.loadingContainer}>
-              <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
+              <ThemedText
+                style={[styles.loadingText, { color: mutedTextColor }]}
+              >
                 Loading documents...
               </ThemedText>
             </ThemedView>
@@ -295,17 +352,23 @@ export default function DocumentsManagement() {
               <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
                 No documents found
               </ThemedText>
-              <ThemedText style={[styles.emptySubtitle, { color: mutedTextColor }]}>
-                {selectedCategory === 'all'
-                  ? 'Upload your first document to get started'
-                  : `No ${getCategoryLabel(selectedCategory).toLowerCase()} documents found`
-                }
+              <ThemedText
+                style={[styles.emptySubtitle, { color: mutedTextColor }]}
+              >
+                {selectedCategory === "all"
+                  ? "Upload your first document to get started"
+                  : `No ${getCategoryLabel(
+                      selectedCategory
+                    ).toLowerCase()} documents found`}
               </ThemedText>
             </ThemedView>
           ) : (
             <View style={styles.documentsList}>
               {filteredDocuments.map((document) => (
-                <ThemedView key={document.id} style={[styles.documentCard, { borderColor }]}>
+                <ThemedView
+                  key={document.id}
+                  style={[styles.documentCard, { borderColor }]}
+                >
                   <DocumentCard
                     document={document}
                     onPress={() => handleViewDocument(document)}
@@ -325,9 +388,9 @@ export default function DocumentsManagement() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 0.5,
@@ -337,7 +400,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   viewModeButton: {
     padding: 8,
@@ -351,30 +414,30 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 12,
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
   statCard: {
     flex: 1,
-    minWidth: '45%',
-    alignItems: 'center',
+    minWidth: "45%",
+    alignItems: "center",
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   categoryFilter: {
     paddingHorizontal: 16,
@@ -384,18 +447,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     gap: 6,
   },
   categoryChipText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   uploadSection: {
     paddingHorizontal: 16,
@@ -406,68 +469,68 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   uploadGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
   uploadCard: {
-    width: '48%',
-    alignItems: 'center',
+    width: "48%",
+    alignItems: "center",
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
   uploadCardText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   documentsSection: {
     paddingHorizontal: 16,
     marginBottom: 24,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   uploadButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   loadingContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
   },
   loadingText: {
     fontSize: 16,
   },
   emptyContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
   documentsList: {
     gap: 12,
@@ -475,6 +538,6 @@ const styles = StyleSheet.create({
   documentCard: {
     borderRadius: 12,
     borderWidth: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-}); 
+});

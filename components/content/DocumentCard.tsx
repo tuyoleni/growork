@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { Document } from '@/types/documents';
-import { ThemedText } from '../ThemedText';
-import { ThemedView } from '../ThemedView';
-import { useThemeColor } from '@/hooks';
+import React, { useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { Document } from "@/types/documents";
+import { ThemedText } from "../ThemedText";
+import { ThemedView } from "../ThemedView";
+import { useThemeColor } from "@/hooks";
 
 interface DocumentCardProps {
   document: Document;
@@ -14,17 +14,29 @@ interface DocumentCardProps {
   onDelete?: () => void;
   showMenu?: boolean;
   showCategory?: boolean;
-  variant?: 'default' | 'compact' | 'detailed';
+  variant?: "default" | "compact" | "detailed";
   onPressMenu?: () => void;
   selectable?: boolean;
+  selected?: boolean;
 }
 
-const IconWithBackground = ({ icon }: { icon: React.ReactNode }) => {
-  const backgroundColor = useThemeColor({}, 'backgroundSecondary');
-  const iconColor = useThemeColor({}, 'iconSecondary');
-  
+const IconWithBackground = ({
+  icon,
+  selected,
+}: {
+  icon: React.ReactNode;
+  selected?: boolean;
+}) => {
+  const iconColor = useThemeColor({}, "iconSecondary");
+  const tintColor = useThemeColor({}, "tint");
+
   return (
-    <View style={[styles.iconContainer, { backgroundColor }]}>
+    <View
+      style={[
+        styles.iconContainer,
+        { backgroundColor: selected ? tintColor + "15" : "transparent" },
+      ]}
+    >
       {icon}
     </View>
   );
@@ -38,15 +50,16 @@ export default function DocumentCard({
   onDelete,
   showMenu = true,
   showCategory = false,
-  variant = 'default',
+  variant = "default",
   onPressMenu,
   selectable = false,
+  selected = false,
 }: DocumentCardProps) {
-  const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const textColor = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
-  const iconColor = useThemeColor({}, 'iconSecondary');
+  const borderColor = useThemeColor({}, "border");
+  const textColor = useThemeColor({}, "text");
+  const mutedText = useThemeColor({}, "mutedText");
+  const iconColor = useThemeColor({}, "iconSecondary");
+  const tintColor = useThemeColor({}, "tint");
 
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -74,22 +87,24 @@ export default function DocumentCard({
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const diffInDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     if (diffInDays === 0) {
-      return 'Today';
+      return "Today";
     } else if (diffInDays === 1) {
-      return 'Yesterday';
+      return "Yesterday";
     } else if (diffInDays < 7) {
       return `${diffInDays} days ago`;
     } else if (diffInDays < 30) {
       const weeks = Math.floor(diffInDays / 7);
-      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+      return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
     } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
       });
     }
   };
@@ -98,23 +113,23 @@ export default function DocumentCard({
 
   // Get document type display name
   const getDocumentTypeDisplay = (type: string) => {
-    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return type.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   // Get file extension from name
   const getFileExtension = (name: string) => {
-    const parts = name.split('.');
-    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : 'FILE';
+    const parts = name.split(".");
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "FILE";
   };
 
   const renderMenuButton = () => {
     if (!showMenu) return null;
-    
+
     return (
       <Pressable
         style={({ pressed }) => [
           styles.menuButton,
-          { backgroundColor: pressed ? borderColor + '11' : 'transparent' }
+          { backgroundColor: pressed ? borderColor + "11" : "transparent" },
         ]}
         onPress={onPressMenu ? onPressMenu : handleMenuPress}
       >
@@ -125,7 +140,7 @@ export default function DocumentCard({
 
   const renderCategory = () => {
     if (!showCategory) return null;
-    
+
     return (
       <View style={styles.categoryContainer}>
         <ThemedText style={[styles.categoryText, { color: mutedText }]}>
@@ -136,7 +151,7 @@ export default function DocumentCard({
   };
 
   const renderMetadata = () => {
-    if (variant !== 'detailed') return null;
+    if (variant !== "detailed") return null;
 
     return (
       <View style={styles.metadataContainer}>
@@ -149,50 +164,65 @@ export default function DocumentCard({
         <View style={styles.metadataRow}>
           <Feather name="file" size={12} color={mutedText} />
           <ThemedText style={[styles.metadataText, { color: mutedText }]}>
-            {getFileExtension(document.name || '')}
+            {getFileExtension(document.name || "")}
           </ThemedText>
         </View>
       </View>
     );
   };
 
-  const cardStyle = variant === 'compact' ? styles.cardCompact : 
-                   variant === 'detailed' ? styles.cardDetailed : 
-                   styles.card;
+  const cardStyle =
+    variant === "compact"
+      ? styles.cardCompact
+      : variant === "detailed"
+      ? styles.cardDetailed
+      : styles.card;
 
   return (
     <Pressable
       style={({ pressed }) => [
         cardStyle,
-        { 
+        {
           borderBottomColor: borderColor,
-          backgroundColor: pressed ? borderColor + '05' : backgroundColor,
-        }
+          backgroundColor: "transparent",
+        },
       ]}
       onPress={onPress}
     >
-      <IconWithBackground icon={<Feather name="file-text" size={24} color={textColor} />} />
-      
-      <ThemedView style={styles.cardTextWrap}>
-        <ThemedText style={styles.cardTitle} numberOfLines={variant === 'compact' ? 1 : 2}>
+      <IconWithBackground
+        icon={
+          <Feather
+            name="file-text"
+            size={22}
+            color={selected ? tintColor : textColor}
+          />
+        }
+        selected={selected}
+      />
+
+      <View style={styles.cardTextWrap}>
+        <ThemedText
+          style={styles.cardTitle}
+          numberOfLines={variant === "compact" ? 1 : 2}
+        >
           {document.name}
         </ThemedText>
-        
+
         <View style={styles.metaRow}>
           <ThemedText style={[styles.cardSubtitle, { color: mutedText }]}>
             {formattedDate}
           </ThemedText>
-          {variant === 'detailed' && (
+          {variant === "detailed" && (
             <ThemedText style={[styles.fileType, { color: mutedText }]}>
-              {getFileExtension(document.name || '')}
+              {getFileExtension(document.name || "")}
             </ThemedText>
           )}
         </View>
-        
+
         {renderCategory()}
         {renderMetadata()}
-      </ThemedView>
-      
+      </View>
+
       {renderMenuButton()}
     </Pressable>
   );
@@ -200,31 +230,31 @@ export default function DocumentCard({
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  cardCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
     borderBottomWidth: 1,
     gap: 10,
   },
-  cardDetailed: {
-    flexDirection: 'column',
-    padding: 16,
+  cardCompact: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 6,
     borderBottomWidth: 1,
-    gap: 12,
+    gap: 8,
+  },
+  cardDetailed: {
+    flexDirection: "column",
+    padding: 8,
+    borderBottomWidth: 1,
+    gap: 10,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   cardTextWrap: {
     flex: 1,
@@ -232,33 +262,31 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 20,
   },
   metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   cardSubtitle: {
     fontSize: 13,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   fileType: {
     fontSize: 11,
-    fontWeight: '500',
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    fontWeight: "500",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   categoryContainer: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   categoryText: {
     fontSize: 11,
-    fontWeight: '500',
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    fontWeight: "500",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -268,18 +296,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metadataRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   metadataText: {
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   menuButton: {
     padding: 8,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
-}); 
+});

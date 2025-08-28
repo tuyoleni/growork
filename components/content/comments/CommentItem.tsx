@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useThemeColor , Comment } from "@/hooks";
+import { useThemeColor, Comment } from "@/hooks";
 import { Colors } from "@/constants/Colors";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
@@ -36,10 +36,12 @@ export function CommentItem({
     : "Anonymous";
   const avatarUrl =
     item.profile?.avatar_url ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=128`;
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      displayName
+    )}&size=128`;
 
   return (
-    <View style={[styles.row, { borderBottomColor: Colors.light.border }]}>
+    <View style={styles.row}>
       <ThemedAvatar image={avatarUrl} size={34} />
       <View style={styles.content}>
         <View style={styles.headerLine}>
@@ -47,11 +49,6 @@ export function CommentItem({
             <ThemedText type="defaultSemiBold" style={styles.name}>
               {displayName}
             </ThemedText>
-            {isAuthor && (
-              <View style={styles.badge}>
-                <ThemedText style={styles.badgeLabel}>Author</ThemedText>
-              </View>
-            )}
 
             <ThemedText style={[styles.time, { color: mutedTextColor }]}>
               {formatDate(item.created_at)}
@@ -79,7 +76,13 @@ export function CommentItem({
 
           {isOwn && (
             <ThemedIconButton
-              icon={<Feather name="more-horizontal" size={17} color={mutedTextColor} />}
+              icon={
+                <Feather
+                  name="more-horizontal"
+                  size={17}
+                  color={mutedTextColor}
+                />
+              }
               onPress={onMenu}
             />
           )}
@@ -95,8 +98,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: "transparent", // Will be set dynamically
     paddingHorizontal: 0,
   },
   content: {
@@ -115,20 +116,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     marginRight: 2,
-  },
-  badge: {
-    borderRadius: 10,
-    backgroundColor: "#eef4ff",
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    marginRight: 4,
-    marginLeft: 0,
-  },
-  badgeLabel: {
-    fontSize: 10,
-    color: "#0077ff",
-    fontWeight: "600",
-    letterSpacing: 0.1,
   },
 
   time: {
@@ -160,5 +147,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-
 });

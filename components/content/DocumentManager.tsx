@@ -1,17 +1,24 @@
-import { useAuth , useThemeColor } from '@/hooks';
-import { DocumentType, Document } from '@/types';
-import { supabase } from '@/utils/supabase';
-import { STORAGE_BUCKETS } from '@/utils/uploadUtils';
-import * as DocumentPicker from 'expo-document-picker';
-import { Feather } from '@expo/vector-icons';
-import React, { useState, useEffect, useCallback } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View, ScrollView } from 'react-native';
-import { ThemedText } from '../ThemedText';
-import { ThemedView } from '../ThemedView';
-import BadgeSelector, { BadgeOption } from '../ui/BadgeSelector';
-import DocumentCard from './DocumentCard';
-import * as Haptics from 'expo-haptics';
-import * as FileSystem from 'expo-file-system';
+import { useAuth, useThemeColor } from "@/hooks";
+import { DocumentType, Document } from "@/types";
+import { supabase } from "@/utils/supabase";
+import { STORAGE_BUCKETS } from "@/utils/uploadUtils";
+import * as DocumentPicker from "expo-document-picker";
+import { Feather } from "@expo/vector-icons";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  View,
+  ScrollView,
+} from "react-native";
+import { ThemedText } from "../ThemedText";
+import { ThemedView } from "../ThemedView";
+import BadgeSelector, { BadgeOption } from "../ui/BadgeSelector";
+import DocumentCard from "./DocumentCard";
+import * as Haptics from "expo-haptics";
+import * as FileSystem from "expo-file-system";
 
 type DocumentManagerProps = {
   userId?: string;
@@ -23,10 +30,10 @@ type DocumentManagerProps = {
 };
 
 const DOCUMENT_TYPE_OPTIONS: BadgeOption[] = [
-  { label: 'CV/Resume', value: DocumentType.CV },
-  { label: 'Cover Letter', value: DocumentType.CoverLetter },
-  { label: 'Certificate', value: DocumentType.Certificate },
-  { label: 'Other', value: DocumentType.Other },
+  { label: "CV/Resume", value: DocumentType.CV },
+  { label: "Cover Letter", value: DocumentType.CoverLetter },
+  { label: "Certificate", value: DocumentType.Certificate },
+  { label: "Other", value: DocumentType.Other },
 ];
 
 export default function DocumentManager({
@@ -39,12 +46,17 @@ export default function DocumentManager({
 }: DocumentManagerProps) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [selectedDocumentType, setSelectedDocumentType] = useState<DocumentType>(documentType || DocumentType.CV);
+  const [selectedDocumentType, setSelectedDocumentType] =
+    useState<DocumentType>(documentType || DocumentType.CV);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
-  const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
-  const borderColor = useThemeColor({}, 'border');
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null
+  );
+  const backgroundColor = useThemeColor({}, "background");
+  const textColor = useThemeColor({}, "text");
+  const borderColor = useThemeColor({}, "border");
+  const tintColor = useThemeColor({}, "tint");
 
   // Fetch documents function
   const fetchDocuments = useCallback(async () => {
@@ -53,20 +65,20 @@ export default function DocumentManager({
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('type', documentType)
-        .order('uploaded_at', { ascending: false });
+        .from("documents")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("type", documentType)
+        .order("uploaded_at", { ascending: false });
 
       if (error) {
-        console.error('Error fetching documents:', error);
+        console.error("Error fetching documents:", error);
         return;
       }
 
       setDocuments(data || []);
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      console.error("Error fetching documents:", error);
     } finally {
       setLoading(false);
     }
@@ -79,6 +91,7 @@ export default function DocumentManager({
 
   const handleDocumentSelect = (document: Document) => {
     if (selectable && onSelect) {
+      setSelectedDocumentId(document.id);
       onSelect(document);
     }
   };
@@ -91,7 +104,11 @@ export default function DocumentManager({
 
       // Pick document
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        type: [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
         copyToCacheDirectory: true,
       });
 
@@ -105,16 +122,16 @@ export default function DocumentManager({
       // Validate file exists
       const fileInfo = await FileSystem.getInfoAsync(file.uri);
       if (!fileInfo.exists) {
-        throw new Error('Document file does not exist');
+        throw new Error("Document file does not exist");
       }
 
       // Check file size (50MB limit)
       const maxSize = 50 * 1024 * 1024;
       if (fileInfo.size && fileInfo.size > maxSize) {
-        throw new Error('Document file is too large (max 50MB)');
+        throw new Error("Document file is too large (max 50MB)");
       }
 
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "pdf";
       const uniqueFileName = `document_${user.id}_${Date.now()}.${fileExt}`;
       const filePath = `${uniqueFileName}`;
 
@@ -136,8 +153,8 @@ export default function DocumentManager({
         .from(STORAGE_BUCKETS.DOCUMENTS)
         .upload(filePath, byteArray, {
           contentType: `application/${fileExt}`,
-          cacheControl: '3600',
-          upsert: false
+          cacheControl: "3600",
+          upsert: false,
         });
 
       if (uploadError) {
@@ -150,32 +167,30 @@ export default function DocumentManager({
         .getPublicUrl(filePath).data.publicUrl;
 
       // Add document record
-      const { error: dbError } = await supabase
-        .from('documents')
-        .insert({
-          user_id: user.id,
-          type: selectedDocumentType,
-          name: file.name,
-          file_url: publicUrl,
-        });
+      const { error: dbError } = await supabase.from("documents").insert({
+        user_id: user.id,
+        type: selectedDocumentType,
+        name: file.name,
+        file_url: publicUrl,
+      });
 
       if (dbError) {
         throw dbError;
       }
 
-      if (process.env.EXPO_OS === 'ios') {
+      if (process.env.EXPO_OS === "ios") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
-      Alert.alert('Success', 'Document uploaded successfully!');
-      
+      Alert.alert("Success", "Document uploaded successfully!");
+
       // Refresh the documents list
       await fetchDocuments();
       onSuccess?.();
     } catch (error: any) {
-      console.error('Error uploading document:', error);
-      Alert.alert('Upload Error', error.message || 'Failed to upload document');
-      if (process.env.EXPO_OS === 'ios') {
+      console.error("Error uploading document:", error);
+      Alert.alert("Upload Error", error.message || "Failed to upload document");
+      if (process.env.EXPO_OS === "ios") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     } finally {
@@ -188,29 +203,31 @@ export default function DocumentManager({
       {selectable ? (
         // Selection mode
         <>
-          <View style={styles.header}>
-            <ThemedText style={styles.title} type="defaultSemiBold">
-              Select Document
-            </ThemedText>
-          </View>
-
           {loading ? (
-            <View style={styles.loadingContainer}>
+            <View
+              style={[
+                styles.loadingContainer,
+                { backgroundColor: "transparent" },
+              ]}
+            >
               <ActivityIndicator size="large" color={textColor} />
               <ThemedText style={[styles.loadingText, { color: textColor }]}>
                 Loading documents...
               </ThemedText>
             </View>
           ) : documents.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <ThemedText style={[styles.emptyText, { color: textColor }]}>
-                No documents found
-              </ThemedText>
-              <ThemedText style={[styles.emptySubtext, { color: textColor }]}>
-                Upload a document to continue
-              </ThemedText>
+            <View
+              style={[
+                styles.emptyContainer,
+                { backgroundColor: "transparent" },
+              ]}
+            >
               <Pressable
-                style={[styles.uploadButton, { borderColor }, uploading && styles.uploadButtonDisabled]}
+                style={[
+                  styles.uploadButton,
+                  { borderColor: tintColor },
+                  uploading && styles.uploadButtonDisabled,
+                ]}
                 onPress={handleUploadDocument}
                 disabled={uploading}
               >
@@ -219,14 +236,16 @@ export default function DocumentManager({
                 ) : (
                   <>
                     <Feather name="upload" size={20} color={textColor} />
-                    <ThemedText style={styles.uploadButtonText}>Upload Document</ThemedText>
+                    <ThemedText style={styles.uploadButtonText}>
+                      Upload
+                    </ThemedText>
                   </>
                 )}
               </Pressable>
             </View>
           ) : (
             <ScrollView
-              style={styles.documentsList}
+              style={[styles.documentsList, { backgroundColor: "transparent" }]}
               showsVerticalScrollIndicator={!disableScrolling}
               scrollEnabled={!disableScrolling}
             >
@@ -237,6 +256,7 @@ export default function DocumentManager({
                   onPress={() => handleDocumentSelect(document)}
                   showMenu={false}
                   selectable={true}
+                  selected={selectedDocumentId === document.id}
                 />
               ))}
             </ScrollView>
@@ -257,7 +277,9 @@ export default function DocumentManager({
               <BadgeSelector
                 options={DOCUMENT_TYPE_OPTIONS}
                 selectedValue={selectedDocumentType}
-                onValueChange={(value) => setSelectedDocumentType(value as DocumentType)}
+                onValueChange={(value) =>
+                  setSelectedDocumentType(value as DocumentType)
+                }
                 title="Select Document Type"
               />
             </View>
@@ -266,7 +288,11 @@ export default function DocumentManager({
           {/* Upload Button */}
           <View style={styles.uploadContainer}>
             <Pressable
-              style={[styles.uploadButton, { borderColor }, uploading && styles.uploadButtonDisabled]}
+              style={[
+                styles.uploadButton,
+                { borderColor: tintColor },
+                uploading && styles.uploadButtonDisabled,
+              ]}
               onPress={handleUploadDocument}
               disabled={uploading}
             >
@@ -275,7 +301,9 @@ export default function DocumentManager({
               ) : (
                 <>
                   <Feather name="upload" size={20} color={textColor} />
-                  <ThemedText style={styles.uploadButtonText}>Choose Document</ThemedText>
+                  <ThemedText style={styles.uploadButtonText}>
+                    Upload
+                  </ThemedText>
                 </>
               )}
             </Pressable>
@@ -294,76 +322,71 @@ export default function DocumentManager({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '100%',
+    width: "100%",
+    backgroundColor: "transparent",
   },
   header: {
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: "600",
   },
   selectorContainer: {
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    marginBottom: 12,
   },
   uploadContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 12,
-    paddingHorizontal: 16,
   },
   uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    minWidth: 200,
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    width: "100%",
+    justifyContent: "center",
   },
   uploadButtonDisabled: {
     opacity: 0.6,
   },
   uploadButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: "500",
   },
   uploadingText: {
     fontSize: 14,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
-    marginTop: 10,
-    fontSize: 16,
+    marginTop: 8,
+    fontSize: 15,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyText: {
-    fontSize: 16,
-    marginBottom: 8,
+    fontSize: 15,
+    marginBottom: 6,
   },
   emptySubtext: {
-    fontSize: 14,
-    marginBottom: 16,
-    textAlign: 'center',
+    fontSize: 13,
+    marginBottom: 12,
+    textAlign: "center",
     opacity: 0.7,
   },
   documentsList: {
     flex: 1,
-    paddingHorizontal: 16,
   },
 });

@@ -242,7 +242,7 @@ export default function JobApplicationForm({
         }
         return (
           <>
-            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>
+            <ThemedText type="subtitle" style={{ marginBottom: 12 }}>
               Select Your CV
             </ThemedText>
             <DocumentManager
@@ -260,14 +260,8 @@ export default function JobApplicationForm({
         }
         return (
           <>
-            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>
+            <ThemedText type="subtitle" style={{ marginBottom: 12 }}>
               Cover Letter (Optional)
-            </ThemedText>
-
-            <ThemedText
-              style={{ marginBottom: 12, fontSize: 14, opacity: 0.7 }}
-            >
-              Write a cover letter or upload an existing one
             </ThemedText>
 
             <ThemedInput
@@ -281,15 +275,9 @@ export default function JobApplicationForm({
                 minHeight: 120,
                 textAlignVertical: "top",
                 paddingTop: 12,
-                marginBottom: 16,
+                marginBottom: 12,
               }}
             />
-
-            <ThemedText
-              style={{ marginBottom: 8, fontSize: 14, fontWeight: "600" }}
-            >
-              Or upload a cover letter document:
-            </ThemedText>
 
             <DocumentManager
               userId={user?.id}

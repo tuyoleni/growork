@@ -51,7 +51,7 @@ interface ContentCardProps {
   isSponsored?: boolean;
 }
 
-// Company Header Component
+// Company Header
 const CompanyHeader = memo<CompanyHeaderProps>(({ companyId, companyName }) => {
   const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -61,26 +61,15 @@ const CompanyHeader = memo<CompanyHeaderProps>(({ companyId, companyName }) => {
 
   useEffect(() => {
     let isMounted = true;
-
-    const fetchCompany = async () => {
+    (async () => {
       try {
-        const { company: companyData, error } = await getCompanyById(companyId);
-        if (isMounted) {
-          if (error) {
-            console.error("Error fetching company:", error);
-          }
-          setCompany(companyData);
-          setLoading(false);
-        }
-      } catch (error) {
-        if (isMounted) {
-          console.error("Error fetching company:", error);
-          setLoading(false);
-        }
+        const { company: companyData } = await getCompanyById(companyId);
+        if (!isMounted) return;
+        setCompany(companyData || null);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    };
-
-    fetchCompany();
+    })();
     return () => {
       isMounted = false;
     };
@@ -114,6 +103,7 @@ const CompanyHeader = memo<CompanyHeaderProps>(({ companyId, companyName }) => {
   }
 
   if (!company) {
+    const fallbackName = companyName || "Unknown Company";
     return (
       <View style={styles.header}>
         <ThemedAvatar
@@ -125,45 +115,43 @@ const CompanyHeader = memo<CompanyHeaderProps>(({ companyId, companyName }) => {
                 )}&size=32`
               : ""
           }
-          square={true}
+          square
         />
         <View style={styles.headerText}>
           <ThemedText
             style={[styles.name, { color: textColor }]}
             numberOfLines={1}
           >
-            {companyName || "Unknown Company"}
+            {fallbackName}
           </ThemedText>
         </View>
       </View>
     );
   }
 
+  const displayName = company?.name || companyName || "Unknown Company";
+  const avatarUrl =
+    company?.logo_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      displayName
+    )}&size=32`;
+
   return (
     <View style={styles.header}>
-      <ThemedAvatar
-        size={32}
-        image={
-          company?.logo_url ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            company?.name
-          )}&size=32`
-        }
-        square={true}
-      />
+      <ThemedAvatar size={32} image={avatarUrl} square />
       <View style={styles.headerText}>
         <View style={styles.nameRow}>
           <ThemedText
             style={[styles.name, { color: textColor }]}
             numberOfLines={1}
           >
-            {company?.name}
+            {displayName}
           </ThemedText>
           {company?.status === "approved" && (
             <BadgeCheck size={14} color={textColor} />
           )}
         </View>
-        {company?.location && (
+        {!!company?.location && (
           <ThemedText
             style={[styles.subtitle, { color: mutedTextColor }]}
             numberOfLines={1}
@@ -175,10 +163,9 @@ const CompanyHeader = memo<CompanyHeaderProps>(({ companyId, companyName }) => {
     </View>
   );
 });
-
 CompanyHeader.displayName = "CompanyHeader";
 
-// User Header Component
+// User Header
 const UserHeader = memo<UserHeaderProps>(({ authorName, authorAvatarUrl }) => {
   const textColor = useThemeColor({}, "text");
   const displayName = authorName || "Unknown User";
@@ -204,19 +191,17 @@ const UserHeader = memo<UserHeaderProps>(({ authorName, authorAvatarUrl }) => {
     </View>
   );
 });
-
 UserHeader.displayName = "UserHeader";
 
-// Job Details Component
+// Details
 const JobDetails = memo<{ criteria?: ContentCardProps["criteria"] }>(
   ({ criteria }) => {
     const mutedTextColor = useThemeColor({}, "mutedText");
-
     if (!criteria) return null;
 
     return (
       <View style={styles.details}>
-        {criteria.location && (
+        {!!criteria.location && (
           <View style={styles.detail}>
             <Feather name="map-pin" size={12} color={mutedTextColor} />
             <ThemedText
@@ -227,7 +212,7 @@ const JobDetails = memo<{ criteria?: ContentCardProps["criteria"] }>(
             </ThemedText>
           </View>
         )}
-        {criteria.salary && (
+        {!!criteria.salary && (
           <View style={styles.detail}>
             <Feather name="dollar-sign" size={12} color={mutedTextColor} />
             <ThemedText
@@ -238,7 +223,7 @@ const JobDetails = memo<{ criteria?: ContentCardProps["criteria"] }>(
             </ThemedText>
           </View>
         )}
-        {criteria.jobType && (
+        {!!criteria.jobType && (
           <View style={styles.detail}>
             <Feather name="clock" size={12} color={mutedTextColor} />
             <ThemedText
@@ -253,14 +238,11 @@ const JobDetails = memo<{ criteria?: ContentCardProps["criteria"] }>(
     );
   }
 );
-
 JobDetails.displayName = "JobDetails";
 
-// News Details Component
 const NewsDetails = memo<{ criteria?: ContentCardProps["criteria"] }>(
   ({ criteria }) => {
     const mutedTextColor = useThemeColor({}, "mutedText");
-
     if (!criteria?.publication_date) return null;
 
     return (
@@ -278,10 +260,9 @@ const NewsDetails = memo<{ criteria?: ContentCardProps["criteria"] }>(
     );
   }
 );
-
 NewsDetails.displayName = "NewsDetails";
 
-// Main ContentCard Component
+// Main
 const ContentCard = memo<ContentCardProps>(
   ({
     id,
@@ -305,21 +286,15 @@ const ContentCard = memo<ContentCardProps>(
     const borderColor = useThemeColor({}, "border");
 
     const handlePress = useCallback(() => {
-      if (id) {
-        router.push(`/post/${id}`);
-      }
+      if (id) router.push(`/post/${id}`);
     }, [id, router]);
 
     const handleCompanyPress = useCallback(() => {
-      if (criteria?.companyId) {
-        router.push(`/company/${criteria.companyId}`);
-      }
+      if (criteria?.companyId) router.push(`/company/${criteria.companyId}`);
     }, [criteria?.companyId, router]);
 
     const handleUserPress = useCallback(() => {
-      if (user_id) {
-        router.push(`/profile`);
-      }
+      if (user_id) router.push(`/profile`);
     }, [user_id, router]);
 
     const handleApplyPress = useCallback(() => {
@@ -357,8 +332,7 @@ const ContentCard = memo<ContentCardProps>(
 
         {/* Content */}
         <Pressable style={styles.contentContainer} onPress={handlePress}>
-          {/* Image */}
-          {mainImage && (
+          {!!mainImage && (
             <Image
               source={{ uri: mainImage }}
               style={styles.image}
@@ -366,7 +340,6 @@ const ContentCard = memo<ContentCardProps>(
             />
           )}
 
-          {/* Title */}
           <ThemedText
             style={[styles.title, { color: textColor }]}
             numberOfLines={2}
@@ -374,7 +347,6 @@ const ContentCard = memo<ContentCardProps>(
             {title}
           </ThemedText>
 
-          {/* Description */}
           <ThemedText
             style={[styles.description, { color: mutedTextColor }]}
             numberOfLines={3}
@@ -382,7 +354,6 @@ const ContentCard = memo<ContentCardProps>(
             {description}
           </ThemedText>
 
-          {/* Details */}
           {variant === "job" ? (
             <JobDetails criteria={criteria} />
           ) : (
@@ -408,6 +379,7 @@ const ContentCard = memo<ContentCardProps>(
               size="small"
             />
           )}
+
           {variant === "news" && (
             <ThemedButton
               title="Read"
@@ -416,6 +388,7 @@ const ContentCard = memo<ContentCardProps>(
               size="small"
             />
           )}
+
           {isSponsored && (
             <ThemedText style={[styles.sponsored, { color: mutedTextColor }]}>
               Sponsored
@@ -426,9 +399,9 @@ const ContentCard = memo<ContentCardProps>(
     );
   }
 );
-
 ContentCard.displayName = "ContentCard";
 
+// Styles
 const styles = StyleSheet.create({
   headerContainer: {
     marginBottom: 12,
@@ -452,7 +425,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 12,
-    marginTop: 1,
+    marginTop: -5,
   },
   contentContainer: {
     marginBottom: 12,
