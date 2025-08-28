@@ -1,17 +1,14 @@
-import React, { forwardRef, useMemo } from 'react';
-import {
-  StyleSheet,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native';
+import React, { useMemo } from "react";
+import { forwardRef } from "react";
+import { StyleSheet, Platform, KeyboardAvoidingView } from "react-native";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetTextInput,
   BottomSheetBackdropProps,
-} from '@gorhom/bottom-sheet';
-import { useThemeColor } from '@/hooks';
+} from "@gorhom/bottom-sheet";
+import { useThemeColor } from "@/hooks";
 
 export interface SimpleBottomSheetProps {
   snapPoints: string[];
@@ -21,41 +18,49 @@ export interface SimpleBottomSheetProps {
 
 const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
   function SimpleBottomSheet({ snapPoints, onDismiss, children }, ref) {
-    const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
-    const borderColor = useThemeColor({}, 'border');
-    const textColor = useThemeColor({}, 'text');
-    const mutedText = useThemeColor({}, 'mutedText');
+    const backgroundSecondary = useThemeColor({}, "backgroundSecondary");
+    const borderColor = useThemeColor({}, "border");
+    const textColor = useThemeColor({}, "text");
+    const mutedText = useThemeColor({}, "mutedText");
 
-    const backgroundStyle = useMemo(() => ({
-      backgroundColor: backgroundSecondary,
-      borderTopLeftRadius: 18,
-      borderTopRightRadius: 18,
-      shadowColor: textColor,
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 8,
-      borderColor,
-      borderTopWidth: 1,
-    }), [backgroundSecondary, borderColor, textColor]);
+    const backgroundStyle = useMemo(
+      () => ({
+        backgroundColor: backgroundSecondary,
+        borderTopLeftRadius: 18,
+        borderTopRightRadius: 18,
+        shadowColor: textColor,
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 8,
+        borderColor,
+        borderTopWidth: 1,
+      }),
+      [backgroundSecondary, borderColor, textColor]
+    );
 
-    const handleIndicatorStyle = useMemo(() => ({
-      backgroundColor: mutedText,
-      width: 40,
-      height: 4,
-    }), [mutedText]);
+    const handleIndicatorStyle = useMemo(
+      () => ({
+        backgroundColor: mutedText,
+        width: 40,
+        height: 4,
+      }),
+      [mutedText]
+    );
 
     const renderBackdrop = useMemo(
-      () => function RenderBackdrop(backdropProps: BottomSheetBackdropProps) {
-        return (
-          <BottomSheetBackdrop
-            {...backdropProps}
-            appearsOnIndex={0}
-            disappearsOnIndex={-1}
-            opacity={0.44}
-            pressBehavior="close"
-          />
-        );
-      }, []
+      () =>
+        function RenderBackdrop(backdropProps: BottomSheetBackdropProps) {
+          return (
+            <BottomSheetBackdrop
+              {...backdropProps}
+              appearsOnIndex={0}
+              disappearsOnIndex={-1}
+              opacity={0.44}
+              pressBehavior="close"
+            />
+          );
+        },
+      []
     );
 
     return (
@@ -68,10 +73,10 @@ const SimpleBottomSheet = forwardRef<BottomSheetModal, SimpleBottomSheetProps>(
         backdropComponent={renderBackdrop}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
-        enableDynamicSizing={false}
+        enableDynamicSizing={true}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
         >
           <BottomSheetScrollView

@@ -1,17 +1,16 @@
-'use client';
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, TouchableOpacity, View } from 'react-native';
-import { ThemedInput } from '@/components/ThemedInput';
-import { ThemedText } from '@/components/ThemedText';
-import { PostType } from '@/types';
-import { usePostForm } from './usePostForm';
-import PostTypeSelector from './PostTypeSelector';
-import JobFields from './JobFields';
-import ArticleFields from './ArticleFields';
-import { ImagePickerField } from './ImagePickerField';
-import * as Haptics from 'expo-haptics';
-import { Feather } from '@expo/vector-icons';
-import { useFlashToast } from '@/components/ui/Flash';
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Keyboard, TouchableOpacity, View } from "react-native";
+import { ThemedInput } from "@/components/ThemedInput";
+import { ThemedText } from "@/components/ThemedText";
+import { PostType } from "@/types";
+import { usePostForm } from "./usePostForm";
+import PostTypeSelector from "./PostTypeSelector";
+import JobFields from "./JobFields";
+import ArticleFields from "./ArticleFields";
+import { ImagePickerField } from "./ImagePickerField";
+import * as Haptics from "expo-haptics";
+import { Feather } from "@expo/vector-icons";
+import { useFlashToast } from "@/components/ui/Flash";
 
 export enum WizardStep {
   BasicInfo = 0,
@@ -26,7 +25,9 @@ interface PostFormProps {
 
 export default function PostForm({ onSuccess }: PostFormProps) {
   const toast = useFlashToast();
-  const [currentStep, setCurrentStep] = useState<WizardStep>(WizardStep.BasicInfo);
+  const [currentStep, setCurrentStep] = useState<WizardStep>(
+    WizardStep.BasicInfo
+  );
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   const {
@@ -59,12 +60,20 @@ export default function PostForm({ onSuccess }: PostFormProps) {
     if (currentStep === WizardStep.BasicInfo) {
       if (!title.trim()) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        toast.show({ type: 'danger', title: 'Missing title', message: 'Please enter a title for your post.' });
+        toast.show({
+          type: "danger",
+          title: "Missing title",
+          message: "Please enter a title for your post.",
+        });
         return;
       }
       if (!content.trim()) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        toast.show({ type: 'danger', title: 'Missing content', message: 'Please enter content for your post.' });
+        toast.show({
+          type: "danger",
+          title: "Missing content",
+          message: "Please enter content for your post.",
+        });
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -118,65 +127,93 @@ export default function PostForm({ onSuccess }: PostFormProps) {
         );
       case WizardStep.DetailsInfo:
         return postType === PostType.Job ? (
-          <JobFields
-            values={jobFields}
-            onChange={setJobFields}
-          />
+          <JobFields values={jobFields} onChange={setJobFields} />
         ) : (
-          <ArticleFields
-            values={articleFields}
-            onChange={setArticleFields}
-          />
+          <ArticleFields values={articleFields} onChange={setArticleFields} />
         );
       case WizardStep.Review:
         return (
           <View style={{ padding: 16 }}>
-            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>Review Your Post</ThemedText>
+            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>
+              Review Your Post
+            </ThemedText>
 
             <View style={{ marginBottom: 12 }}>
-              <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Title:</ThemedText>
+              <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
+                Title:
+              </ThemedText>
               <ThemedText>{title}</ThemedText>
             </View>
 
             <View style={{ marginBottom: 12 }}>
-              <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Content:</ThemedText>
+              <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
+                Content:
+              </ThemedText>
               <ThemedText>{content}</ThemedText>
             </View>
 
             {imageUrl && (
               <View style={{ marginBottom: 12 }}>
-                <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Image:</ThemedText>
-                <ThemedText style={{ color: '#666' }}>Image attached</ThemedText>
+                <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
+                  Image:
+                </ThemedText>
+                <ThemedText style={{ color: "#666" }}>
+                  Image attached
+                </ThemedText>
               </View>
             )}
 
             {postType === PostType.Job && (
               <View style={{ marginBottom: 12 }}>
-                <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Job Details:</ThemedText>
-                <ThemedText>Company: {jobFields.company || 'Not specified'}</ThemedText>
+                <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
+                  Job Details:
+                </ThemedText>
+                <ThemedText>
+                  Company: {jobFields.company || "Not specified"}
+                </ThemedText>
                 {jobFields.companyId && (
-                  <ThemedText style={{ color: '#666', fontSize: 12, marginLeft: 8 }}>
+                  <ThemedText
+                    style={{ color: "#666", fontSize: 12, marginLeft: 8 }}
+                  >
                     (Linked to company profile)
                   </ThemedText>
                 )}
-                <ThemedText>Location: {jobFields.location || 'Not specified'}</ThemedText>
-                <ThemedText>Salary: {jobFields.salary || 'Not specified'}</ThemedText>
-                <ThemedText>Job Type: {jobFields.jobType || 'Not specified'}</ThemedText>
-                <ThemedText>Industry: {jobFields.industry || 'Not specified'}</ThemedText>
+                <ThemedText>
+                  Location: {jobFields.location || "Not specified"}
+                </ThemedText>
+                <ThemedText>
+                  Salary: {jobFields.salary || "Not specified"}
+                </ThemedText>
+                <ThemedText>
+                  Job Type: {jobFields.jobType || "Not specified"}
+                </ThemedText>
+                <ThemedText>
+                  Industry: {jobFields.industry || "Not specified"}
+                </ThemedText>
               </View>
             )}
 
             {postType === PostType.News && (
               <View style={{ marginBottom: 12 }}>
-                <ThemedText style={{ fontWeight: '600', marginBottom: 4 }}>Article Details:</ThemedText>
-                <ThemedText>Company: {articleFields.company || 'Not specified'}</ThemedText>
+                <ThemedText style={{ fontWeight: "600", marginBottom: 4 }}>
+                  Article Details:
+                </ThemedText>
+                <ThemedText>
+                  Company: {articleFields.company || "Not specified"}
+                </ThemedText>
                 {articleFields.companyId && (
-                  <ThemedText style={{ color: '#666', fontSize: 12, marginLeft: 8 }}>
+                  <ThemedText
+                    style={{ color: "#666", fontSize: 12, marginLeft: 8 }}
+                  >
                     (Linked to company profile)
                   </ThemedText>
                 )}
-                <ThemedText>Industry: {articleFields.industry || 'Not specified'}</ThemedText>
-                <ThemedText>Source: {articleFields.source || 'Not specified'}</ThemedText>
+                <ThemedText>
+                  Industry: {articleFields.industry || "Not specified"}
+                </ThemedText>
+                <ThemedText>
+                  Source: {articleFields.source || "Not specified"}
+                </ThemedText>
               </View>
             )}
           </View>
@@ -192,23 +229,32 @@ export default function PostForm({ onSuccess }: PostFormProps) {
   return (
     <>
       {renderStepContent()}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+        }}
+      >
         <TouchableOpacity
           onPress={atFirstStep ? undefined : handlePrevStep}
           disabled={atFirstStep}
           style={{ opacity: atFirstStep ? 0.5 : 1 }}
         >
-          <ThemedText style={{ color: atFirstStep ? '#999' : '#007AFF' }}>
-            {atFirstStep ? 'Previous' : '← Previous'}
+          <ThemedText style={{ color: atFirstStep ? "#999" : "#007AFF" }}>
+            {atFirstStep ? "Previous" : "← Previous"}
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleNextStep}
           disabled={loading || !isFormValid()}
-          style={{ opacity: (loading || !isFormValid()) ? 0.5 : 1 }}
+          style={{ opacity: loading || !isFormValid() ? 0.5 : 1 }}
         >
-          <ThemedText style={{ color: (loading || !isFormValid()) ? '#999' : '#007AFF' }}>
-            {atLastStep ? 'Post' : 'Next →'}
+          <ThemedText
+            style={{ color: loading || !isFormValid() ? "#999" : "#007AFF" }}
+          >
+            {atLastStep ? "Post" : "Next →"}
           </ThemedText>
         </TouchableOpacity>
       </View>

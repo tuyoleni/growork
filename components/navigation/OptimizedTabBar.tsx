@@ -63,11 +63,11 @@ function OptimizedTabBar({ state, descriptors, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   const tabConfig = useMemo(() => ({
-    index: { label: 'Home', icon: 'home' },
-    applications: { label: 'Applications', icon: 'briefcase' },
-    bookmarks: { label: 'Bookmarks', icon: 'bookmark' },
-    profile: { label: 'Profile', icon: 'user' },
+    index: { label: 'Discover', icon: 'compass' },
+    applications: { label: 'My Jobs', icon: 'briefcase' },
     search: { label: 'Search', icon: 'search' },
+    bookmarks: { label: 'Saved', icon: 'bookmark' },
+    profile: { label: 'Profile', icon: 'user' },
   }), []);
 
   const containerStyle = useMemo(() => [

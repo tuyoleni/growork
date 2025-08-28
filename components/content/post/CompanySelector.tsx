@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
-import { useCompanies } from '@/hooks';
-import { useThemeColor } from '@/hooks';
+import { useCompanies , useThemeColor } from '@/hooks';
 import { Feather } from '@expo/vector-icons';
 import { Company } from '@/types';
 

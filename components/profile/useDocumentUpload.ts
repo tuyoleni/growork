@@ -1,4 +1,4 @@
-import { useThemeColor } from '@/hooks';
+import { useThemeColor , useAuth } from '@/hooks';
 import { useBottomSheetModal } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '@/utils/supabase';
 import { STORAGE_BUCKETS } from '@/utils/uploadUtils';
-import { useAuth } from '@/hooks';
 
 export const CATEGORIES = ['CV', 'Cover Letter', 'Certificate'];
 

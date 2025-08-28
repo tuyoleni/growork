@@ -1,10 +1,8 @@
-'use client';
-
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { ThemedInput } from '@/components/ThemedInput';
-import { useThemeColor } from '@/hooks';
+import React from "react";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { ThemedInput } from "@/components/ThemedInput";
+import { useThemeColor } from "@/hooks";
 
 interface SearchBarProps {
   value: string;
@@ -13,18 +11,23 @@ interface SearchBarProps {
   placeholder?: string;
 }
 
-export default function SearchBar({ 
-  value, 
-  onChange, 
-  onClear, 
-  placeholder = 'Search...'
+export default function SearchBar({
+  value,
+  onChange,
+  onClear,
+  placeholder = "Search...",
 }: SearchBarProps) {
-  const iconColor = useThemeColor({}, 'iconSecondary');
+  const iconColor = useThemeColor({}, "iconSecondary");
 
   return (
     <View style={styles.container}>
       <View style={styles.searchField}>
-        <Feather name="search" size={20} color={iconColor} style={styles.searchIcon} />
+        <Feather
+          name="search"
+          size={20}
+          color={iconColor}
+          style={styles.searchIcon}
+        />
         <ThemedInput
           style={styles.textInput}
           placeholder={placeholder}
@@ -43,11 +46,11 @@ export default function SearchBar({
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: "100%",
   },
   searchField: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
   },
   searchIcon: {
@@ -60,7 +63,7 @@ const styles = StyleSheet.create({
     marginBottom: 0, // Override the default margin in ThemedInput
   },
   clearButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 10,
     top: 14, // Adjusted to vertically center the icon
   },

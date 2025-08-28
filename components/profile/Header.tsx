@@ -18,6 +18,7 @@ export type ProfileHeaderProps = {
   stats: { label: string; value: string | number }[];
   details?: { label: string; value: string; icon: string }[];
   onEdit?: () => void;
+  isBusinessUser?: boolean;
 };
 
 function ProfileHeader({
@@ -31,6 +32,7 @@ function ProfileHeader({
   stats,
   details = [],
   onEdit,
+  isBusinessUser = false,
 }: ProfileHeaderProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
@@ -74,9 +76,16 @@ function ProfileHeader({
       <ThemedView style={styles.infoSection}>
         <ThemedView style={styles.nameRow}>
           <ThemedText style={[styles.name, { color: textColor }]}>{name}</ThemedText>
-          <ThemedView style={[styles.badge, { backgroundColor: successColor, borderColor: successColor }]}>
-            <ThemedText style={[styles.badgeText, { color: '#374151' }]}>{status}</ThemedText>
-          </ThemedView>
+          <View style={styles.badgeContainer}>
+            <ThemedView style={[styles.badge, { backgroundColor: successColor, borderColor: successColor }]}>
+              <ThemedText style={[styles.badgeText, { color: '#374151' }]}>{status}</ThemedText>
+            </ThemedView>
+            {isBusinessUser && (
+              <ThemedView style={[styles.badge, { backgroundColor: '#fef3c7', borderColor: '#fcd34d', marginLeft: 6 }]}>
+                <ThemedText style={[styles.badgeText, { color: '#92400e' }]}>Business</ThemedText>
+              </ThemedView>
+            )}
+          </View>
         </ThemedView>
         <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>{subtitle}</ThemedText>
         {bio && (
@@ -187,6 +196,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   badge: {
     borderRadius: 8,
     paddingHorizontal: 10,
@@ -194,8 +207,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   badgeText: {
-    fontWeight: '500',
     fontSize: 11,
+    fontWeight: '600',
+    color: '#374151',
   },
   subtitle: {
     fontSize: 13,

@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Platform } from 'react-native';
-import { useAuth } from '../auth';
-import { Company } from '@/types/company';
-import { supabase } from '@/utils/supabase';
+import { useState, useCallback, useEffect } from "react";
+import { Platform } from "react-native";
+import { useAuth } from "../auth";
+import { Company } from "@/types/company";
+import { supabase } from "@/utils/supabase";
 
 export const useCompanies = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -18,10 +18,10 @@ export const useCompanies = () => {
       if (user) {
         // Fetch user's companies if authenticated
         const { data, error: fetchError } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .from("companies")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
 
         if (fetchError) {
           throw fetchError;
@@ -33,138 +33,188 @@ export const useCompanies = () => {
         setCompanies([]);
       }
     } catch (err: any) {
-      console.error('Error fetching companies:', err.message);
-      const errorMessage = err.message || 'An error occurred';
+      console.error("Error fetching companies:", err.message);
+      const errorMessage = err.message || "An error occurred";
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
-  const createCompany = useCallback(async (companyData: Partial<Company>) => {
-    if (!user) return { error: 'User not authenticated' };
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .insert([{ ...companyData, user_id: user.id }])
-        .select()
-        .single();
+  const createCompany = useCallback(
+    async (companyData: Partial<Company>) => {
+      if (!user) return { error: "User not authenticated" };
+      try {
+        const { data, error } = await supabase
+          .from("companies")
+          .insert([{ ...companyData, user_id: user.id }])
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setCompanies(prev => [data, ...prev]);
-      return { company: data };
-    } catch (err: any) {
-      console.error('Error creating company:', err.message);
-      return { error: err.message };
-    }
-  }, [user]);
+        setCompanies((prev) => [data, ...prev]);
+        return { company: data };
+      } catch (err: any) {
+        console.error("Error creating company:", err.message);
+        return { error: err.message };
+      }
+    },
+    [user]
+  );
 
-  const updateCompany = useCallback(async (id: string, updates: Partial<Company>) => {
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+  const updateCompany = useCallback(
+    async (id: string, updates: Partial<Company>) => {
+      try {
+        const { data, error } = await supabase
+          .from("companies")
+          .update(updates)
+          .eq("id", id)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setCompanies(prev => prev.map(company =>
-        company.id === id ? data : company
-      ));
-      return { company: data };
-    } catch (err: any) {
-      console.error('Error updating company:', err.message);
-      return { error: err.message };
-    }
-  }, []);
+        setCompanies((prev) =>
+          prev.map((company) => (company.id === id ? data : company))
+        );
+        return { company: data };
+      } catch (err: any) {
+        console.error("Error updating company:", err.message);
+        return { error: err.message };
+      }
+    },
+    []
+  );
 
   const deleteCompany = useCallback(async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('companies')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("companies").delete().eq("id", id);
 
       if (error) throw error;
 
-      setCompanies(prev => prev.filter(company => company.id !== id));
+      setCompanies((prev) => prev.filter((company) => company.id !== id));
       return { success: true };
     } catch (err: any) {
-      console.error('Error deleting company:', err.message);
+      console.error("Error deleting company:", err.message);
       return { error: err.message };
     }
   }, []);
 
-
-
   const getCompanyById = useCallback(async (id: string) => {
     try {
-      console.log('🔍 getCompanyById: Looking for company with ID:', id);
+      console.log("🔍 getCompanyById: Looking for company with ID:", id);
 
       const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', id)
+        .from("companies")
+        .select("*")
+        .eq("id", id)
         .maybeSingle();
 
-      console.log('🔍 getCompanyById: Query result - data:', JSON.stringify(data, null, 2));
-      console.log('🔍 getCompanyById: Query result - error:', JSON.stringify(error, null, 2));
+      console.log(
+        "🔍 getCompanyById: Query result - data:",
+        JSON.stringify(data, null, 2)
+      );
+      console.log(
+        "🔍 getCompanyById: Query result - error:",
+        JSON.stringify(error, null, 2)
+      );
 
       if (error) {
-        console.error('❌ getCompanyById: Database error:', error);
+        console.error("❌ getCompanyById: Database error:", error);
         throw error;
       }
 
       if (data) {
-        console.log('✅ getCompanyById: Company found:', data);
+        console.log("✅ getCompanyById: Company found:", data);
         return { company: data };
       } else {
-        console.log('⚠️ getCompanyById: No company found with ID:', id);
+        console.log("⚠️ getCompanyById: No company found with ID:", id);
         return { company: null };
       }
     } catch (err: any) {
-      console.error('❌ getCompanyById: Error:', err.message);
+      console.error("❌ getCompanyById: Error:", err.message);
       return { error: err.message };
     }
   }, []);
 
   const getCompanyByIdPublic = useCallback(async (id: string) => {
     try {
-      console.log('🔍 Fetching company by ID:', id);
+      console.log("🔍 Fetching company by ID:", id);
 
       const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', id)
+        .from("companies")
+        .select("*")
+        .eq("id", id)
         .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
-        // Fetch company posts
+        // Fetch posts that belong to this company
+        console.log(
+          "🔍 Fetching posts for company:",
+          data.name,
+          "with ID:",
+          id
+        );
+
+        // First, let's see what posts exist and their criteria
+        const { data: allPosts, error: allPostsError } = await supabase
+          .from("posts")
+          .select("id, title, criteria, type")
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (allPostsError) {
+          console.error("Error fetching all posts:", allPostsError);
+        } else {
+          console.log("📋 Sample posts in database:");
+          allPosts?.forEach((post, index) => {
+            console.log(`📋 Post ${index + 1}:`, {
+              id: post.id,
+              title: post.title,
+              type: post.type,
+              criteria: post.criteria,
+            });
+          });
+        }
+
+        // Now fetch posts for this specific company
         const { data: postsData, error: postsError } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('type', 'job')
-          .eq('criteria->>companyId', id)
-          .order('created_at', { ascending: false });
+          .from("posts")
+          .select("*")
+          .eq("criteria->>companyId", id)
+          .order("created_at", { ascending: false });
+
+        if (postsError) {
+          console.error("Error fetching company posts:", postsError);
+        }
+
+        console.log("📋 Found posts for company:", postsData?.length || 0);
+        if (postsData && postsData.length > 0) {
+          postsData.forEach((post, index) => {
+            console.log(`📋 Company post ${index + 1}:`, {
+              id: post.id,
+              title: post.title,
+              type: post.type,
+              criteria: post.criteria,
+            });
+          });
+        }
 
         const companyWithPosts = {
           ...data,
-          posts: postsData || []
+          posts: postsData || [],
         };
 
-        console.log('✅ Company found with posts:', companyWithPosts);
+        console.log("✅ Company found with posts:", companyWithPosts);
         return { company: companyWithPosts };
       }
 
       return { company: null };
-
     } catch (err: any) {
-      console.error('Error fetching company:', err.message);
+      console.error("Error fetching company:", err.message);
       return { error: err.message };
     }
   }, []);
@@ -172,11 +222,11 @@ export const useCompanies = () => {
   const getCompanyByUserId = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false }) // Get the most recent approved company
+        .from("companies")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false }) // Get the most recent approved company
         .limit(1);
 
       if (error) throw error;
@@ -187,8 +237,8 @@ export const useCompanies = () => {
       }
       return { company: null };
     } catch (err: any) {
-      console.error('Error fetching company by user ID:', err.message);
-      const errorMessage = err.message || 'An error occurred';
+      console.error("Error fetching company by user ID:", err.message);
+      const errorMessage = err.message || "An error occurred";
       return { error: errorMessage };
     }
   }, []);
@@ -196,15 +246,15 @@ export const useCompanies = () => {
   const getAllCompaniesByUserId = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .from("companies")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return { companies: data || [] };
     } catch (err: any) {
-      console.error('Error fetching all companies by user ID:', err.message);
+      console.error("Error fetching all companies by user ID:", err.message);
       return { error: err.message };
     }
   }, []);
@@ -212,81 +262,83 @@ export const useCompanies = () => {
   // Debug function to check company table structure
   const debugCompanyTable = useCallback(async () => {
     try {
-      console.log('=== DEBUG: Checking companies table structure ===');
+      console.log("=== DEBUG: Checking companies table structure ===");
 
       // Check total count
       const { count, error: countError } = await supabase
-        .from('companies')
-        .select('*', { count: 'exact', head: true });
+        .from("companies")
+        .select("*", { count: "exact", head: true });
 
       if (countError) {
-        console.error('Error getting company count:', countError);
+        console.error("Error getting company count:", countError);
         return;
       }
 
-      console.log('Total companies in table:', count);
+      console.log("Total companies in table:", count);
 
       // Check for any companies with duplicate IDs
       const { data: allCompanies, error: allError } = await supabase
-        .from('companies')
-        .select('id, name, status, user_id, created_at')
-        .order('created_at', { ascending: false })
+        .from("companies")
+        .select("id, name, status, user_id, created_at")
+        .order("created_at", { ascending: false })
         .limit(10);
 
       if (allError) {
-        console.error('Error getting sample companies:', allError);
+        console.error("Error getting sample companies:", allError);
         return;
       }
 
-      console.log('Sample companies:', allCompanies);
+      console.log("Sample companies:", allCompanies);
 
       // Check for companies with specific statuses
       const { data: pendingCompanies, error: pendingError } = await supabase
-        .from('companies')
-        .select('id, name, status')
-        .eq('status', 'pending');
+        .from("companies")
+        .select("id, name, status")
+        .eq("status", "pending");
 
       if (pendingError) {
-        console.error('Error getting pending companies:', pendingError);
+        console.error("Error getting pending companies:", pendingError);
       } else {
-        console.log('Pending companies count:', pendingCompanies?.length || 0);
+        console.log("Pending companies count:", pendingCompanies?.length || 0);
       }
 
       const { data: approvedCompanies, error: approvedError } = await supabase
-        .from('companies')
-        .select('id, name, status')
-        .eq('status', 'approved');
+        .from("companies")
+        .select("id, name, status")
+        .eq("status", "approved");
 
       if (approvedError) {
-        console.error('Error getting approved companies:', approvedError);
+        console.error("Error getting approved companies:", approvedError);
       } else {
-        console.log('Approved companies count:', approvedCompanies?.length || 0);
+        console.log(
+          "Approved companies count:",
+          approvedCompanies?.length || 0
+        );
       }
 
-      console.log('=== END DEBUG ===');
-
+      console.log("=== END DEBUG ===");
     } catch (err: any) {
-      console.error('Error in debug function:', err);
+      console.error("Error in debug function:", err);
     }
   }, []);
 
   const updateCompanyLogo = useCallback(async (id: string, logoUrl: string) => {
     try {
       const { data, error } = await supabase
-        .from('companies')
+        .from("companies")
         .update({ logo_url: logoUrl })
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
 
-      setCompanies(prev => prev.map(company =>
-        company.id === id ? data : company
-      ));
+      setCompanies((prev) =>
+        prev.map((company) => (company.id === id ? data : company))
+      );
       return { company: data };
     } catch (err: any) {
-      console.error('Error updating company logo:', err.message);
+      console.error("Error updating company logo:", err.message);
       return { error: err.message };
     }
   }, []);
@@ -310,4 +362,4 @@ export const useCompanies = () => {
     getAllCompaniesByUserId,
     debugCompanyTable,
   };
-}; 
+};

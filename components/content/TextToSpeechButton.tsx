@@ -1,8 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useThemeColor } from '@/hooks';
-import { useTextToSpeech } from '@/hooks';
+import { useThemeColor , useTextToSpeech } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 

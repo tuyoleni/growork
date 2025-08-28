@@ -190,7 +190,7 @@ export default function Profile() {
               }
             ]}
           >
-            <ProfileHeader {...headerProps} />
+            <ProfileHeader {...headerProps} isBusinessUser={isBusinessUser} />
           </Animated.View>
 
           <ThemedView style={styles.categorySection}>

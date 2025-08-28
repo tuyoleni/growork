@@ -3,8 +3,7 @@ import { View, StyleSheet, Alert, Pressable, StatusBar, TouchableOpacity, useCol
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
-import { useAuth } from '@/hooks';
-import { useThemeColor } from '@/hooks';
+import { useAuth , useThemeColor } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 // import { ThemedInput } from '@/components/ThemedInput';

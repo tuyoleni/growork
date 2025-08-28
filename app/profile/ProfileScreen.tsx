@@ -11,8 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
-import { useAuth } from '@/hooks';
-import { useThemeColor } from '@/hooks';
+import { useAuth , useThemeColor } from '@/hooks';
 import { Profile } from '@/types';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';

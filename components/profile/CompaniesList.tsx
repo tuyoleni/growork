@@ -1,22 +1,22 @@
-import { useThemeColor } from '@/hooks';
+import { useThemeColor , useAuth , usePermissions , useCompanies } from '@/hooks';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect } from 'react';
-import { Image, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
-import { useAuth } from '@/hooks';
-import { Company } from '@/types';
+import { Company } from '@/types/company';
 import { useRouter } from 'expo-router';
-import { usePermissions } from '@/hooks';
-import { useCompanies } from '@/hooks';
 
 
 export default function CompaniesList() {
   const { user } = useAuth();
   const router = useRouter();
-  // Removed isBusinessUser restriction to allow all users to create companies
-  const { companies, fetchCompanies } = useCompanies();
+  const { isBusinessUser } = usePermissions();
+  const { fetchCompanies, getAllCompaniesByUserId } = useCompanies();
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const colorScheme = useColorScheme() ?? 'light';
   const borderColor = useThemeColor({}, 'border');
   const backgroundColor = useThemeColor({}, 'background');
@@ -26,22 +26,58 @@ export default function CompaniesList() {
   const tintColor = useThemeColor({}, 'tint');
 
   useEffect(() => {
-    if (user) {
-      fetchCompanies();
-    }
-  }, [user]);
+    const loadCompanies = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        if (isBusinessUser) {
+          await fetchCompanies(); // Business users see companies they manage
+        } else {
+          // Non-business users see companies they follow
+          const { companies: followedCompanies } = await getAllCompaniesByUserId(user.id);
+          setCompanies(followedCompanies || []);
+        }
+      } catch (error) {
+        console.error('Error loading companies:', error);
+        setError('Failed to load companies');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCompanies();
+  }, [user, isBusinessUser]);
 
 
   const handleCreateCompany = () => {
+    if (!isBusinessUser) return;
     router.push('/profile/CompanyManagement');
   };
 
 
 
+  if (loading) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={tintColor} />
+      </ThemedView>
+    );
+  }
+
+  if (error) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <ThemedText style={{ color: 'red' }}>{error}</ThemedText>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <View style={styles.headerRow}>
         <ThemedText style={styles.headerTitle}>Companies</ThemedText>
+        {isBusinessUser && (
           <Pressable
             onPress={() => {
               if (process.env.EXPO_OS === 'ios') {
@@ -52,15 +88,31 @@ export default function CompaniesList() {
           >
             <ThemedText style={[styles.addButtonText, { color: tintColor }]}>Add New</ThemedText>
           </Pressable>
+        )}
       </View>
 
       {companies.length === 0 ? (
         <View style={styles.emptyState}>
           <Feather name="briefcase" size={48} color={mutedTextColor} />
-          <ThemedText style={[styles.emptyTitle, { color: textColor }]}>Get started with your companies</ThemedText>
-          <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }]}>
-            Tap the Add New button to create your first company profile
-          </ThemedText>
+          {isBusinessUser ? (
+            <>
+              <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
+                Get started with your companies
+              </ThemedText>
+              <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }, styles.textCenter]}>
+                Tap the Add New button to create your first company profile
+              </ThemedText>
+            </>
+          ) : (
+            <>
+              <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
+                Follow companies you're interested in
+              </ThemedText>
+              <ThemedText style={[styles.emptyDescription, { color: mutedTextColor }, styles.textCenter]}>
+                Browse companies and tap the follow button to see their updates here
+              </ThemedText>
+            </>
+          )}
         </View>
       ) : (
         <ThemedView style={styles.companiesList}>
@@ -75,7 +127,13 @@ export default function CompaniesList() {
                   shadowColor: colorScheme === 'dark' ? '#000' : '#000',
                 }
               ]}
-              onPress={() => router.push(`/profile/CompanyManagement?id=${company.id}`)}
+              onPress={() => {
+                if (isBusinessUser) {
+                  router.push(`/profile/CompanyManagement?id=${company.id}`);
+                } else {
+                  router.push(`/company/${company.id}`);
+                }
+              }}
             >
               <Image
                 source={{
@@ -142,20 +200,27 @@ const styles = StyleSheet.create({
 
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+    padding: 24,
+    width: '100%',
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
     marginTop: 16,
-    marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 14,
-    textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textCenter: {
+    textAlign: 'center',
   },
   companiesList: {
     width: '100%',

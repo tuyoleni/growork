@@ -1,9 +1,7 @@
-'use client';
-
-import React from 'react';
-import { INDUSTRIES } from '@/dataset/industries';
-import BadgeSelector from '@/components/ui/BadgeSelector';
-import { View } from 'react-native';
+import React from "react";
+import { INDUSTRIES } from "@/dataset/industries";
+import BadgeSelector from "@/components/ui/BadgeSelector";
+import { View } from "react-native";
 
 interface IndustryFilterProps {
   selectedIndustry: string | null;
@@ -12,23 +10,23 @@ interface IndustryFilterProps {
 
 export default function IndustryFilter({
   selectedIndustry,
-  setSelectedIndustry
+  setSelectedIndustry,
 }: IndustryFilterProps) {
   // Transform the INDUSTRIES array to include 'All' option
   const badgeOptions = [
-    { label: 'All', value: 'All', icon: 'grid' },
-    ...INDUSTRIES.map(industry => ({
+    { label: "All", value: "All", icon: "grid" },
+    ...INDUSTRIES.map((industry) => ({
       label: industry.label,
       value: industry.label,
-      icon: industry.icon
-    }))
+      icon: industry.icon,
+    })),
   ];
 
   return (
     <View style={{ paddingVertical: 8 }}>
       <BadgeSelector
         options={badgeOptions}
-        selectedValue={selectedIndustry ?? 'All'}
+        selectedValue={selectedIndustry ?? "All"}
         onValueChange={setSelectedIndustry}
         title="Industries"
       />

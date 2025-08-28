@@ -6,6 +6,7 @@ import { useThemeColor } from "@/hooks";
 import type { Profile } from "@/types";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
 import { ThemedIconButton } from "@/components/ui/ThemedIconButton";
+import { Spacing } from "@/constants/DesignSystem";
 
 interface CommentsInputBarProps {
   profile: Profile | null;
@@ -38,53 +39,73 @@ export function CommentsInputBar({
   };
 
   return (
-    <View style={[styles.inputWrap, { borderColor }]}>
+    <View style={[styles.container, { borderColor }]}>
       {profile && (
         <ThemedAvatar
           image={
             profile.avatar_url ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || "User")}&size=128`
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              profile.name || "User"
+            )}&size=128`
           }
           size={32}
         />
       )}
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+
+      <View style={styles.inputContainer}>
         <ThemedInput
+          ref={inputRef}
           placeholder="Add a comment..."
           value={value}
           onChangeText={onChange}
           multiline
-          style={{ flex: 1 }}
+          style={styles.input}
           returnKeyType="send"
           onSubmitEditing={handleSend}
           blurOnSubmit={false}
         />
-        <ThemedIconButton
-          icon={<Feather name="smile" size={20} color={mutedTextColor} />}
-          onPress={onEmojiPicker}
-        />
-        <ThemedIconButton
-          icon={
-            isSending ? (
-              <ActivityIndicator size={20} color={tintColor} />
-            ) : (
-              <Feather name="send" size={20} color={tintColor} />
-            )
-          }
-          onPress={handleSend}
-          disabled={isSending || !value.trim()}
-        />
+
+        <View style={styles.actions}>
+          <ThemedIconButton
+            icon={<Feather name="smile" size={20} color={mutedTextColor} />}
+            onPress={onEmojiPicker}
+          />
+          <ThemedIconButton
+            icon={
+              isSending ? (
+                <ActivityIndicator size={20} color={tintColor} />
+              ) : (
+                <Feather name="send" size={20} color={tintColor} />
+              )
+            }
+            onPress={handleSend}
+            disabled={isSending || !value.trim()}
+          />
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  inputWrap: {
+  container: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  inputContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  input: {
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

@@ -12,11 +12,12 @@ export default function TabLayout() {
   const { isBusinessUser } = usePermissions();
   const applicationTabOptions = isBusinessUser
     ? {
-      title: 'Applications',
+      title: 'Jobs',
       tabBarIcon: ({ color }: { color: string }) => (
-        <Feather name="users" size={20} color={color} />
+        <Feather name="briefcase" size={20} color={color} />
       ),
       tabBarButton: (props: any) => <HapticTab {...props} />,
+      headerShown: false,
     }
     : {
       href: null as any,
@@ -36,20 +37,23 @@ export default function TabLayout() {
           headerShown: false,
         }}
       />
+      <Tabs.Screen 
+        name="applications" 
+        options={applicationTabOptions as any} 
+      />
       <Tabs.Screen
         name="search"
         options={{
           title: 'Search',
           tabBarIcon: ({ color }) => <Feather name="search" size={20} color={color} />,
           tabBarButton: (props) => <HapticTab {...props} />,
+          headerShown: false,
         }}
       />
-
-      <Tabs.Screen name="applications" options={applicationTabOptions as any} />
       <Tabs.Screen
         name="bookmarks"
         options={{
-          title: 'Bookmarks',
+          title: 'Saved',
           tabBarIcon: ({ color }) => <Feather name="bookmark" size={20} color={color} />,
           tabBarButton: (props) => <HapticTab {...props} />,
           headerShown: false,
@@ -58,12 +62,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'Me',
           tabBarIcon: ({ color }) => <Feather name="user" size={20} color={color} />,
           tabBarButton: (props) => <HapticTab {...props} />,
         }}
       />
-
     </Tabs>
   );
 }

@@ -1,5 +1,4 @@
-import { useAuth } from '@/hooks';
-import { useThemeColor } from '@/hooks';
+import { useAuth , useThemeColor } from '@/hooks';
 import { Profile } from '@/types';
 import { supabase } from '@/utils/supabase';
 import { uploadImage, STORAGE_BUCKETS } from '@/utils/uploadUtils';

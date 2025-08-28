@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useThemeColor } from '@/hooks';
+import { useThemeColor , ApplicationWithDetails } from '@/hooks';
 import { ThemedText } from '@/components/ThemedText';
 import { ApplicationStatus } from '@/types/enums';
-import { ApplicationWithDetails } from '@/hooks';
 
 interface ApplicationStatsProps {
     applications: ApplicationWithDetails[];

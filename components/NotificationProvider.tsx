@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect } from 'react';
-import { useNotificationSetup } from '@/hooks';
-import { usePushNotifications } from '@/hooks';
+import { useNotificationSetup , usePushNotifications } from '@/hooks';
 import { checkNotificationPermissions, requestNotificationPermissions } from '@/utils/notifications';
 
 type NotificationContextType = {
