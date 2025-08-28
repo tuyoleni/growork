@@ -62,15 +62,91 @@ export default function CompanySelector({
         Company
       </ThemedText>
 
-      <TouchableOpacity
-        style={[styles.selectorButton, { borderColor }]}
-        onPress={() => setShowCompanySelector(true)}
-      >
-        <ThemedText style={[styles.selectorText, { color: textColor }]}>
-          {selectedCompany ? selectedCompany.name : "Select Company"}
-        </ThemedText>
-        <Feather name="chevron-down" size={16} color={mutedTextColor} />
-      </TouchableOpacity>
+      {selectedCompany ? (
+        // Show selected company with enhanced design
+        <TouchableOpacity
+          style={[
+            styles.selectedCompany,
+            {
+              borderColor,
+              backgroundColor: backgroundSecondary,
+            },
+          ]}
+          onPress={() => setShowCompanySelector(true)}
+        >
+          <ThemedAvatar
+            size={48}
+            image={
+              selectedCompany.logo_url ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                selectedCompany.name
+              )}&size=48&background=2563eb&color=ffffff`
+            }
+          />
+          <View style={styles.companyInfo}>
+            <ThemedText style={[styles.companyName, { color: textColor }]}>
+              {selectedCompany.name}
+            </ThemedText>
+            <View style={styles.companyMeta}>
+              {selectedCompany.industry && (
+                <View>
+                  <ThemedText
+                    style={[styles.metaChipText, { color: tintColor }]}
+                  >
+                    {selectedCompany.industry}
+                  </ThemedText>
+                </View>
+              )}
+              {selectedCompany.location && (
+                <View>
+                  <ThemedText
+                    style={[styles.metaChipText, { color: mutedTextColor }]}
+                  >
+                    {selectedCompany.location}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          </View>
+          <View
+            style={[
+              styles.chevronContainer,
+              { backgroundColor: tintColor + "15" },
+            ]}
+          >
+            <Feather name="chevron-down" size={16} color={tintColor} />
+          </View>
+        </TouchableOpacity>
+      ) : (
+        // Show enhanced company selector button
+        <TouchableOpacity
+          style={[
+            styles.selectCompanyButton,
+            {
+              borderColor,
+              backgroundColor: backgroundSecondary,
+            },
+          ]}
+          onPress={() => setShowCompanySelector(true)}
+        >
+          <View
+            style={[styles.buttonIcon, { backgroundColor: tintColor + "15" }]}
+          >
+            <Feather name="briefcase" size={20} color={tintColor} />
+          </View>
+          <View style={styles.buttonContent}>
+            <ThemedText style={[styles.buttonTitle, { color: textColor }]}>
+              Select Company
+            </ThemedText>
+            <ThemedText
+              style={[styles.buttonSubtitle, { color: mutedTextColor }]}
+            >
+              Choose from your companies
+            </ThemedText>
+          </View>
+          <Feather name="chevron-right" size={16} color={mutedTextColor} />
+        </TouchableOpacity>
+      )}
 
       {/* Enhanced Company Selector Modal */}
       <Modal
@@ -103,21 +179,28 @@ export default function CompanySelector({
             <View style={{ width: 60 }} />
           </View>
 
+          {/* Enhanced Company List */}
           <FlatList
             data={companies}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.companyItem, { borderBottomColor: borderColor }]}
+                style={[
+                  styles.companyItem,
+                  {
+                    borderBottomColor: borderColor,
+                    backgroundColor: backgroundSecondary,
+                  },
+                ]}
                 onPress={() => handleCompanySelect(item)}
               >
                 <ThemedAvatar
-                  size={48}
+                  size={56}
                   image={
                     item.logo_url ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
                       item.name
-                    )}&size=48&background=2563eb&color=ffffff`
+                    )}&size=56&background=2563eb&color=ffffff`
                   }
                 />
                 <View style={styles.companyItemInfo}>
@@ -126,24 +209,54 @@ export default function CompanySelector({
                   >
                     {item.name}
                   </ThemedText>
-                  {item.industry && (
+                  {item.description && (
                     <ThemedText
                       style={[
-                        styles.companyItemMeta,
+                        styles.companyItemDescription,
                         { color: mutedTextColor },
                       ]}
+                      numberOfLines={2}
                     >
-                      {item.industry}
+                      {item.description}
                     </ThemedText>
                   )}
+                  <View style={styles.companyItemMeta}>
+                    {item.industry && (
+                      <View style={[{ backgroundColor: tintColor + "15" }]}>
+                        <ThemedText
+                          style={[styles.metaChipText, { color: tintColor }]}
+                        >
+                          {item.industry}
+                        </ThemedText>
+                      </View>
+                    )}
+                    {item.location && (
+                      <View
+                        style={[{ backgroundColor: mutedTextColor + "15" }]}
+                      >
+                        <ThemedText
+                          style={[
+                            styles.metaChipText,
+                            { color: mutedTextColor },
+                          ]}
+                        >
+                          {item.location}
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <Feather
-                  name="chevron-right"
-                  size={16}
-                  color={mutedTextColor}
-                />
+                <View
+                  style={[
+                    styles.selectIndicator,
+                    { backgroundColor: tintColor + "15" },
+                  ]}
+                >
+                  <Feather name="check" size={16} color={tintColor} />
+                </View>
               </TouchableOpacity>
             )}
+            contentContainerStyle={styles.modalContent}
             showsVerticalScrollIndicator={false}
           />
         </SafeAreaView>
@@ -236,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   companyItemInfo: {
@@ -247,9 +360,19 @@ const styles = StyleSheet.create({
     fontSize: Typography.base,
     fontWeight: Typography.semibold,
   },
-  companyItemMeta: {
+  companyItemDescription: {
     fontSize: Typography.sm,
     marginTop: Spacing.xs,
+    color: "gray",
+  },
+  companyItemMeta: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    flexWrap: "wrap",
+    marginTop: Spacing.xs,
+  },
+  selectIndicator: {
+    marginLeft: Spacing.sm,
   },
   avatar: {
     width: 48,
