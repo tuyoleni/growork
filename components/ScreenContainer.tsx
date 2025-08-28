@@ -6,13 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 interface ScreenContainerProps {
   children: React.ReactNode;
   style?: ViewStyle | ViewStyle[];
-  edges?: ('top' | 'bottom' | 'left' | 'right')[];
+  edges?: ('top' | 'left' | 'right')[];
 }
 
 const ScreenContainer: React.FC<ScreenContainerProps> = ({
   children,
   style,
-  edges = ['top', 'bottom', 'left', 'right']
+  edges = ['top', 'left', 'right']
 }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const backgroundColor = Colors[colorScheme].background;

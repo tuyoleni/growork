@@ -53,16 +53,16 @@ const Header = ({
               <Feather name="plus" size={22} color={theme.icon} />
             </Pressable>
           )}
-          <Pressable
-            style={styles.iconButton}
-            onPress={() => router.push('/notifications')}
-            hitSlop={8}
-          >
-            <View style={styles.bellContainer}>
+          <View style={styles.notificationContainer}>
+            <Pressable
+              style={styles.iconButton}
+              onPress={() => router.push('/notifications')}
+              hitSlop={12}
+            >
               <Feather name="bell" size={22} color={theme.icon} />
               <NotificationBadge />
-            </View>
-          </Pressable>
+            </Pressable>
+          </View>
         </View>
       </View>
       <CategorySelector
@@ -96,13 +96,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
-  iconButton: {
-    marginLeft: 12,
-    padding: 4,
-  },
-  bellContainer: {
+  notificationContainer: {
     position: 'relative',
+    marginLeft: 8,
   },
+  iconButton: {
+    padding: 8,
+    borderRadius: 20,
+    marginLeft: 4,
+  },
+  // Removed bellContainer as it's no longer needed
   header: {
     paddingTop: 10,
     paddingBottom: 8,
