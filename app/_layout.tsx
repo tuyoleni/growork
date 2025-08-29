@@ -3,7 +3,7 @@ import { AppProvider } from "@/utils/AppContext";
 import { NotificationProvider } from "@/components/NotificationProvider";
 import { supabase, handleAuthError } from "@/utils/supabase";
 import { setOpenGlobalSheet } from "@/utils/globalSheet";
-import AuthErrorHandler from "@/components/AuthErrorHandler";
+import { AuthErrorHandler } from "@/components/AuthErrorHandler";
 
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import {
@@ -55,7 +55,6 @@ function useProtectedRoute() {
   useEffect(() => {
     if (initialLoading) return;
     const isAuthRoute = segments.some((segment) => segment === "auth");
-    const isPostRoute = segments.some((segment) => segment === "post");
     const isProfileRoute = segments.some((segment) => segment === "profile");
     const isApplicationsRoute = segments.some(
       (segment) => segment === "applications"

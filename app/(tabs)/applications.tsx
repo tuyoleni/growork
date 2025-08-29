@@ -12,8 +12,16 @@ import { useRouter } from "expo-router";
 import ScreenContainer from "@/components/ScreenContainer";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
+import ThemedButton from "@/components/ui/ThemedButton";
+import { ApplicationSkeleton } from "@/components/ui/SkeletonLoader";
 import { useAuth, useMyPostApplications, useThemeColor } from "@/hooks";
 import { ApplicationStatus } from "@/types/enums";
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+} from "@/constants/DesignSystem";
 
 export default function ApplicationsScreen() {
   const router = useRouter();
@@ -104,13 +112,13 @@ export default function ApplicationsScreen() {
     const getStatusColor = (status: ApplicationStatus) => {
       switch (status) {
         case ApplicationStatus.Pending:
-          return "#FFA500";
+          return Colors.warning;
         case ApplicationStatus.Reviewed:
-          return "#007AFF";
+          return Colors.primary;
         case ApplicationStatus.Accepted:
-          return "#34C759";
+          return Colors.success;
         case ApplicationStatus.Rejected:
-          return "#FF3B30";
+          return Colors.error;
         default:
           return mutedTextColor;
       }
@@ -130,23 +138,23 @@ export default function ApplicationsScreen() {
             {(companyLogo || companyName) && (
               <View style={styles.companyAvatarContainer}>
                 <ThemedAvatar
-                  size={36}
+                  size={40}
                   image={
                     companyLogo ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
                       companyName || "Company"
-                    )}&size=36&background=2563eb&color=ffffff`
+                    )}&size=40&background=2563eb&color=ffffff`
                   }
                 />
               </View>
             )}
             <View style={styles.applicantDetails}>
-              <ThemedText style={[styles.applicantName, { color: textColor }]}>
+              <ThemedText style={styles.applicantName}>
                 {applicant.name && applicant.surname
                   ? `${applicant.name} ${applicant.surname}`
                   : applicant.username || "Unknown User"}
               </ThemedText>
-              <ThemedText style={[styles.jobTitle, { color: mutedTextColor }]}>
+              <ThemedText style={styles.jobTitle}>
                 {post.title || "Unknown Job"}
               </ThemedText>
             </View>
@@ -160,85 +168,14 @@ export default function ApplicationsScreen() {
 
         <View style={styles.itemActions}>
           <TouchableOpacity
-            style={styles.viewButton}
             onPress={() => {
               router.push(`/application/${item.id}`);
             }}
           >
-            <ThemedText style={[styles.viewButtonText, { color: tintColor }]}>
+            <ThemedText style={[styles.actionText, { color: tintColor }]}>
               View
             </ThemedText>
           </TouchableOpacity>
-
-          {item.status === ApplicationStatus.Pending && (
-            <View style={styles.statusActions}>
-              <TouchableOpacity
-                style={[styles.statusButton, { backgroundColor: "#A8E6CF" }]}
-                onPress={() =>
-                  handleApplicationStatusUpdate(
-                    item.id,
-                    ApplicationStatus.Accepted
-                  )
-                }
-              >
-                <ThemedText
-                  style={[styles.statusButtonText, { color: "#2D5A3D" }]}
-                >
-                  Accept
-                </ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.statusButton, { backgroundColor: "#FFB3BA" }]}
-                onPress={() =>
-                  handleApplicationStatusUpdate(
-                    item.id,
-                    ApplicationStatus.Rejected
-                  )
-                }
-              >
-                <ThemedText
-                  style={[styles.statusButtonText, { color: "#8B2635" }]}
-                >
-                  Reject
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {item.status === ApplicationStatus.Reviewed && (
-            <View style={styles.statusActions}>
-              <TouchableOpacity
-                style={[styles.statusButton, { backgroundColor: "#A8E6CF" }]}
-                onPress={() =>
-                  handleApplicationStatusUpdate(
-                    item.id,
-                    ApplicationStatus.Accepted
-                  )
-                }
-              >
-                <ThemedText
-                  style={[styles.statusButtonText, { color: "#2D5A3D" }]}
-                >
-                  Accept
-                </ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.statusButton, { backgroundColor: "#FFB3BA" }]}
-                onPress={() =>
-                  handleApplicationStatusUpdate(
-                    item.id,
-                    ApplicationStatus.Rejected
-                  )
-                }
-              >
-                <ThemedText
-                  style={[styles.statusButtonText, { color: "#8B2635" }]}
-                >
-                  Reject
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
       </View>
     );
@@ -247,10 +184,14 @@ export default function ApplicationsScreen() {
   if (applicationsLoading && !refreshing) {
     return (
       <ScreenContainer>
-        <View style={styles.centerContainer}>
-          <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
-            Loading...
-          </ThemedText>
+        <View style={styles.header}>
+          <ThemedText style={styles.title}>Applications</ThemedText>
+          <ThemedText style={styles.subtitle}>Loading...</ThemedText>
+        </View>
+        <View style={styles.listContainer}>
+          {[1, 2, 3].map((index) => (
+            <ApplicationSkeleton key={index} />
+          ))}
         </View>
       </ScreenContainer>
     );
@@ -260,14 +201,13 @@ export default function ApplicationsScreen() {
     return (
       <ScreenContainer>
         <View style={styles.centerContainer}>
-          <ThemedText style={[styles.errorText, { color: textColor }]}>
+          <ThemedText style={styles.errorText}>
             Error loading applications
           </ThemedText>
-          <TouchableOpacity
-            style={[styles.retryButton, { backgroundColor: tintColor }]}
-            onPress={() => user && handleRefresh()}
-          >
-            <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
+          <TouchableOpacity onPress={() => user && handleRefresh()}>
+            <ThemedText style={[styles.actionText, { color: tintColor }]}>
+              Retry
+            </ThemedText>
           </TouchableOpacity>
         </View>
       </ScreenContainer>
@@ -277,10 +217,8 @@ export default function ApplicationsScreen() {
   return (
     <ScreenContainer>
       <View style={styles.header}>
-        <ThemedText style={[styles.title, { color: textColor }]}>
-          Applications
-        </ThemedText>
-        <ThemedText style={[styles.subtitle, { color: mutedTextColor }]}>
+        <ThemedText style={styles.title}>Applications</ThemedText>
+        <ThemedText style={styles.subtitle}>
           {applications.length} total
         </ThemedText>
       </View>
@@ -299,7 +237,7 @@ export default function ApplicationsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <ThemedText style={[styles.emptyText, { color: mutedTextColor }]}>
+            <ThemedText style={styles.emptyText}>
               No applications yet
             </ThemedText>
           </View>
@@ -311,30 +249,29 @@ export default function ApplicationsScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "600",
-    marginBottom: 4,
+    fontSize: Typography.xl,
+    fontWeight: Typography.semibold,
+    marginBottom: Spacing.xs,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: Typography.sm,
   },
   listContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
   },
   item: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   itemHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: Spacing.sm,
   },
   applicantInfo: {
     flexDirection: "row",
@@ -347,79 +284,54 @@ const styles = StyleSheet.create({
   },
   companyAvatarContainer: {
     marginLeft: -10,
-    marginRight: 4,
+    marginRight: Spacing.xs,
   },
   applicantDetails: {
-    marginLeft: 12,
+    marginLeft: Spacing.sm,
     flex: 1,
   },
   applicantName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 2,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+    marginBottom: Spacing.xs,
   },
   jobTitle: {
-    fontSize: 14,
+    fontSize: Typography.sm,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: Typography.xs,
+    fontWeight: Typography.medium,
   },
   itemActions: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  viewButton: {
-    paddingVertical: 4,
-  },
-  viewButtonText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  statusActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  statusButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  statusButtonText: {
-    fontSize: 12,
-    fontWeight: "500",
+
+  actionText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.medium,
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: Spacing.lg,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: Typography.base,
   },
   errorText: {
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  retryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  retryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: Typography.base,
+    marginBottom: Spacing.md,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: Spacing.xl,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: Typography.base,
   },
 });

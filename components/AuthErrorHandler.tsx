@@ -63,7 +63,7 @@ export const AuthErrorHandler: React.FC<AuthErrorHandlerProps> = ({
       onRetry();
     } else {
       // Default retry action - refresh the current screen
-      router.replace(router.pathname as any);
+      router.replace("/");
     }
   };
 

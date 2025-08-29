@@ -189,10 +189,7 @@ export const testSupabaseConnection = async () => {
     }
 
     // Test basic connection by fetching a single row from a table
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id")
-      .limit(1);
+    const { error } = await supabase.from("profiles").select("id").limit(1);
 
     if (error) {
       console.error("❌ Supabase connection test failed:", error);

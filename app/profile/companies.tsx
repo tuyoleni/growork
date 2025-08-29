@@ -127,7 +127,7 @@ export default function CompaniesManagement() {
         <View style={styles.headerRight} />
       </ThemedView>
 
-      <ScrollView style={styles.container} showsScrollIndicator={false}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* For Business Users: Show My Companies first, then Followed Companies */}
         {isBusinessUser && (
           <ThemedView style={styles.section}>

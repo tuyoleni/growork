@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Clipboard,
+  Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -14,16 +16,26 @@ import ScreenContainer from "@/components/ScreenContainer";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
 import ThemedButton from "@/components/ui/ThemedButton";
-import { ThemedIconButton } from "@/components/ui/ThemedIconButton";
-import { useThemeColor } from "@/hooks";
+import PostBadge from "@/components/content/post/PostBadge";
+import UniversalHeader from "@/components/ui/UniversalHeader";
+import { ApplicationDetailSkeleton } from "@/components/ui/Skeleton";
+import { useThemeColor, useAuth } from "@/hooks";
 import { supabase } from "@/utils/supabase";
+import { generateStatusUpdateEmail } from "@/utils/emailService";
 import {
   Colors,
   Typography,
   Spacing,
   BorderRadius,
-  Shadows,
 } from "@/constants/DesignSystem";
+
+interface Document {
+  id: string;
+  type: "cv" | "cover_letter" | "certificate" | "other";
+  name: string | null;
+  file_url: string;
+  uploaded_at: string;
+}
 
 interface ApplicationData {
   id: string;
@@ -35,6 +47,7 @@ interface ApplicationData {
   cover_letter: string | null;
   status: ApplicationStatus;
   created_at: string;
+  documents: Document[];
   posts: {
     id: string;
     title: string;
@@ -63,20 +76,52 @@ interface ApplicationData {
     id: string;
     name: string;
     logo_url: string | null;
+    owner_email?: string;
   } | null;
 }
 
 export default function ApplicationDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { user } = useAuth();
   const [application, setApplication] = useState<ApplicationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const textColor = useThemeColor({}, "text");
-  const borderColor = useThemeColor({}, "border");
   const mutedTextColor = useThemeColor({}, "mutedText");
   const tintColor = useThemeColor({}, "tint");
+
+  const handleCopyToClipboard = (text: string, label: string) => {
+    Clipboard.setString(text);
+    Alert.alert("Copied!", `${label} copied to clipboard`);
+  };
+
+  const handleOpenDocument = (url: string, documentType: string) => {
+    if (!url) {
+      Alert.alert("Error", `${documentType} not available`);
+      return;
+    }
+
+    Linking.openURL(url).catch((err) => {
+      Alert.alert("Error", `Could not open ${documentType.toLowerCase()}`);
+    });
+  };
+
+  const getDocumentIcon = (type: string) => {
+    switch (type) {
+      case "cv":
+        return "file-text";
+      case "cover_letter":
+        return "file-text";
+      case "certificate":
+        return "award";
+      case "other":
+        return "file";
+      default:
+        return "file";
+    }
+  };
 
   useEffect(() => {
     const fetchApplicationDetails = async () => {
@@ -140,18 +185,47 @@ export default function ApplicationDetailScreen() {
         if (applicationData.posts?.criteria?.companyId) {
           const { data: company, error: companyError } = await supabase
             .from("companies")
-            .select("id, name, logo_url")
+            .select(
+              `
+              id, 
+              name, 
+              logo_url,
+              user_id
+            `
+            )
             .eq("id", applicationData.posts.criteria.companyId)
             .single();
 
           if (!companyError && company) {
-            companyData = company;
+            // Use the current user's email as the HR email
+            console.log("Company found:", company);
+            console.log("Current user:", user);
+
+            companyData = {
+              ...company,
+              owner_email: user?.email || null,
+            };
           }
         }
+
+        // Fetch all documents uploaded for this specific application
+        const { data: documentsData, error: documentsError } = await supabase
+          .from("documents")
+          .select("id, type, name, file_url, uploaded_at")
+          .eq("user_id", applicationData.user_id)
+          .gte("uploaded_at", applicationData.created_at)
+          .order("uploaded_at", { ascending: false });
+
+        if (documentsError) {
+          console.error("Documents query error:", documentsError);
+        }
+
+        const documents = documentsData || [];
 
         // Combine data
         const applicationWithDetails: ApplicationData = {
           ...applicationData,
+          documents,
           posts: applicationData.posts,
           profiles: applicantData,
           companies: companyData,
@@ -196,7 +270,83 @@ export default function ApplicationDetailScreen() {
                 prev ? { ...prev, status: newStatus } : null
               );
 
-              Alert.alert("Success", "Application status updated successfully");
+              // Send email notification when status is changed to "Reviewed"
+              if (newStatus === ApplicationStatus.Reviewed && application) {
+                try {
+                  // Generate email HTML for HR notification
+                  const emailHTML = generateStatusUpdateEmail(
+                    application,
+                    newStatus
+                  );
+
+                  // Send email to company HR if email is available
+                  console.log("Company data:", application.companies);
+                  console.log(
+                    "Owner email:",
+                    application.companies?.owner_email
+                  );
+
+                  if (application.companies?.owner_email) {
+                    console.log(
+                      "Attempting to send email to:",
+                      application.companies.owner_email
+                    );
+                    console.log("Email HTML length:", emailHTML.length);
+
+                    const emailResponse = await fetch(
+                      "https://gkjtpxzmbvispwmfgzrc.supabase.co/functions/v1/send-email",
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_KEY}`,
+                        },
+                        body: JSON.stringify({
+                          to: application.companies.owner_email,
+                          subject: `New Application Review - ${
+                            application.posts?.title || "Job Position"
+                          }`,
+                          html: emailHTML,
+                        }),
+                      }
+                    );
+
+                    console.log("Email response status:", emailResponse.status);
+
+                    const emailResult = await emailResponse.json();
+                    console.log("Email result:", emailResult);
+
+                    if (emailResult.success) {
+                      Alert.alert(
+                        "Status Updated",
+                        `Application status updated to ${newStatus}. Email sent to HR.`
+                      );
+                    } else {
+                      console.error("Email sending failed:", emailResult.error);
+                      Alert.alert(
+                        "Status Updated",
+                        `Application status updated to ${newStatus}. Email sending failed.`
+                      );
+                    }
+                  } else {
+                    Alert.alert(
+                      "Status Updated",
+                      `Application status updated to ${newStatus}. No HR email available.`
+                    );
+                  }
+                } catch (emailError) {
+                  console.error("Error sending email:", emailError);
+                  Alert.alert(
+                    "Success",
+                    "Application status updated successfully"
+                  );
+                }
+              } else {
+                Alert.alert(
+                  "Success",
+                  "Application status updated successfully"
+                );
+              }
             } catch {
               Alert.alert("Error", "Failed to update application status");
             }
@@ -206,21 +356,6 @@ export default function ApplicationDetailScreen() {
     );
   };
 
-  const getStatusColor = (status: ApplicationStatus) => {
-    switch (status) {
-      case ApplicationStatus.Pending:
-        return Colors.warning;
-      case ApplicationStatus.Reviewed:
-        return Colors.primary;
-      case ApplicationStatus.Accepted:
-        return Colors.success;
-      case ApplicationStatus.Rejected:
-        return Colors.error;
-      default:
-        return Colors.gray600;
-    }
-  };
-
   const getStatusText = (status: ApplicationStatus) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
@@ -228,12 +363,12 @@ export default function ApplicationDetailScreen() {
   if (loading) {
     return (
       <ScreenContainer>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={tintColor} />
-          <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
-            Loading application...
-          </ThemedText>
-        </View>
+        <UniversalHeader
+          title="Application Details"
+          showBackButton={true}
+          showNotifications={false}
+        />
+        <ApplicationDetailSkeleton />
       </ScreenContainer>
     );
   }
@@ -262,26 +397,24 @@ export default function ApplicationDetailScreen() {
 
   return (
     <ScreenContainer>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: borderColor }]}>
-        <ThemedIconButton
-          icon={<Feather name="arrow-left" size={24} color={textColor} />}
-          onPress={() => router.back()}
-        />
-        <ThemedText style={[styles.headerTitle, { color: textColor }]}>
-          {company?.name
+      <UniversalHeader
+        title={
+          company?.name
             ? `${company.name} - Application`
-            : "Application Details"}
-        </ThemedText>
-        <View style={styles.headerSpacer} />
-      </View>
+            : "Application Details"
+        }
+        showBackButton={true}
+        showNotifications={false}
+      />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Company Context Card */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Company Context */}
         {company && (
-          <View
-            style={[styles.companyCard, { backgroundColor: Colors.gray50 }]}
-          >
+          <View style={styles.section}>
             <View style={styles.companyHeader}>
               <ThemedAvatar
                 size={60}
@@ -293,12 +426,10 @@ export default function ApplicationDetailScreen() {
                 }
               />
               <View style={styles.companyInfo}>
-                <ThemedText style={[styles.companyName, { color: textColor }]}>
+                <ThemedText style={styles.companyName}>
                   {company.name}
                 </ThemedText>
-                <ThemedText
-                  style={[styles.companyTagline, { color: mutedTextColor }]}
-                >
+                <ThemedText style={styles.companyTagline}>
                   Hiring for {post?.title || "Position"}
                 </ThemedText>
               </View>
@@ -308,56 +439,46 @@ export default function ApplicationDetailScreen() {
 
         {/* Job Position */}
         <View style={styles.section}>
-          <View style={styles.positionCard}>
-            <ThemedText style={[styles.positionTitle, { color: textColor }]}>
-              {post?.title || "Job Position"}
-            </ThemedText>
+          <ThemedText style={styles.positionTitle}>
+            {post?.title || "Job Position"}
+          </ThemedText>
 
-            <View style={styles.positionDetails}>
-              {post?.type && (
-                <View style={styles.detailChip}>
-                  <Feather name="briefcase" size={14} color={mutedTextColor} />
-                  <ThemedText
-                    style={[styles.detailText, { color: mutedTextColor }]}
-                  >
-                    {post.type}
-                  </ThemedText>
-                </View>
-              )}
+          <View style={styles.positionDetails}>
+            {post?.type && (
+              <PostBadge
+                label={post.type}
+                icon="briefcase"
+                variant="default"
+                size="small"
+              />
+            )}
 
-              {post?.industry && (
-                <View style={styles.detailChip}>
-                  <Feather name="briefcase" size={14} color={mutedTextColor} />
-                  <ThemedText
-                    style={[styles.detailText, { color: mutedTextColor }]}
-                  >
-                    {post.industry}
-                  </ThemedText>
-                </View>
-              )}
+            {post?.industry && (
+              <PostBadge
+                label={post.industry}
+                icon="briefcase"
+                variant="default"
+                size="small"
+              />
+            )}
 
-              {post?.criteria?.location && (
-                <View style={styles.detailChip}>
-                  <Feather name="map-pin" size={14} color={mutedTextColor} />
-                  <ThemedText
-                    style={[styles.detailText, { color: mutedTextColor }]}
-                  >
-                    {post.criteria.location}
-                  </ThemedText>
-                </View>
-              )}
-            </View>
-
-            {post?.content && (
-              <View style={styles.descriptionContainer}>
-                <ThemedText
-                  style={[styles.descriptionText, { color: textColor }]}
-                >
-                  {post.content}
-                </ThemedText>
-              </View>
+            {post?.criteria?.location && (
+              <PostBadge
+                label={post.criteria.location}
+                icon="map-pin"
+                variant="default"
+                size="small"
+              />
             )}
           </View>
+
+          {post?.content && (
+            <View style={styles.descriptionContainer}>
+              <ThemedText style={styles.descriptionText}>
+                {post.content}
+              </ThemedText>
+            </View>
+          )}
         </View>
 
         {/* Applicant Profile */}
@@ -365,341 +486,350 @@ export default function ApplicationDetailScreen() {
           <ThemedText style={[styles.sectionTitle, { color: textColor }]}>
             Meet the Applicant
           </ThemedText>
-          <View style={styles.applicantCard}>
-            <View style={styles.applicantHeader}>
-              <View style={styles.userAvatarContainer}>
-                <ThemedAvatar
-                  size={70}
-                  image={
-                    applicant?.avatar_url ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      applicant?.name && applicant?.surname
-                        ? `${applicant.name}+${applicant.surname}`
-                        : applicant?.username || "User"
-                    )}&size=70&background=10b981&color=ffffff`
-                  }
-                />
-                <View
-                  style={[
-                    styles.onlineIndicator,
-                    { backgroundColor: Colors.success },
-                  ]}
-                />
-              </View>
-
-              <View style={styles.applicantInfo}>
-                <ThemedText
-                  style={[styles.applicantName, { color: textColor }]}
-                >
-                  {applicant?.name && applicant?.surname
-                    ? `${applicant.name} ${applicant.surname}`
-                    : applicant?.username || "Anonymous Applicant"}
-                </ThemedText>
-
-                {applicant?.profession && (
-                  <View style={styles.professionBadge}>
-                    <Feather
-                      name="briefcase"
-                      size={14}
-                      color={Colors.success}
-                    />
-                    <ThemedText
-                      style={[styles.professionText, { color: Colors.success }]}
-                    >
-                      {applicant.profession}
-                    </ThemedText>
-                  </View>
-                )}
-
-                <View style={styles.usernameRow}>
-                  <Feather name="user" size={14} color={mutedTextColor} />
-                  <ThemedText
-                    style={[
-                      styles.applicantUsername,
-                      { color: mutedTextColor },
-                    ]}
-                  >
-                    @{applicant?.username || "user"}
-                  </ThemedText>
-                </View>
-
-                {applicant?.bio && (
-                  <View style={styles.bioContainer}>
-                    <Feather
-                      name="message-square"
-                      size={14}
-                      color={mutedTextColor}
-                    />
-                    <ThemedText
-                      style={[styles.userBio, { color: mutedTextColor }]}
-                    >
-                      &ldquo;{applicant.bio}&rdquo;
-                    </ThemedText>
-                  </View>
-                )}
-              </View>
+          <View style={styles.applicantHeader}>
+            <View style={styles.userAvatarContainer}>
+              <ThemedAvatar
+                size={70}
+                image={
+                  applicant?.avatar_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    applicant?.name && applicant?.surname
+                      ? `${applicant.name}+${applicant.surname}`
+                      : applicant?.username || "User"
+                  )}&size=70&background=10b981&color=ffffff`
+                }
+              />
+              <View
+                style={[
+                  styles.onlineIndicator,
+                  { backgroundColor: Colors.success },
+                ]}
+              />
             </View>
 
-            {/* Contact Information */}
-            {(applicant?.phone ||
-              applicant?.website ||
-              applicant?.location) && (
-              <View style={styles.contactSection}>
-                <ThemedText style={[styles.sectionTitle, { color: textColor }]}>
-                  Contact
+            <View style={styles.applicantInfo}>
+              <ThemedText style={[styles.applicantName, { color: textColor }]}>
+                {applicant?.name && applicant?.surname
+                  ? `${applicant.name} ${applicant.surname}`
+                  : applicant?.username || "Anonymous Applicant"}
+              </ThemedText>
+
+              {applicant?.profession && (
+                <PostBadge
+                  label={applicant.profession}
+                  icon="briefcase"
+                  variant="highlighted"
+                  size="small"
+                />
+              )}
+
+              <View style={styles.usernameRow}>
+                <Feather name="user" size={14} color={mutedTextColor} />
+                <ThemedText style={styles.applicantUsername}>
+                  @{applicant?.username || "user"}
                 </ThemedText>
-
-                {applicant?.phone && (
-                  <View style={styles.contactItem}>
-                    <Feather name="phone" size={16} color={mutedTextColor} />
-                    <ThemedText
-                      style={[styles.contactText, { color: textColor }]}
-                    >
-                      {applicant.phone}
-                    </ThemedText>
-                  </View>
-                )}
-
-                {applicant?.website && (
-                  <View style={styles.contactItem}>
-                    <Feather name="globe" size={16} color={mutedTextColor} />
-                    <ThemedText
-                      style={[styles.contactText, { color: textColor }]}
-                    >
-                      {applicant.website}
-                    </ThemedText>
-                  </View>
-                )}
-
-                {applicant?.location && (
-                  <View style={styles.contactItem}>
-                    <Feather name="map-pin" size={16} color={mutedTextColor} />
-                    <ThemedText
-                      style={[styles.contactText, { color: textColor }]}
-                    >
-                      {applicant.location}
-                    </ThemedText>
-                  </View>
-                )}
               </View>
+
+              {applicant?.bio && (
+                <View style={styles.bioContainer}>
+                  <Feather
+                    name="message-square"
+                    size={14}
+                    color={mutedTextColor}
+                  />
+                  <ThemedText style={styles.userBio} numberOfLines={0}>
+                    {applicant.bio}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Contact Information */}
+        {(applicant?.phone || applicant?.website || applicant?.location) && (
+          <View style={styles.section}>
+            <ThemedText style={[styles.sectionTitle, { color: textColor }]}>
+              Contact
+            </ThemedText>
+
+            {applicant?.phone && (
+              <TouchableOpacity
+                style={styles.contactItem}
+                onPress={() =>
+                  handleCopyToClipboard(applicant.phone!, "Phone number")
+                }
+              >
+                <Feather name="phone" size={16} color={tintColor} />
+                <ThemedText style={styles.contactText}>
+                  {applicant.phone}
+                </ThemedText>
+              </TouchableOpacity>
             )}
 
-            {/* Experience & Skills */}
-            {(applicant?.experience_years ||
-              applicant?.education ||
-              applicant?.skills) && (
-              <View style={styles.experienceSection}>
-                {applicant?.experience_years && (
-                  <View style={styles.experienceItem}>
-                    <ThemedText
-                      style={[
-                        styles.experienceLabel,
-                        { color: mutedTextColor },
-                      ]}
-                    >
-                      Experience
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.experienceValue, { color: textColor }]}
-                    >
-                      {applicant.experience_years} years
-                    </ThemedText>
-                  </View>
-                )}
+            {applicant?.website && (
+              <TouchableOpacity
+                style={styles.contactItem}
+                onPress={() =>
+                  handleCopyToClipboard(applicant.website!, "Website")
+                }
+              >
+                <Feather name="globe" size={16} color={tintColor} />
+                <ThemedText style={styles.contactText}>
+                  {applicant.website}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
 
-                {applicant?.education && (
-                  <View style={styles.experienceItem}>
-                    <ThemedText
-                      style={[
-                        styles.experienceLabel,
-                        { color: mutedTextColor },
-                      ]}
-                    >
-                      Education
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.experienceValue, { color: textColor }]}
-                    >
-                      {applicant.education}
-                    </ThemedText>
-                  </View>
-                )}
-
-                {applicant?.skills && applicant.skills.length > 0 && (
-                  <View style={styles.skillsSection}>
-                    <ThemedText
-                      style={[styles.skillsLabel, { color: mutedTextColor }]}
-                    >
-                      Skills
-                    </ThemedText>
-                    <View style={styles.skillsContainer}>
-                      {applicant.skills.map((skill: string, index: number) => (
-                        <View
-                          key={index}
-                          style={[
-                            styles.skillTag,
-                            { backgroundColor: `${tintColor}20` },
-                          ]}
-                        >
-                          <ThemedText
-                            style={[styles.skillText, { color: tintColor }]}
-                          >
-                            {skill}
-                          </ThemedText>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
+            {applicant?.location && (
+              <View style={styles.contactItem}>
+                <Feather name="map-pin" size={16} color={mutedTextColor} />
+                <ThemedText style={styles.contactText}>
+                  {applicant.location}
+                </ThemedText>
               </View>
             )}
           </View>
-        </View>
+        )}
+
+        {/* Experience & Skills */}
+        {(applicant?.experience_years ||
+          applicant?.education ||
+          applicant?.skills) && (
+          <View style={styles.section}>
+            {applicant?.experience_years && (
+              <View style={styles.experienceItem}>
+                <ThemedText style={styles.experienceLabel}>
+                  Experience
+                </ThemedText>
+                <ThemedText style={styles.experienceValue}>
+                  {applicant.experience_years} years
+                </ThemedText>
+              </View>
+            )}
+
+            {applicant?.education && (
+              <View style={styles.experienceItem}>
+                <ThemedText style={styles.experienceLabel}>
+                  Education
+                </ThemedText>
+                <ThemedText style={styles.experienceValue}>
+                  {applicant.education}
+                </ThemedText>
+              </View>
+            )}
+
+            {applicant?.skills && applicant.skills.length > 0 && (
+              <View style={styles.skillsSection}>
+                <ThemedText style={styles.skillsLabel}>Skills</ThemedText>
+                <View style={styles.skillsContainer}>
+                  {applicant.skills.map((skill: string, index: number) => (
+                    <PostBadge
+                      key={index}
+                      label={skill}
+                      variant="default"
+                      size="small"
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Application Content */}
         {(application.cover_letter || application.resume_url) && (
           <View style={styles.section}>
-            <View style={styles.applicationCard}>
-              <ThemedText style={[styles.sectionTitle, { color: textColor }]}>
-                Application
-              </ThemedText>
+            <ThemedText style={[styles.sectionTitle, { color: textColor }]}>
+              Application
+            </ThemedText>
 
-              {application.cover_letter && (
-                <View style={styles.coverLetterSection}>
-                  <ThemedText
-                    style={[styles.coverLetterLabel, { color: mutedTextColor }]}
+            {application.cover_letter && (
+              <View style={styles.coverLetterSection}>
+                <ThemedText style={styles.coverLetterLabel}>
+                  Cover Letter
+                </ThemedText>
+                {application.cover_letter.startsWith("http") ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.coverLetterContainer,
+                      { borderColor: Colors.gray300 },
+                    ]}
+                    onPress={() =>
+                      handleOpenDocument(
+                        application.cover_letter!,
+                        "Cover Letter"
+                      )
+                    }
                   >
-                    Cover Letter
-                  </ThemedText>
-                  <View style={[styles.coverLetterContainer, { borderColor }]}>
-                    <ThemedText
-                      style={[styles.coverLetterText, { color: textColor }]}
-                    >
+                    <Feather
+                      name="file-text"
+                      size={16}
+                      color={tintColor}
+                      style={{ marginRight: 8 }}
+                    />
+                    <ThemedText style={styles.coverLetterText}>
+                      View Cover Letter
+                    </ThemedText>
+                  </TouchableOpacity>
+                ) : (
+                  <View
+                    style={[
+                      styles.coverLetterContainer,
+                      { borderColor: Colors.gray300 },
+                    ]}
+                  >
+                    <ThemedText style={styles.coverLetterText}>
                       {application.cover_letter}
                     </ThemedText>
                   </View>
-                </View>
-              )}
+                )}
+              </View>
+            )}
 
-              {application.resume_url && (
+            {/* Documents Section */}
+            {application.documents && application.documents.length > 0 && (
+              <View style={styles.documentsSection}>
+                <ThemedText style={styles.sectionTitle}>Documents</ThemedText>
+                {application.documents.map((document) => (
+                  <TouchableOpacity
+                    key={document.id}
+                    style={styles.documentCard}
+                    onPress={() =>
+                      handleOpenDocument(
+                        document.file_url,
+                        document.name || document.type
+                      )
+                    }
+                  >
+                    <View style={styles.documentCardContent}>
+                      <View style={styles.documentIconContainer}>
+                        <Feather
+                          name={getDocumentIcon(document.type)}
+                          size={24}
+                          color={tintColor}
+                        />
+                      </View>
+                      <View style={styles.documentInfo}>
+                        <ThemedText style={styles.documentName}>
+                          {document.name ||
+                            `${
+                              document.type.charAt(0).toUpperCase() +
+                              document.type.slice(1)
+                            }`}
+                        </ThemedText>
+                        <ThemedText style={styles.documentType}>
+                          {document.type.replace("_", " ").toUpperCase()}
+                        </ThemedText>
+                      </View>
+                      <Feather
+                        name="external-link"
+                        size={18}
+                        color={mutedTextColor}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Fallback for old resume_url if no documents */}
+            {(!application.documents || application.documents.length === 0) &&
+              application.resume_url && (
                 <View style={styles.resumeSection}>
                   <TouchableOpacity
-                    style={[styles.resumeButton, { borderColor }]}
+                    style={[
+                      styles.resumeButton,
+                      { borderColor: Colors.gray300 },
+                    ]}
+                    onPress={() =>
+                      handleOpenDocument(application.resume_url!, "Resume")
+                    }
                   >
                     <Feather name="file-text" size={20} color={tintColor} />
-                    <ThemedText
-                      style={[styles.resumeText, { color: tintColor }]}
-                    >
+                    <ThemedText style={styles.resumeText}>
                       View Resume
                     </ThemedText>
                   </TouchableOpacity>
                 </View>
               )}
-            </View>
           </View>
         )}
 
         {/* Application Status & Actions */}
-        <View style={styles.section}>
-          <View style={styles.statusCard}>
-            <View style={styles.statusHeader}>
-              <View style={styles.statusInfo}>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    {
-                      backgroundColor: `${getStatusColor(
-                        application.status
-                      )}20`,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    style={[
-                      styles.statusText,
-                      { color: getStatusColor(application.status) },
-                    ]}
-                  >
-                    {getStatusText(application.status)}
-                  </ThemedText>
-                </View>
-
-                <ThemedText
-                  style={[styles.applicationDate, { color: mutedTextColor }]}
-                >
-                  Applied{" "}
-                  {new Date(application.created_at).toLocaleDateString()}
-                </ThemedText>
-              </View>
+        <View style={[styles.section, { borderBottomWidth: 0 }]}>
+          <View style={styles.statusHeader}>
+            <View style={styles.statusInfo}>
+              <ThemedText style={styles.statusText}>
+                {getStatusText(application.status)}
+              </ThemedText>
+              <ThemedText style={styles.applicationDate}>
+                Applied {new Date(application.created_at).toLocaleDateString()}
+              </ThemedText>
             </View>
+          </View>
 
-            {/* Action Buttons */}
-            <View style={styles.actionButtons}>
-              {application.status === ApplicationStatus.Pending && (
-                <>
-                  <ThemedButton
-                    title="Review"
-                    onPress={() =>
-                      handleApplicationStatusUpdate(
-                        application.id,
-                        ApplicationStatus.Reviewed
-                      )
-                    }
-                    style={{ backgroundColor: Colors.primary }}
-                    textStyle={{ color: Colors.white }}
-                  />
-                  <ThemedButton
-                    title="Accept"
-                    onPress={() =>
-                      handleApplicationStatusUpdate(
-                        application.id,
-                        ApplicationStatus.Accepted
-                      )
-                    }
-                    style={{ backgroundColor: Colors.success }}
-                    textStyle={{ color: Colors.white }}
-                  />
-                  <ThemedButton
-                    title="Reject"
-                    onPress={() =>
-                      handleApplicationStatusUpdate(
-                        application.id,
-                        ApplicationStatus.Rejected
-                      )
-                    }
-                    style={{ backgroundColor: Colors.error }}
-                    textStyle={{ color: Colors.white }}
-                  />
-                </>
-              )}
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            {application.status === ApplicationStatus.Pending && (
+              <>
+                <ThemedButton
+                  title="Review"
+                  onPress={() =>
+                    handleApplicationStatusUpdate(
+                      application.id,
+                      ApplicationStatus.Reviewed
+                    )
+                  }
+                  style={{ flex: 1 }}
+                />
+                <ThemedButton
+                  title="Accept"
+                  onPress={() =>
+                    handleApplicationStatusUpdate(
+                      application.id,
+                      ApplicationStatus.Accepted
+                    )
+                  }
+                  style={{ flex: 1 }}
+                />
+                <ThemedButton
+                  title="Reject"
+                  onPress={() =>
+                    handleApplicationStatusUpdate(
+                      application.id,
+                      ApplicationStatus.Rejected
+                    )
+                  }
+                  style={{ flex: 1 }}
+                />
+              </>
+            )}
 
-              {application.status === ApplicationStatus.Reviewed && (
-                <>
-                  <ThemedButton
-                    title="Accept"
-                    onPress={() =>
-                      handleApplicationStatusUpdate(
-                        application.id,
-                        ApplicationStatus.Accepted
-                      )
-                    }
-                    style={{ backgroundColor: Colors.success }}
-                    textStyle={{ color: Colors.white }}
-                  />
-                  <ThemedButton
-                    title="Reject"
-                    onPress={() =>
-                      handleApplicationStatusUpdate(
-                        application.id,
-                        ApplicationStatus.Rejected
-                      )
-                    }
-                    style={{ backgroundColor: Colors.error }}
-                    textStyle={{ color: Colors.white }}
-                  />
-                </>
-              )}
-            </View>
+            {application.status === ApplicationStatus.Reviewed && (
+              <>
+                <ThemedButton
+                  title="Accept"
+                  onPress={() =>
+                    handleApplicationStatusUpdate(
+                      application.id,
+                      ApplicationStatus.Accepted
+                    )
+                  }
+                  style={{ flex: 1 }}
+                />
+                <ThemedButton
+                  title="Reject"
+                  onPress={() =>
+                    handleApplicationStatusUpdate(
+                      application.id,
+                      ApplicationStatus.Rejected
+                    )
+                  }
+                  style={{ flex: 1 }}
+                />
+              </>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -708,15 +838,6 @@ export default function ApplicationDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    fontSize: Typography.base,
-    marginTop: Spacing.md,
-  },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
@@ -738,44 +859,21 @@ const styles = StyleSheet.create({
     fontWeight: Typography.semibold,
   },
 
-  // Header
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.semibold,
-    flex: 1,
-    textAlign: "center",
-  },
-  headerSpacer: {
-    width: 40,
-  },
-
   // Main content
   content: {
     flex: 1,
-    padding: Spacing.lg,
+  },
+  scrollContent: {
+    paddingBottom: Spacing.xl,
   },
   section: {
-    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.gray400,
   },
 
-  // Company Card
-  companyCard: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-    borderWidth: 1,
-    ...Shadows.sm,
-  },
+  // Company Header
   companyHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -785,24 +883,13 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   companyName: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.bold,
     marginBottom: Spacing.xs,
   },
   companyTagline: {
-    fontSize: Typography.sm,
-  },
-
-  // Position Card
-  positionCard: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    ...Shadows.sm,
+    marginBottom: Spacing.xs,
   },
   positionTitle: {
-    fontSize: Typography["2xl"],
-    fontWeight: Typography.bold,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   positionDetails: {
     flexDirection: "row",
@@ -810,35 +897,15 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     marginBottom: Spacing.md,
   },
-  detailChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.gray100,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-    gap: Spacing.xs,
-  },
-  detailText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-  },
+
   descriptionContainer: {
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.gray200,
+    paddingTop: Spacing.sm,
   },
   descriptionText: {
-    fontSize: Typography.base,
-    lineHeight: Typography.lineHeight.relaxed,
+    marginTop: Spacing.xs,
   },
 
-  // Applicant Card
-  applicantCard: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    ...Shadows.sm,
-  },
+  // Applicant Header
   applicantHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -854,7 +921,7 @@ const styles = StyleSheet.create({
     right: 2,
     width: 16,
     height: 16,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.full,
     borderWidth: 3,
     borderColor: Colors.white,
   },
@@ -862,25 +929,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   applicantName: {
-    fontSize: Typography["2xl"],
-    fontWeight: Typography.bold,
     marginBottom: Spacing.xs,
   },
-  professionBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.gray100,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.xs,
-    alignSelf: "flex-start",
-    gap: Spacing.xs,
-  },
-  professionText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semibold,
-  },
+
   usernameRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -888,20 +939,18 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   applicantUsername: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
+    marginLeft: Spacing.xs,
   },
   bioContainer: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: Spacing.xs,
     marginTop: Spacing.xs,
+    flex: 1,
   },
   userBio: {
-    fontSize: Typography.sm,
-    fontStyle: "italic",
-    lineHeight: Typography.lineHeight.snug,
     flex: 1,
+    marginLeft: Spacing.xs,
   },
 
   // Contact Section
@@ -909,8 +958,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semibold,
     marginBottom: Spacing.sm,
   },
   contactItem: {
@@ -918,9 +965,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing.xs,
     gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.sm,
   },
   contactText: {
-    fontSize: Typography.base,
+    marginLeft: Spacing.sm,
   },
 
   // Experience Section
@@ -933,11 +983,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   experienceLabel: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
+    marginRight: Spacing.sm,
   },
   experienceValue: {
-    fontSize: Typography.sm,
+    marginLeft: Spacing.sm,
   },
 
   // Skills Section
@@ -945,54 +994,69 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   skillsLabel: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
+    marginBottom: Spacing.xs,
   },
   skillsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.xs,
   },
-  skillTag: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-  },
-  skillText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-  },
-
-  // Application Card
-  applicationCard: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    ...Shadows.sm,
-  },
 
   // Cover Letter
   coverLetterSection: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   coverLetterLabel: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
     marginBottom: Spacing.xs,
   },
   coverLetterContainer: {
     borderWidth: 1,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    backgroundColor: Colors.gray50,
+    padding: Spacing.sm,
+    backgroundColor: Colors.gray700,
   },
   coverLetterText: {
-    fontSize: Typography.base,
-    lineHeight: Typography.lineHeight.relaxed,
+    marginTop: Spacing.xs,
+  },
+
+  // Documents
+  documentsSection: {
+    gap: Spacing.md,
+  },
+  documentCard: {
+    backgroundColor: Colors.gray200,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  documentCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  documentIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.gray300,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: Spacing.md,
+  },
+  documentInfo: {
+    flex: 1,
+  },
+  documentName: {
+    marginBottom: Spacing.xs,
+    fontWeight: "600",
+  },
+  documentType: {
+    color: Colors.gray400,
+    fontSize: 12,
   },
 
   // Resume
   resumeSection: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
   resumeButton: {
     flexDirection: "row",
@@ -1003,40 +1067,36 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   resumeText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.medium,
+    marginLeft: Spacing.sm,
   },
 
-  // Status Card
-  statusCard: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    ...Shadows.sm,
-  },
+  // Status Header
   statusHeader: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   statusInfo: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  statusBadge: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-  },
   statusText: {
-    fontSize: Typography.sm,
+    fontSize: Typography.base,
     fontWeight: Typography.semibold,
   },
   applicationDate: {
+    color: Colors.gray400,
     fontSize: Typography.sm,
   },
 
   // Action Buttons
   actionButtons: {
-    gap: Spacing.sm,
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  actionText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.medium,
   },
   actionButton: {
     flexDirection: "row",
@@ -1048,7 +1108,6 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   actionButtonText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semibold,
+    marginLeft: Spacing.xs,
   },
 });

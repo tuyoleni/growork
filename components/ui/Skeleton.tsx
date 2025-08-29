@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useThemeColor } from '@/hooks';
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, Animated } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useThemeColor } from "@/hooks";
 
 interface SkeletonProps {
   width?: number | string;
@@ -10,9 +10,14 @@ interface SkeletonProps {
   style?: any;
 }
 
-export function Skeleton({ width, height = 16, borderRadius = 4, style }: SkeletonProps) {
-  const backgroundColor = useThemeColor({}, 'backgroundSecondary') || '#f3f4f6';
-  const shimmerColor = useThemeColor({}, 'backgroundTertiary') || '#e5e7eb';
+export function Skeleton({
+  width,
+  height = 16,
+  borderRadius = 4,
+  style,
+}: SkeletonProps) {
+  const backgroundColor = useThemeColor({}, "backgroundSecondary") || "#f3f4f6";
+  const shimmerColor = useThemeColor({}, "backgroundTertiary") || "#e5e7eb";
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -40,7 +45,13 @@ export function Skeleton({ width, height = 16, borderRadius = 4, style }: Skelet
   });
 
   return (
-    <View style={[styles.skeleton, { width, height, borderRadius, backgroundColor }, style]}>
+    <View
+      style={[
+        styles.skeleton,
+        { width, height, borderRadius, backgroundColor },
+        style,
+      ]}
+    >
       <Animated.View
         style={[
           styles.shimmer,
@@ -50,7 +61,7 @@ export function Skeleton({ width, height = 16, borderRadius = 4, style }: Skelet
         ]}
       >
         <LinearGradient
-          colors={['transparent', shimmerColor, 'transparent']}
+          colors={["transparent", shimmerColor, "transparent"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.gradient}
@@ -62,7 +73,7 @@ export function Skeleton({ width, height = 16, borderRadius = 4, style }: Skelet
 
 // Content Card Skeleton
 export function ContentCardSkeleton() {
-  const borderColor = useThemeColor({}, 'border');
+  const borderColor = useThemeColor({}, "border");
 
   return (
     <View style={[styles.cardContainer, { borderBottomColor: borderColor }]}>
@@ -70,7 +81,12 @@ export function ContentCardSkeleton() {
       <View style={styles.header}>
         <Skeleton width={40} height={40} borderRadius={20} />
         <View style={styles.headerText}>
-          <Skeleton width={120} height={16} borderRadius={4} style={styles.name} />
+          <Skeleton
+            width={120}
+            height={16}
+            borderRadius={4}
+            style={styles.name}
+          />
           <Skeleton width={80} height={12} borderRadius={4} />
         </View>
         <Skeleton width={60} height={16} borderRadius={4} />
@@ -78,10 +94,30 @@ export function ContentCardSkeleton() {
 
       {/* Content */}
       <View style={styles.content}>
-        <Skeleton width="100%" height={18} borderRadius={4} style={styles.title} />
-        <Skeleton width="90%" height={16} borderRadius={4} style={styles.description} />
-        <Skeleton width="85%" height={16} borderRadius={4} style={styles.description2} />
-        <Skeleton width="70%" height={16} borderRadius={4} style={styles.description3} />
+        <Skeleton
+          width="100%"
+          height={18}
+          borderRadius={4}
+          style={styles.title}
+        />
+        <Skeleton
+          width="90%"
+          height={16}
+          borderRadius={4}
+          style={styles.description}
+        />
+        <Skeleton
+          width="85%"
+          height={16}
+          borderRadius={4}
+          style={styles.description2}
+        />
+        <Skeleton
+          width="70%"
+          height={16}
+          borderRadius={4}
+          style={styles.description3}
+        />
       </View>
 
       {/* Action Row */}
@@ -99,7 +135,7 @@ export function ContentCardSkeleton() {
 
 // Post Detail Skeleton
 export function PostDetailSkeleton() {
-  const borderColor = useThemeColor({}, 'border');
+  const borderColor = useThemeColor({}, "border");
 
   return (
     <View style={styles.postDetailContainer}>
@@ -107,7 +143,12 @@ export function PostDetailSkeleton() {
       <View style={[styles.postHeader, { borderBottomColor: borderColor }]}>
         <Skeleton width={40} height={40} borderRadius={20} />
         <View style={styles.postHeaderText}>
-          <Skeleton width={150} height={18} borderRadius={4} style={styles.postName} />
+          <Skeleton
+            width={150}
+            height={18}
+            borderRadius={4}
+            style={styles.postName}
+          />
           <Skeleton width={100} height={14} borderRadius={4} />
         </View>
         <Skeleton width={60} height={24} borderRadius={12} />
@@ -115,12 +156,42 @@ export function PostDetailSkeleton() {
 
       {/* Content */}
       <View style={styles.postContent}>
-        <Skeleton width="100%" height={24} borderRadius={4} style={styles.postTitle} />
-        <Skeleton width="95%" height={16} borderRadius={4} style={styles.postDescription} />
-        <Skeleton width="90%" height={16} borderRadius={4} style={styles.postDescription2} />
-        <Skeleton width="85%" height={16} borderRadius={4} style={styles.postDescription3} />
-        <Skeleton width="80%" height={16} borderRadius={4} style={styles.postDescription4} />
-        <Skeleton width="75%" height={16} borderRadius={4} style={styles.postDescription5} />
+        <Skeleton
+          width="100%"
+          height={24}
+          borderRadius={4}
+          style={styles.postTitle}
+        />
+        <Skeleton
+          width="95%"
+          height={16}
+          borderRadius={4}
+          style={styles.postDescription}
+        />
+        <Skeleton
+          width="90%"
+          height={16}
+          borderRadius={4}
+          style={styles.postDescription2}
+        />
+        <Skeleton
+          width="85%"
+          height={16}
+          borderRadius={4}
+          style={styles.postDescription3}
+        />
+        <Skeleton
+          width="80%"
+          height={16}
+          borderRadius={4}
+          style={styles.postDescription4}
+        />
+        <Skeleton
+          width="75%"
+          height={16}
+          borderRadius={4}
+          style={styles.postDescription5}
+        />
       </View>
 
       {/* Actions */}
@@ -151,14 +222,19 @@ export function SearchResultsSkeleton() {
 
 // Company Details Skeleton
 export function CompanyDetailsSkeleton() {
-  const borderColor = useThemeColor({}, 'border');
+  const borderColor = useThemeColor({}, "border");
 
   return (
     <View style={styles.companyDetailsContainer}>
       {/* Header */}
       <View style={[styles.companyHeader, { borderBottomColor: borderColor }]}>
         <Skeleton width={24} height={24} borderRadius={12} />
-        <Skeleton width={120} height={18} borderRadius={4} style={styles.companyHeaderTitle} />
+        <Skeleton
+          width={120}
+          height={18}
+          borderRadius={4}
+          style={styles.companyHeaderTitle}
+        />
         <Skeleton width={24} height={24} borderRadius={12} />
       </View>
 
@@ -166,9 +242,24 @@ export function CompanyDetailsSkeleton() {
       <View style={styles.companyInfoSection}>
         <Skeleton width={80} height={80} borderRadius={40} />
         <View style={styles.companyInfoText}>
-          <Skeleton width={200} height={24} borderRadius={4} style={styles.companyName} />
-          <Skeleton width={150} height={16} borderRadius={4} style={styles.companyIndustry} />
-          <Skeleton width={180} height={14} borderRadius={4} style={styles.companyLocation} />
+          <Skeleton
+            width={200}
+            height={24}
+            borderRadius={4}
+            style={styles.companyName}
+          />
+          <Skeleton
+            width={150}
+            height={16}
+            borderRadius={4}
+            style={styles.companyIndustry}
+          />
+          <Skeleton
+            width={180}
+            height={14}
+            borderRadius={4}
+            style={styles.companyLocation}
+          />
         </View>
       </View>
 
@@ -176,11 +267,21 @@ export function CompanyDetailsSkeleton() {
       <View style={[styles.statsSection, { borderBottomColor: borderColor }]}>
         <View style={styles.statItem}>
           <Skeleton width={40} height={20} borderRadius={4} />
-          <Skeleton width={60} height={14} borderRadius={4} style={styles.statLabel} />
+          <Skeleton
+            width={60}
+            height={14}
+            borderRadius={4}
+            style={styles.statLabel}
+          />
         </View>
         <View style={styles.statItem}>
           <Skeleton width={40} height={20} borderRadius={4} />
-          <Skeleton width={80} height={14} borderRadius={4} style={styles.statLabel} />
+          <Skeleton
+            width={80}
+            height={14}
+            borderRadius={4}
+            style={styles.statLabel}
+          />
         </View>
       </View>
 
@@ -190,15 +291,37 @@ export function CompanyDetailsSkeleton() {
       </View>
 
       {/* Description */}
-      <View style={[styles.descriptionSection, { borderBottomColor: borderColor }]}>
-        <Skeleton width="100%" height={16} borderRadius={4} style={styles.descriptionLine} />
-        <Skeleton width="90%" height={16} borderRadius={4} style={styles.descriptionLine} />
-        <Skeleton width="85%" height={16} borderRadius={4} style={styles.descriptionLine} />
+      <View
+        style={[styles.descriptionSection, { borderBottomColor: borderColor }]}
+      >
+        <Skeleton
+          width="100%"
+          height={16}
+          borderRadius={4}
+          style={styles.descriptionLine}
+        />
+        <Skeleton
+          width="90%"
+          height={16}
+          borderRadius={4}
+          style={styles.descriptionLine}
+        />
+        <Skeleton
+          width="85%"
+          height={16}
+          borderRadius={4}
+          style={styles.descriptionLine}
+        />
       </View>
 
       {/* Posts Section */}
       <View style={styles.postsSection}>
-        <Skeleton width={80} height={20} borderRadius={4} style={styles.postsTitle} />
+        <Skeleton
+          width={80}
+          height={20}
+          borderRadius={4}
+          style={styles.postsTitle}
+        />
         {[1, 2, 3].map((index) => (
           <View key={`company-post-${index}`} style={styles.postItem}>
             <ContentCardSkeleton />
@@ -211,18 +334,38 @@ export function CompanyDetailsSkeleton() {
 
 // Job Application Form Skeleton
 export function JobApplicationSkeleton() {
-  const borderColor = useThemeColor({}, 'border');
+  const borderColor = useThemeColor({}, "border");
 
   return (
     <View style={styles.jobApplicationContainer}>
       {/* Step Title */}
-      <Skeleton width={200} height={20} borderRadius={4} style={styles.stepTitle} />
-      
+      <Skeleton
+        width={200}
+        height={20}
+        borderRadius={4}
+        style={styles.stepTitle}
+      />
+
       {/* Document Selection Area */}
       <View style={styles.documentSelectionArea}>
-        <Skeleton width="100%" height={80} borderRadius={8} style={styles.documentCard} />
-        <Skeleton width="100%" height={80} borderRadius={8} style={styles.documentCard} />
-        <Skeleton width="100%" height={60} borderRadius={8} style={styles.uploadButton} />
+        <Skeleton
+          width="100%"
+          height={80}
+          borderRadius={8}
+          style={styles.documentCard}
+        />
+        <Skeleton
+          width="100%"
+          height={80}
+          borderRadius={8}
+          style={styles.documentCard}
+        />
+        <Skeleton
+          width="100%"
+          height={60}
+          borderRadius={8}
+          style={styles.uploadButton}
+        />
       </View>
     </View>
   );
@@ -233,17 +376,42 @@ export function CoverLetterSkeleton() {
   return (
     <View style={styles.jobApplicationContainer}>
       {/* Step Title */}
-      <Skeleton width={200} height={20} borderRadius={4} style={styles.stepTitle} />
-      
+      <Skeleton
+        width={200}
+        height={20}
+        borderRadius={4}
+        style={styles.stepTitle}
+      />
+
       {/* Description */}
-      <Skeleton width="90%" height={16} borderRadius={4} style={{ marginBottom: 12 }} />
-      
+      <Skeleton
+        width="90%"
+        height={16}
+        borderRadius={4}
+        style={{ marginBottom: 12 }}
+      />
+
       {/* Cover Letter Input */}
-      <Skeleton width="100%" height={120} borderRadius={8} style={styles.coverLetterInput} />
-      
+      <Skeleton
+        width="100%"
+        height={120}
+        borderRadius={8}
+        style={styles.coverLetterInput}
+      />
+
       {/* Upload Section */}
-      <Skeleton width={180} height={16} borderRadius={4} style={{ marginBottom: 8 }} />
-      <Skeleton width="100%" height={60} borderRadius={8} style={styles.uploadButton} />
+      <Skeleton
+        width={180}
+        height={16}
+        borderRadius={4}
+        style={{ marginBottom: 8 }}
+      />
+      <Skeleton
+        width="100%"
+        height={60}
+        borderRadius={8}
+        style={styles.uploadButton}
+      />
     </View>
   );
 }
@@ -253,24 +421,292 @@ export function ReviewSkeleton() {
   return (
     <View style={styles.jobApplicationContainer}>
       {/* Step Title */}
-      <Skeleton width={200} height={20} borderRadius={4} style={styles.stepTitle} />
-      
+      <Skeleton
+        width={200}
+        height={20}
+        borderRadius={4}
+        style={styles.stepTitle}
+      />
+
       {/* Position Section */}
       <View style={styles.reviewSection}>
-        <Skeleton width={80} height={16} borderRadius={4} style={styles.reviewLabel} />
+        <Skeleton
+          width={80}
+          height={16}
+          borderRadius={4}
+          style={styles.reviewLabel}
+        />
         <Skeleton width="100%" height={20} borderRadius={4} />
       </View>
-      
+
       {/* CV Section */}
       <View style={styles.reviewSection}>
-        <Skeleton width={40} height={16} borderRadius={4} style={styles.reviewLabel} />
-        <Skeleton width="100%" height={60} borderRadius={8} style={styles.reviewContent} />
+        <Skeleton
+          width={40}
+          height={16}
+          borderRadius={4}
+          style={styles.reviewLabel}
+        />
+        <Skeleton
+          width="100%"
+          height={60}
+          borderRadius={8}
+          style={styles.reviewContent}
+        />
       </View>
-      
+
       {/* Cover Letter Section */}
       <View style={styles.reviewSection}>
-        <Skeleton width={100} height={16} borderRadius={4} style={styles.reviewLabel} />
-        <Skeleton width="100%" height={80} borderRadius={8} style={styles.reviewContent} />
+        <Skeleton
+          width={100}
+          height={16}
+          borderRadius={4}
+          style={styles.reviewLabel}
+        />
+        <Skeleton
+          width="100%"
+          height={80}
+          borderRadius={8}
+          style={styles.reviewContent}
+        />
+      </View>
+    </View>
+  );
+}
+
+// Application Detail Skeleton
+export function ApplicationDetailSkeleton() {
+  const borderColor = useThemeColor({}, "border");
+
+  return (
+    <View style={styles.applicationDetailContainer}>
+      {/* Company Context */}
+      <View style={[styles.section, { borderBottomColor: borderColor }]}>
+        <View style={styles.companyHeader}>
+          <Skeleton width={60} height={60} borderRadius={30} />
+          <View style={styles.companyInfo}>
+            <Skeleton
+              width={150}
+              height={18}
+              borderRadius={4}
+              style={styles.companyName}
+            />
+            <Skeleton
+              width={120}
+              height={14}
+              borderRadius={4}
+              style={styles.companyTagline}
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* Job Position */}
+      <View style={[styles.section, { borderBottomColor: borderColor }]}>
+        <Skeleton
+          width="80%"
+          height={20}
+          borderRadius={4}
+          style={styles.positionTitle}
+        />
+        <View style={styles.positionDetails}>
+          <Skeleton width={60} height={24} borderRadius={12} />
+          <Skeleton width={80} height={24} borderRadius={12} />
+          <Skeleton width={70} height={24} borderRadius={12} />
+        </View>
+        <View style={styles.descriptionContainer}>
+          <Skeleton
+            width="100%"
+            height={16}
+            borderRadius={4}
+            style={styles.descriptionLine}
+          />
+          <Skeleton
+            width="90%"
+            height={16}
+            borderRadius={4}
+            style={styles.descriptionLine}
+          />
+          <Skeleton
+            width="85%"
+            height={16}
+            borderRadius={4}
+            style={styles.descriptionLine}
+          />
+        </View>
+      </View>
+
+      {/* Applicant Profile */}
+      <View style={[styles.section, { borderBottomColor: borderColor }]}>
+        <Skeleton
+          width={100}
+          height={16}
+          borderRadius={4}
+          style={styles.sectionTitle}
+        />
+        <View style={styles.applicantHeader}>
+          <View style={styles.userAvatarContainer}>
+            <Skeleton width={70} height={70} borderRadius={35} />
+            <Skeleton
+              width={16}
+              height={16}
+              borderRadius={8}
+              style={styles.onlineIndicator}
+            />
+          </View>
+          <View style={styles.applicantInfo}>
+            <Skeleton
+              width={120}
+              height={18}
+              borderRadius={4}
+              style={styles.applicantName}
+            />
+            <Skeleton
+              width={80}
+              height={24}
+              borderRadius={12}
+              style={styles.professionBadge}
+            />
+            <View style={styles.usernameRow}>
+              <Skeleton width={14} height={14} borderRadius={7} />
+              <Skeleton
+                width={60}
+                height={14}
+                borderRadius={4}
+                style={styles.username}
+              />
+            </View>
+            <View style={styles.bioContainer}>
+              <Skeleton width={14} height={14} borderRadius={7} />
+              <Skeleton
+                width="80%"
+                height={14}
+                borderRadius={4}
+                style={styles.bio}
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Contact Information */}
+      <View style={[styles.section, { borderBottomColor: borderColor }]}>
+        <Skeleton
+          width={80}
+          height={16}
+          borderRadius={4}
+          style={styles.sectionTitle}
+        />
+        <View style={styles.contactItem}>
+          <Skeleton width={16} height={16} borderRadius={8} />
+          <Skeleton
+            width={120}
+            height={16}
+            borderRadius={4}
+            style={styles.contactText}
+          />
+        </View>
+        <View style={styles.contactItem}>
+          <Skeleton width={16} height={16} borderRadius={8} />
+          <Skeleton
+            width={100}
+            height={16}
+            borderRadius={4}
+            style={styles.contactText}
+          />
+        </View>
+        <View style={styles.contactItem}>
+          <Skeleton width={16} height={16} borderRadius={8} />
+          <Skeleton
+            width={90}
+            height={16}
+            borderRadius={4}
+            style={styles.contactText}
+          />
+        </View>
+      </View>
+
+      {/* Experience & Skills */}
+      <View style={[styles.section, { borderBottomColor: borderColor }]}>
+        <View style={styles.experienceItem}>
+          <Skeleton width={80} height={16} borderRadius={4} />
+          <Skeleton width={60} height={16} borderRadius={4} />
+        </View>
+        <View style={styles.experienceItem}>
+          <Skeleton width={80} height={16} borderRadius={4} />
+          <Skeleton width={120} height={16} borderRadius={4} />
+        </View>
+        <View style={styles.skillsSection}>
+          <Skeleton
+            width={60}
+            height={16}
+            borderRadius={4}
+            style={styles.skillsLabel}
+          />
+          <View style={styles.skillsContainer}>
+            <Skeleton width={60} height={24} borderRadius={12} />
+            <Skeleton width={70} height={24} borderRadius={12} />
+            <Skeleton width={80} height={24} borderRadius={12} />
+            <Skeleton width={65} height={24} borderRadius={12} />
+          </View>
+        </View>
+      </View>
+
+      {/* Application Content */}
+      <View style={[styles.section, { borderBottomColor: borderColor }]}>
+        <Skeleton
+          width={100}
+          height={16}
+          borderRadius={4}
+          style={styles.sectionTitle}
+        />
+        <View style={styles.coverLetterSection}>
+          <Skeleton
+            width={100}
+            height={16}
+            borderRadius={4}
+            style={styles.coverLetterLabel}
+          />
+          <Skeleton
+            width="100%"
+            height={80}
+            borderRadius={8}
+            style={styles.coverLetterContainer}
+          />
+        </View>
+        <View style={styles.resumeSection}>
+          <Skeleton
+            width="100%"
+            height={60}
+            borderRadius={8}
+            style={styles.resumeButton}
+          />
+        </View>
+      </View>
+
+      {/* Application Status & Actions */}
+      <View style={styles.section}>
+        <View style={styles.statusHeader}>
+          <View style={styles.statusInfo}>
+            <Skeleton
+              width={80}
+              height={32}
+              borderRadius={16}
+              style={styles.statusBadge}
+            />
+            <Skeleton
+              width={120}
+              height={16}
+              borderRadius={4}
+              style={styles.applicationDate}
+            />
+          </View>
+        </View>
+        <View style={styles.actionButtons}>
+          <Skeleton width="100%" height={44} borderRadius={22} />
+          <Skeleton width="100%" height={44} borderRadius={22} />
+          <Skeleton width="100%" height={44} borderRadius={22} />
+        </View>
       </View>
     </View>
   );
@@ -278,11 +714,11 @@ export function ReviewSkeleton() {
 
 const styles = StyleSheet.create({
   skeleton: {
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: "hidden",
+    position: "relative",
   },
   shimmer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -290,7 +726,7 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   cardContainer: {
     paddingHorizontal: 16,
@@ -298,8 +734,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   headerText: {
@@ -325,20 +761,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   postDetailContainer: {
     padding: 16,
   },
   postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingBottom: 16,
     borderBottomWidth: 1,
     marginBottom: 16,
@@ -372,14 +808,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   postActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingTop: 16,
     borderTopWidth: 1,
   },
   postActionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
   },
   searchResultsContainer: {
@@ -392,21 +828,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   companyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
   companyHeaderTitle: {
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
   companyInfoSection: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   companyInfoText: {
     marginLeft: 16,
@@ -422,13 +858,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statsSection: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
   statItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   statLabel: {
     marginTop: 2,
@@ -462,27 +898,27 @@ const styles = StyleSheet.create({
   },
   documentSelectionArea: {
     minHeight: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   documentCard: {
-    width: '100%',
+    width: "100%",
     height: 80,
     borderRadius: 8,
     marginBottom: 8,
   },
   coverLetterInput: {
-    width: '100%',
+    width: "100%",
     height: 120,
     borderRadius: 8,
     marginBottom: 16,
   },
   uploadButton: {
-    width: '100%',
+    width: "100%",
     height: 60,
     borderRadius: 8,
     borderWidth: 2,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
   reviewSection: {
     marginBottom: 12,
@@ -494,4 +930,139 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 8,
   },
-}); 
+  // Application Detail Skeleton Styles
+  applicationDetailContainer: {
+    flex: 1,
+  },
+  section: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+
+  companyInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  companyTagline: {
+    marginBottom: 4,
+  },
+  positionTitle: {
+    marginBottom: 12,
+  },
+  positionDetails: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  descriptionContainer: {
+    paddingTop: 12,
+  },
+
+  sectionTitle: {
+    marginBottom: 12,
+  },
+  applicantHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  userAvatarContainer: {
+    position: "relative",
+    marginRight: 16,
+  },
+  onlineIndicator: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+  },
+  applicantInfo: {
+    flex: 1,
+  },
+  applicantName: {
+    marginBottom: 4,
+  },
+  professionBadge: {
+    marginBottom: 4,
+  },
+  usernameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 4,
+  },
+  username: {
+    marginLeft: 4,
+  },
+  bioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+    flex: 1,
+  },
+  bio: {
+    marginLeft: 4,
+  },
+  contactItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  contactText: {
+    marginLeft: 8,
+  },
+  experienceItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  skillsSection: {
+    gap: 8,
+  },
+  skillsLabel: {
+    marginBottom: 4,
+  },
+  skillsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  coverLetterSection: {
+    marginBottom: 8,
+  },
+  coverLetterLabel: {
+    marginBottom: 4,
+  },
+  coverLetterContainer: {
+    marginTop: 4,
+  },
+  resumeSection: {
+    marginTop: 8,
+  },
+  resumeButton: {
+    marginTop: 4,
+  },
+  statusHeader: {
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  statusInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 8,
+  },
+  statusBadge: {
+    marginBottom: 8,
+  },
+  applicationDate: {
+    marginBottom: 8,
+  },
+});
