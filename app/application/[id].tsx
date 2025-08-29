@@ -182,31 +182,86 @@ export default function ApplicationDetailScreen() {
 
         // Fetch company data if available
         let companyData = null;
+        console.log("=== COMPANY DATA FETCHING ===");
+        console.log(
+          "Application posts criteria:",
+          applicationData.posts?.criteria
+        );
+        console.log(
+          "Company ID to fetch:",
+          applicationData.posts?.criteria?.companyId
+        );
+
         if (applicationData.posts?.criteria?.companyId) {
+          console.log(
+            "Fetching company with ID:",
+            applicationData.posts.criteria.companyId
+          );
+
+          // First fetch the company
           const { data: company, error: companyError } = await supabase
             .from("companies")
-            .select(
-              `
-              id, 
-              name, 
-              logo_url,
-              user_id
-            `
-            )
+            .select("id, name, logo_url, user_id")
             .eq("id", applicationData.posts.criteria.companyId)
             .single();
 
-          if (!companyError && company) {
-            // Use the current user's email as the HR email
-            console.log("Company found:", company);
-            console.log("Current user:", user);
+          console.log("Company query result:", { company, companyError });
 
-            companyData = {
-              ...company,
-              owner_email: user?.email || null,
-            };
+          if (!companyError && company) {
+            console.log("=== COMPANY DATA DETAILS ===");
+            console.log("Company found:", company);
+            console.log("Company ID:", company.id);
+            console.log("Company name:", company.name);
+            console.log("Company user_id:", company.user_id);
+
+            // Now fetch the owner's profile separately
+            if (company.user_id) {
+              const { data: ownerProfile, error: profileError } = await supabase
+                .from("profiles")
+                .select("username, name, surname")
+                .eq("id", company.user_id)
+                .single();
+
+              console.log("Owner profile query result:", {
+                ownerProfile,
+                profileError,
+              });
+
+              if (!profileError && ownerProfile) {
+                console.log("Owner profile found:", ownerProfile);
+                console.log("Owner username:", ownerProfile.username);
+
+                const ownerEmail = ownerProfile.username
+                  ? `${ownerProfile.username}@growork.com`
+                  : null;
+                console.log("Constructed owner email:", ownerEmail);
+
+                companyData = {
+                  ...company,
+                  owner_email: ownerEmail,
+                };
+              } else {
+                console.log("Profile error or not found:", profileError);
+                companyData = {
+                  ...company,
+                  owner_email: null,
+                };
+              }
+            } else {
+              console.log("No user_id found in company");
+              companyData = {
+                ...company,
+                owner_email: null,
+              };
+            }
+            console.log("Final company data:", companyData);
+          } else {
+            console.log("Company error or not found:", companyError);
           }
+        } else {
+          console.log("No company ID found in posts criteria");
         }
+        console.log("=== END COMPANY DATA FETCHING ===");
 
         // Fetch all documents uploaded for this specific application
         const { data: documentsData, error: documentsError } = await supabase
@@ -230,6 +285,18 @@ export default function ApplicationDetailScreen() {
           profiles: applicantData,
           companies: companyData,
         };
+
+        console.log("=== FINAL APPLICATION DATA ===");
+        console.log("Application with details:", applicationWithDetails);
+        console.log(
+          "Companies data in final app:",
+          applicationWithDetails.companies
+        );
+        console.log(
+          "Owner email in final app:",
+          applicationWithDetails.companies?.owner_email
+        );
+        console.log("=== END FINAL APPLICATION DATA ===");
 
         setApplication(applicationWithDetails);
       } catch (err: any) {
