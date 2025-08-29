@@ -19,6 +19,11 @@ export interface ApplicationWithDetails extends Application {
     avatar_url: string | null;
     bio: string | null;
   };
+  company?: {
+    id: string;
+    name: string;
+    logo_url: string | null;
+  };
 }
 
 export function useMyPostApplications() {
@@ -102,12 +107,45 @@ export function useMyPostApplications() {
         return acc;
       }, {});
 
-      // Combine applications with their posts and profiles
-      const applicationsWithProfiles = applicationsData?.map((app: any) => ({
-        ...app,
-        posts: postsMap[app.post_id] || null,
-        profiles: profilesMap[app.user_id] || null
-      })) || [];
+      // Get company IDs from posts criteria
+      const companyIds = postsData
+        ?.map((post: any) => post.criteria?.companyId)
+        .filter(Boolean) || [];
+
+      // Fetch company data
+      let companiesData = [];
+      if (companyIds.length > 0) {
+        const { data: companies, error: companiesError } = await supabase
+          .from('companies')
+          .select('id, name, logo_url')
+          .in('id', companyIds);
+
+        if (companiesError) {
+          console.error('Companies query error:', companiesError);
+        }
+
+        companiesData = companies || [];
+      }
+
+      // Create a map of companies
+      const companiesMap = companiesData.reduce((acc: any, company: any) => {
+        acc[company.id] = company;
+        return acc;
+      }, {});
+
+      // Combine applications with their posts, profiles, and companies
+      const applicationsWithProfiles = applicationsData?.map((app: any) => {
+        const post = postsMap[app.post_id] || null;
+        const companyId = post?.criteria?.companyId;
+        const company = companyId ? companiesMap[companyId] : null;
+        
+        return {
+          ...app,
+          posts: post,
+          profiles: profilesMap[app.user_id] || null,
+          company: company || null
+        };
+      }) || [];
 
       setApplications(applicationsWithProfiles);
     } catch (err: any) {

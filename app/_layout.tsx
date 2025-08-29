@@ -1,8 +1,9 @@
 import FlashBar from "@/components/ui/Flash";
 import { AppProvider } from "@/utils/AppContext";
 import { NotificationProvider } from "@/components/NotificationProvider";
-import { supabase } from "@/utils/supabase";
+import { supabase, handleAuthError } from "@/utils/supabase";
 import { setOpenGlobalSheet } from "@/utils/globalSheet";
+import AuthErrorHandler from "@/components/AuthErrorHandler";
 
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import {
@@ -98,6 +99,11 @@ function AppContent() {
   console.log("Font loading status:", loaded);
   const [session, setSession] = useState<Session | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const clearAuthError = () => {
+    setAuthError(null);
+  };
 
   // Keep the splash screen visible while we fetch resources
   useEffect(() => {
@@ -189,23 +195,59 @@ function AppContent() {
       try {
         const {
           data: { session: currentSession },
+          error: sessionError,
         } = await supabase.auth.getSession();
+
+        // Handle session error
+        if (sessionError) {
+          const { shouldSignOut, userMessage } = await handleAuthError(
+            sessionError
+          );
+          console.error("Session error:", userMessage);
+          if (shouldSignOut) {
+            if (isMounted) {
+              setSession(null);
+              setAuthError(userMessage);
+            }
+          }
+          return;
+        }
+
         if (currentSession) {
+          // Try to refresh the session to validate the tokens
           const {
             data: { user },
             error: refreshError,
           } = await supabase.auth.refreshSession();
+
           if (refreshError) {
-            await supabase.auth.signOut();
-            if (isMounted) setSession(null);
+            // Handle refresh token error
+            const { shouldSignOut, userMessage } = await handleAuthError(
+              refreshError
+            );
+            console.error("Session refresh error:", userMessage);
+            if (shouldSignOut) {
+              if (isMounted) {
+                setSession(null);
+                setAuthError(userMessage);
+              }
+            }
           } else if (user) {
             if (isMounted) setSession(currentSession);
           }
         } else {
           if (isMounted) setSession(null);
         }
-      } catch {
-        if (isMounted) setSession(null);
+      } catch (error) {
+        // Handle unexpected errors
+        const { shouldSignOut, userMessage } = await handleAuthError(error);
+        console.error("Unexpected auth error:", userMessage);
+        if (shouldSignOut) {
+          if (isMounted) {
+            setSession(null);
+            setAuthError(userMessage);
+          }
+        }
       } finally {
         if (isMounted) {
           setInitialLoading(false);
@@ -215,9 +257,31 @@ function AppContent() {
     };
 
     getInitialSession();
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, currentSession) => {
+    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth state change:", event);
+
+      // Handle specific auth events
+      if (event === "TOKEN_REFRESHED") {
+        console.log("Token refreshed successfully");
+        if (isMounted) clearAuthError();
+      } else if (event === "SIGNED_OUT") {
+        console.log("User signed out");
+        if (isMounted) {
+          setSession(null);
+          clearAuthError();
+        }
+      } else if (event === "SIGNED_IN") {
+        console.log("User signed in");
+        if (isMounted) {
+          setSession(currentSession);
+          clearAuthError();
+        }
+      }
+
+      // Update session state
       if (isMounted) setSession(currentSession);
     });
 
@@ -269,6 +333,17 @@ function AppContent() {
       initialLoading
     );
     return null; // Return null to keep splash screen visible
+  }
+
+  // Show auth error handler if there's an auth error
+  if (authError) {
+    return (
+      <AuthErrorHandler
+        error={authError}
+        onRetry={clearAuthError}
+        onSignIn={clearAuthError}
+      />
+    );
   }
 
   return (
