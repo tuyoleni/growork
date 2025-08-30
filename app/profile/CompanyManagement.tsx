@@ -21,6 +21,7 @@ import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
 import { ThemedIconButton } from "@/components/ui/ThemedIconButton";
 import SettingsList from "@/components/ui/SettingsList";
 import ScreenContainer from "@/components/ScreenContainer";
+import UniversalHeader from "@/components/ui/UniversalHeader";
 
 const CompanyManagement = () => {
   const router = useRouter();
@@ -205,47 +206,22 @@ const CompanyManagement = () => {
   };
 
   if (loading) {
-    return (
-      <ScreenContainer>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={tintColor} />
-          <ThemedText style={styles.loadingText}>Loading company...</ThemedText>
-        </View>
-      </ScreenContainer>
-    );
+    return null;
   }
 
   return (
     <ScreenContainer>
       <StatusBar barStyle="dark-content" />
 
-      {/* Simple Header */}
-      <View style={[styles.header, { borderBottomColor: borderColor }]}>
-        <ThemedIconButton
-          icon={<Feather name="arrow-left" size={24} color={textColor} />}
-          onPress={() => router.back()}
-        />
-
-        <ThemedText
-          type="title"
-          style={[styles.headerTitle, { color: textColor }]}
-        >
-          {id ? "Edit Company" : "Create Company"}
-        </ThemedText>
-
-        <TouchableOpacity
-          style={[styles.saveButton, { opacity: loading ? 0.6 : 1 }]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <ThemedText style={styles.saveButtonText}>Save</ThemedText>
-          )}
-        </TouchableOpacity>
-      </View>
+      <UniversalHeader
+        title={id ? "Edit Company" : "Create Company"}
+        showBackButton={true}
+        showNotifications={false}
+        rightAction={{
+          text: id ? "Update" : "Save",
+          onPress: handleSave,
+        }}
+      />
 
       {/* Logo picker */}
       <Pressable onPress={pickLogo} style={styles.logoPicker}>
@@ -371,33 +347,6 @@ const createStyles = (themeColors: {
   mutedTextColor: string;
 }) =>
   StyleSheet.create({
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-    },
-    headerTitle: {
-      flex: 1,
-      textAlign: "center",
-      marginHorizontal: 16,
-    },
-    saveButton: {
-      minWidth: 60,
-      height: 36,
-      backgroundColor: themeColors.tintColor,
-      justifyContent: "center",
-      alignItems: "center",
-      borderRadius: BorderRadius.md,
-      paddingHorizontal: 12,
-    },
-    saveButtonText: {
-      color: "#fff",
-      fontWeight: "600",
-      fontSize: 14,
-    },
     loadingContainer: {
       flex: 1,
       justifyContent: "center",

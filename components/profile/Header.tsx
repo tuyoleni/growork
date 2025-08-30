@@ -1,11 +1,17 @@
-import { Colors } from '@/constants/Colors';
-import { useThemeColor } from '@/hooks';
-import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import React from 'react';
-import { Image, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
-import { ThemedText } from '../ThemedText';
-import { ThemedView } from '../ThemedView';
+import { Colors } from "@/constants/Colors";
+import { useThemeColor } from "@/hooks";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import React from "react";
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from "react-native";
+import { ThemedText } from "../ThemedText";
+import { ThemedView } from "../ThemedView";
 
 export type ProfileHeaderProps = {
   name: string;
@@ -19,6 +25,7 @@ export type ProfileHeaderProps = {
   details?: { label: string; value: string; icon: string }[];
   onEdit?: () => void;
   isBusinessUser?: boolean;
+  onStatPress?: (statLabel: string) => void;
 };
 
 function ProfileHeader({
@@ -33,21 +40,27 @@ function ProfileHeader({
   details = [],
   onEdit,
   isBusinessUser = false,
+  onStatPress,
 }: ProfileHeaderProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
-  const borderColor = useThemeColor({}, 'border');
-  const backgroundColor = useThemeColor({}, 'background');
-  const iconColor = useThemeColor({}, 'icon');
-  const textColor = useThemeColor({}, 'text');
-  const subtitleColor = useThemeColor({}, 'mutedText');
-  const cardBg = useThemeColor({}, 'backgroundSecondary');
-  const pressedBg = useThemeColor({}, 'backgroundTertiary');
-  const accentColor = '#a5b4fc'; // Soft pastel indigo
-  const successColor = '#86efac'; // Soft pastel green
+  const borderColor = useThemeColor({}, "border");
+  const backgroundColor = useThemeColor({}, "background");
+  const iconColor = useThemeColor({}, "icon");
+  const textColor = useThemeColor({}, "text");
+  const subtitleColor = useThemeColor({}, "mutedText");
+  const cardBg = useThemeColor({}, "backgroundSecondary");
+  const pressedBg = useThemeColor({}, "backgroundTertiary");
+  const accentColor = "#a5b4fc"; // Soft pastel indigo
+  const successColor = "#86efac"; // Soft pastel green
 
   return (
-    <ThemedView style={[styles.container, { borderBottomColor: borderColor, backgroundColor }]}>
+    <ThemedView
+      style={[
+        styles.container,
+        { borderBottomColor: borderColor, backgroundColor },
+      ]}
+    >
       {/* Top Row: Avatar + Edit Button */}
       <ThemedView style={styles.topRow}>
         <Image source={{ uri: avatarUrl }} style={styles.avatar} />
@@ -62,7 +75,7 @@ function ProfileHeader({
           ]}
           hitSlop={8}
           onPress={() => {
-            if (process.env.EXPO_OS === 'ios') {
+            if (process.env.EXPO_OS === "ios") {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
             onEdit && onEdit();
@@ -75,45 +88,100 @@ function ProfileHeader({
       {/* Name and Status */}
       <ThemedView style={styles.infoSection}>
         <ThemedView style={styles.nameRow}>
-          <ThemedText style={[styles.name, { color: textColor }]}>{name}</ThemedText>
+          <ThemedText style={[styles.name, { color: textColor }]}>
+            {name}
+          </ThemedText>
           <View style={styles.badgeContainer}>
-            <ThemedView style={[styles.badge, { backgroundColor: successColor, borderColor: successColor }]}>
-              <ThemedText style={[styles.badgeText, { color: '#374151' }]}>{status}</ThemedText>
+            <ThemedView
+              style={[
+                styles.badge,
+                { backgroundColor: successColor, borderColor: successColor },
+              ]}
+            >
+              <ThemedText style={[styles.badgeText, { color: "#374151" }]}>
+                {status}
+              </ThemedText>
             </ThemedView>
             {isBusinessUser && (
-              <ThemedView style={[styles.badge, { backgroundColor: '#fef3c7', borderColor: '#fcd34d', marginLeft: 6 }]}>
-                <ThemedText style={[styles.badgeText, { color: '#92400e' }]}>Business</ThemedText>
+              <ThemedView
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor: "#fef3c7",
+                    borderColor: "#fcd34d",
+                    marginLeft: 6,
+                  },
+                ]}
+              >
+                <ThemedText style={[styles.badgeText, { color: "#92400e" }]}>
+                  Business
+                </ThemedText>
               </ThemedView>
             )}
           </View>
         </ThemedView>
-        <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>{subtitle}</ThemedText>
+        <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>
+          {subtitle}
+        </ThemedText>
         {bio && (
-          <ThemedText style={[styles.bio, { color: textColor }]}>{bio}</ThemedText>
+          <ThemedText style={[styles.bio, { color: textColor }]}>
+            {bio}
+          </ThemedText>
         )}
       </ThemedView>
 
       {/* Profile Strength Card */}
-      <ThemedView style={[styles.profileStrengthCard, { borderColor: borderColor }]}>
-        <ThemedView style={[styles.strengthIconWrap, { backgroundColor: accentColor, borderColor: accentColor }]}>
+      <ThemedView
+        style={[styles.profileStrengthCard, { borderColor: borderColor }]}
+      >
+        <ThemedView
+          style={[
+            styles.strengthIconWrap,
+            { backgroundColor: accentColor, borderColor: accentColor },
+          ]}
+        >
           <Feather name="shield" size={16} color="#374151" />
         </ThemedView>
         <ThemedView style={styles.strengthTextWrap}>
-          <ThemedText style={[styles.strengthTitle, { color: textColor }]}>{profileStrength}</ThemedText>
-          <ThemedText style={[styles.strengthSubtitle, { color: subtitleColor }]}>{profileStrengthDescription}</ThemedText>
+          <ThemedText style={[styles.strengthTitle, { color: textColor }]}>
+            {profileStrength}
+          </ThemedText>
+          <ThemedText
+            style={[styles.strengthSubtitle, { color: subtitleColor }]}
+          >
+            {profileStrengthDescription}
+          </ThemedText>
         </ThemedView>
       </ThemedView>
 
       {/* User Details */}
       {details.length > 0 && (
-        <ThemedView style={[styles.detailsSection, { borderTopColor: borderColor }]}>
+        <ThemedView
+          style={[styles.detailsSection, { borderTopColor: borderColor }]}
+        >
           {details.map((detail, index) => (
-            <ThemedView key={detail.label} style={[styles.detailItem, index > 0 && { borderTopColor: borderColor }]}>
+            <ThemedView
+              key={detail.label}
+              style={[
+                styles.detailItem,
+                index > 0 && { borderTopColor: borderColor },
+              ]}
+            >
               <ThemedView style={styles.detailHeader}>
-                <Feather name={detail.icon as any} size={14} color={iconColor} />
-                <ThemedText style={[styles.detailLabel, { color: subtitleColor }]}>{detail.label}</ThemedText>
+                <Feather
+                  name={detail.icon as any}
+                  size={14}
+                  color={iconColor}
+                />
+                <ThemedText
+                  style={[styles.detailLabel, { color: subtitleColor }]}
+                >
+                  {detail.label}
+                </ThemedText>
               </ThemedView>
-              <ThemedText style={[styles.detailValue, { color: textColor }]}>{detail.value}</ThemedText>
+              <ThemedText style={[styles.detailValue, { color: textColor }]}>
+                {detail.value}
+              </ThemedText>
             </ThemedView>
           ))}
         </ThemedView>
@@ -122,10 +190,30 @@ function ProfileHeader({
       {/* Stats Row */}
       <ThemedView style={[styles.statsRow, { borderTopColor: borderColor }]}>
         {stats.map((stat) => (
-          <ThemedView key={stat.label} style={styles.statItem}>
-            <ThemedText style={[styles.statValue, { color: textColor }]}>{stat.value}</ThemedText>
-            <ThemedText style={[styles.statLabel, { color: subtitleColor }]}>{stat.label}</ThemedText>
-          </ThemedView>
+          <Pressable
+            key={stat.label}
+            style={({ pressed }) => [
+              styles.statItem,
+              {
+                backgroundColor: pressed ? pressedBg : "transparent",
+                borderRadius: 8,
+                padding: 8,
+              },
+            ]}
+            onPress={() => {
+              if (process.env.EXPO_OS === "ios") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+              onStatPress?.(stat.label);
+            }}
+          >
+            <ThemedText style={[styles.statValue, { color: textColor }]}>
+              {stat.value}
+            </ThemedText>
+            <ThemedText style={[styles.statLabel, { color: subtitleColor }]}>
+              {stat.label}
+            </ThemedText>
+          </Pressable>
         ))}
       </ThemedView>
     </ThemedView>
@@ -133,25 +221,25 @@ function ProfileHeader({
 }
 
 ProfileHeader.defaultProps = {
-  name: 'John Cooper',
+  name: "John Cooper",
   avatarUrl:
-    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-  status: 'Available',
-  subtitle: 'Senior Product Designer • San Francisco',
-  profileStrength: 'Profile Strength: Excellent',
-  profileStrengthDescription: 'Your profile is optimized for job searching',
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  status: "Available",
+  subtitle: "Senior Product Designer • San Francisco",
+  profileStrength: "Profile Strength: Excellent",
+  profileStrengthDescription: "Your profile is optimized for job searching",
   stats: [
-    { label: 'Following', value: 156 },
-    { label: 'Channels', value: 8 },
+    { label: "Following", value: 156 },
+    { label: "Channels", value: 8 },
   ],
   onEdit: undefined,
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    width: "100%",
+    flexDirection: "column",
+    alignItems: "flex-start",
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 24,
@@ -159,46 +247,46 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   topRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#f0f0f0',
+    borderColor: "#f0f0f0",
   },
   iconButton: {
     padding: 10,
     borderRadius: 12,
     borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   infoSection: {
-    width: '100%',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    width: "100%",
+    flexDirection: "column",
+    alignItems: "flex-start",
     gap: 8,
   },
   nameRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
   name: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
   },
   badgeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   badge: {
     borderRadius: 8,
@@ -208,8 +296,8 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
   },
   subtitle: {
     fontSize: 13,
@@ -221,9 +309,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   profileStrengthCard: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -233,18 +321,18 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
     borderWidth: 1,
   },
   strengthTextWrap: {
     flex: 1,
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   strengthTitle: {
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 13,
     marginBottom: 2,
   },
@@ -253,51 +341,51 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   detailsSection: {
-    width: '100%',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    width: "100%",
+    flexDirection: "column",
+    alignItems: "flex-start",
     paddingTop: 16,
     borderTopWidth: 1,
   },
   detailItem: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     borderTopWidth: 1,
   },
   detailHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     flex: 1,
   },
   detailLabel: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   detailValue: {
     fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'right',
+    fontWeight: "600",
+    textAlign: "right",
     flex: 1,
   },
   statsRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderTopWidth: 1,
     paddingTop: 20,
   },
   statItem: {
     flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
+    flexDirection: "column",
+    alignItems: "center",
   },
   statValue: {
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 15,
     marginBottom: 2,
   },

@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   Clipboard,
   Linking,
 } from "react-native";
@@ -18,8 +17,8 @@ import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
 import ThemedButton from "@/components/ui/ThemedButton";
 import PostBadge from "@/components/content/post/PostBadge";
 import UniversalHeader from "@/components/ui/UniversalHeader";
-import { ApplicationDetailSkeleton } from "@/components/ui/Skeleton";
-import { useThemeColor, useAuth } from "@/hooks";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useThemeColor } from "@/hooks";
 import { supabase } from "@/utils/supabase";
 import { generateStatusUpdateEmail } from "@/utils/emailService";
 import {
@@ -83,7 +82,6 @@ interface ApplicationData {
 export default function ApplicationDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { user } = useAuth();
   const [application, setApplication] = useState<ApplicationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -435,7 +433,16 @@ export default function ApplicationDetailScreen() {
           showBackButton={true}
           showNotifications={false}
         />
-        <ApplicationDetailSkeleton />
+        <View style={styles.skeletonContainer}>
+          <Skeleton width="100%" height={60} style={{ marginBottom: 16 }} />
+          <Skeleton width="80%" height={24} style={{ marginBottom: 8 }} />
+          <Skeleton width="60%" height={16} style={{ marginBottom: 16 }} />
+          <Skeleton width="100%" height={100} style={{ marginBottom: 16 }} />
+          <Skeleton width="90%" height={16} style={{ marginBottom: 8 }} />
+          <Skeleton width="70%" height={16} style={{ marginBottom: 16 }} />
+          <Skeleton width="100%" height={80} style={{ marginBottom: 16 }} />
+          <Skeleton width="100%" height={120} />
+        </View>
       </ScreenContainer>
     );
   }
@@ -1176,5 +1183,8 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     marginLeft: Spacing.xs,
+  },
+  skeletonContainer: {
+    padding: Spacing.lg,
   },
 });

@@ -15,16 +15,12 @@ import ScreenContainer from "../../components/ScreenContainer";
 import { ThemedText } from "../../components/ThemedText";
 import { ThemedView } from "../../components/ThemedView";
 import ThemedButton from "../../components/ui/ThemedButton";
-import {
-  CompanyHeader,
-  CompanyStats,
-  CompanyContact,
-  CompanyPosts,
-} from "../../components/company";
+import { CompanyHeader, CompanyPosts } from "../../components/company";
 import { useCompanies } from "../../hooks/companies";
 import { useCompanyFollows } from "../../hooks/companies/useCompanyFollows";
 import { useAuth } from "../../hooks/auth";
 import { useThemeColor } from "../../hooks";
+import { useCompanyPosts } from "../../hooks/posts";
 
 export default function CompanyDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,6 +30,7 @@ export default function CompanyDetailsScreen() {
   const { getCompanyByIdPublic } = useCompanies();
   const { followCompany, unfollowCompany, isFollowingCompany } =
     useCompanyFollows();
+  const { posts } = useCompanyPosts(id || "");
 
   // Theme colors
   const textColor = useThemeColor({}, "text");
@@ -45,6 +42,10 @@ export default function CompanyDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+
+  // Calculate counts from the actual posts data
+  const postsCount = posts?.length || 0;
+  const jobsCount = posts?.filter((post) => post.type === "job").length || 0;
 
   // Load company details
   useEffect(() => {
@@ -103,19 +104,7 @@ export default function CompanyDetailsScreen() {
   };
 
   if (loading) {
-    return (
-      <ScreenContainer>
-        <StatusBar
-          barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
-        />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={tintColor} />
-          <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
-            Loading company details...
-          </ThemedText>
-        </View>
-      </ScreenContainer>
-    );
+    return null;
   }
 
   if (!company) {
@@ -179,27 +168,14 @@ export default function CompanyDetailsScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Company Header */}
+        {/* Company Header with integrated stats */}
         <CompanyHeader
           company={company}
           isFollowing={isFollowing}
           onFollowToggle={handleFollowToggle}
           loading={followLoading}
-        />
-
-        {/* Company Stats */}
-        <CompanyStats companyId={id} />
-
-        {/* Company Contact */}
-        <CompanyContact
-          website={company.website}
-          hasPhone={false}
-          onWebsitePress={() => {
-            console.log("Website pressed:", company.website);
-          }}
-          onPhonePress={() => {
-            console.log("Phone contact not available");
-          }}
+          postsCount={postsCount}
+          jobsCount={jobsCount}
         />
 
         {/* Company Posts */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -7,18 +7,18 @@ import {
   StatusBar,
   useColorScheme,
   Image,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 
-import { useAuth , useThemeColor } from '@/hooks';
-import { Profile } from '@/types';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import ScreenContainer from '@/components/ScreenContainer';
-import { checkProfileCompleteness } from '@/hooks/auth';
-import { supabase } from '@/utils/supabase';
-import { useFlashToast } from '@/components/ui/Flash';
+import { useAuth, useThemeColor } from "@/hooks";
+import { Profile } from "@/types";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import ScreenContainer from "@/components/ScreenContainer";
+import { checkProfileCompleteness } from "@/hooks/auth";
+import { supabase } from "@/utils/supabase";
+import { useFlashToast } from "@/components/ui/Flash";
 
 interface ProfileStats {
   posts: number;
@@ -32,11 +32,11 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, profile } = useAuth();
   const colorScheme = useColorScheme();
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
-  const tintColor = useThemeColor({}, 'tint');
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
+  const borderColor = useThemeColor({}, "border");
+  const mutedTextColor = useThemeColor({}, "mutedText");
+  const tintColor = useThemeColor({}, "tint");
   const [stats, setStats] = useState<ProfileStats>({
     posts: 0,
     followers: 0,
@@ -58,11 +58,15 @@ export default function ProfileScreen() {
     if (!profile) return;
     const completeness = checkProfileCompleteness(profile);
     if (!completeness.isComplete) {
-      const required = completeness.missingRequired.map((k: keyof Profile) => String(k)).join(', ');
+      const required = completeness.missingRequired
+        .map((k: keyof Profile) => String(k))
+        .join(", ");
       toast.show({
-        type: 'info',
-        title: 'Complete your profile',
-        message: required ? `Missing required: ${required}` : 'Add more details to improve your profile.',
+        type: "info",
+        title: "Complete your profile",
+        message: required
+          ? `Missing required: ${required}`
+          : "Add more details to improve your profile.",
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,62 +80,70 @@ export default function ProfileScreen() {
 
       // Fetch posts count
       const { count: postsCount } = await supabase
-        .from('posts')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .from("posts")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
 
       // Fetch applications count
       const { count: applicationsCount } = await supabase
-        .from('applications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .from("applications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
 
       // Fetch bookmarks count
       const { count: bookmarksCount } = await supabase
-        .from('bookmarks')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .from("bookmarks")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      // Fetch following count (companies followed)
+      const { count: followingCount } = await supabase
+        .from("company_follows")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
 
       setStats({
         posts: postsCount || 0,
         followers: 0, // Placeholder - would need followers table
-        following: 0, // Placeholder - would need following table
+        following: followingCount || 0,
         applications: applicationsCount || 0,
         bookmarks: bookmarksCount || 0,
       });
     } catch (error: any) {
-      console.error('Error fetching profile stats:', error);
+      console.error("Error fetching profile stats:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleEditProfile = () => {
-    router.push('/profile/edit-profile');
+    router.push("/profile/edit-profile");
   };
 
   const handleSettings = () => {
-    router.push('/settings');
+    router.push("/settings");
   };
 
   const handleViewPosts = () => {
     // Navigate to user's posts
-    console.log('View posts');
+    console.log("View posts");
   };
 
   const handleViewApplications = () => {
     // Navigate to applications
-    console.log('View applications');
+    console.log("View applications");
   };
 
   const handleViewBookmarks = () => {
-    router.push('/(tabs)/bookmarks');
+    router.push("/(tabs)/bookmarks");
   };
 
   if (!profile) {
     return (
       <ScreenContainer>
-        <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+        <StatusBar
+          barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+        />
         <View style={styles.loadingContainer}>
           <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
             Loading profile...
@@ -143,7 +155,9 @@ export default function ProfileScreen() {
 
   return (
     <ScreenContainer>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <StatusBar
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+      />
 
       {/* Header */}
       <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
@@ -166,7 +180,11 @@ export default function ProfileScreen() {
           <View style={styles.avatarSection}>
             <Image
               source={{
-                uri: profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&size=120`
+                uri:
+                  profile.avatar_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    profile.name || "User"
+                  )}&size=120`,
               }}
               style={styles.avatar}
             />
@@ -183,31 +201,43 @@ export default function ProfileScreen() {
               {profile.name} {profile.surname}
             </ThemedText>
             {profile.username && (
-              <ThemedText style={[styles.profileUsername, { color: mutedTextColor }]}>
+              <ThemedText
+                style={[styles.profileUsername, { color: mutedTextColor }]}
+              >
                 @{profile.username}
               </ThemedText>
             )}
             <View style={styles.userTypeContainer}>
-              <ThemedText style={[styles.userTypeText, { color: mutedTextColor }]}>
-                {profile.user_type === 'business' ? 'Business Account' : 'Personal Account'}
+              <ThemedText
+                style={[styles.userTypeText, { color: mutedTextColor }]}
+              >
+                {profile.user_type === "business"
+                  ? "Business Account"
+                  : "Personal Account"}
               </ThemedText>
-              {profile.user_type === 'business' && (
-                <UserTypeBadge />
-              )}
+              {profile.user_type === "business" && <UserTypeBadge />}
             </View>
             {profile.profession && (
-              <ThemedText style={[styles.profileProfession, { color: mutedTextColor }]}>
+              <ThemedText
+                style={[styles.profileProfession, { color: mutedTextColor }]}
+              >
                 {profile.profession}
               </ThemedText>
             )}
             {profile.location && (
-              <ThemedText style={[styles.profileLocation, { color: mutedTextColor }]}>
-                <Feather name="map-pin" size={12} color={mutedTextColor} /> {profile.location}
+              <ThemedText
+                style={[styles.profileLocation, { color: mutedTextColor }]}
+              >
+                <Feather name="map-pin" size={12} color={mutedTextColor} />{" "}
+                {profile.location}
               </ThemedText>
             )}
             {profile.experience_years && (
-              <ThemedText style={[styles.profileExperience, { color: mutedTextColor }]}>
-                <Feather name="clock" size={12} color={mutedTextColor} /> {profile.experience_years} years experience
+              <ThemedText
+                style={[styles.profileExperience, { color: mutedTextColor }]}
+              >
+                <Feather name="clock" size={12} color={mutedTextColor} />{" "}
+                {profile.experience_years} years experience
               </ThemedText>
             )}
           </View>
@@ -235,15 +265,28 @@ export default function ProfileScreen() {
           <View style={styles.statsRow}>
             <TouchableOpacity style={styles.statItem} onPress={handleViewPosts}>
               <ThemedText style={styles.statNumber}>{stats.posts}</ThemedText>
-              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Posts</ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>
+                Posts
+              </ThemedText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
-              <ThemedText style={styles.statNumber}>{stats.followers}</ThemedText>
-              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Followers</ThemedText>
+              <ThemedText style={styles.statNumber}>
+                {stats.followers}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>
+                Followers
+              </ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.statItem}>
-              <ThemedText style={styles.statNumber}>{stats.following}</ThemedText>
-              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>Following</ThemedText>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => router.push("/profile/companies")}
+            >
+              <ThemedText style={styles.statNumber}>
+                {stats.following}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: mutedTextColor }]}>
+                Companies
+              </ThemedText>
             </TouchableOpacity>
           </View>
         </ThemedView>
@@ -256,11 +299,20 @@ export default function ProfileScreen() {
               style={[styles.quickActionCard, { borderColor }]}
               onPress={handleViewApplications}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: tintColor + '20' }]}>
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  { backgroundColor: tintColor + "20" },
+                ]}
+              >
                 <Feather name="briefcase" size={20} color={tintColor} />
               </View>
-              <ThemedText style={styles.quickActionTitle}>Applications</ThemedText>
-              <ThemedText style={[styles.quickActionSubtitle, { color: mutedTextColor }]}>
+              <ThemedText style={styles.quickActionTitle}>
+                Applications
+              </ThemedText>
+              <ThemedText
+                style={[styles.quickActionSubtitle, { color: mutedTextColor }]}
+              >
                 {stats.applications} applications
               </ThemedText>
             </TouchableOpacity>
@@ -269,37 +321,58 @@ export default function ProfileScreen() {
               style={[styles.quickActionCard, { borderColor }]}
               onPress={handleViewBookmarks}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: tintColor + '20' }]}>
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  { backgroundColor: tintColor + "20" },
+                ]}
+              >
                 <Feather name="bookmark" size={20} color={tintColor} />
               </View>
               <ThemedText style={styles.quickActionTitle}>Bookmarks</ThemedText>
-              <ThemedText style={[styles.quickActionSubtitle, { color: mutedTextColor }]}>
+              <ThemedText
+                style={[styles.quickActionSubtitle, { color: mutedTextColor }]}
+              >
                 {stats.bookmarks} saved
               </ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.quickActionCard, { borderColor }]}
-              onPress={() => router.push('/profile/documents')}
+              onPress={() => router.push("/profile/documents")}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: tintColor + '20' }]}>
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  { backgroundColor: tintColor + "20" },
+                ]}
+              >
                 <Feather name="folder" size={20} color={tintColor} />
               </View>
               <ThemedText style={styles.quickActionTitle}>Documents</ThemedText>
-              <ThemedText style={[styles.quickActionSubtitle, { color: mutedTextColor }]}>
+              <ThemedText
+                style={[styles.quickActionSubtitle, { color: mutedTextColor }]}
+              >
                 Manage CV & files
               </ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.quickActionCard, { borderColor }]}
-              onPress={() => router.push('/profile/companies')}
+              onPress={() => router.push("/profile/companies")}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: tintColor + '20' }]}>
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  { backgroundColor: tintColor + "20" },
+                ]}
+              >
                 <Feather name="briefcase" size={20} color={tintColor} />
               </View>
               <ThemedText style={styles.quickActionTitle}>Companies</ThemedText>
-              <ThemedText style={[styles.quickActionSubtitle, { color: mutedTextColor }]}>
+              <ThemedText
+                style={[styles.quickActionSubtitle, { color: mutedTextColor }]}
+              >
                 Manage companies
               </ThemedText>
             </TouchableOpacity>
@@ -312,7 +385,13 @@ export default function ProfileScreen() {
             <ThemedText style={styles.sectionTitle}>Skills</ThemedText>
             <View style={styles.skillsContainer}>
               {profile.skills.map((skill, index) => (
-                <View key={index} style={[styles.skillChip, { backgroundColor: tintColor + '20' }]}>
+                <View
+                  key={index}
+                  style={[
+                    styles.skillChip,
+                    { backgroundColor: tintColor + "20" },
+                  ]}
+                >
                   <ThemedText style={[styles.skillText, { color: tintColor }]}>
                     {skill}
                   </ThemedText>
@@ -354,8 +433,8 @@ function UserTypeBadge() {
   const { user } = useAuth();
   const [companyStatus, setCompanyStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const tintColor = useThemeColor({}, 'tint');
-  const backgroundColor = useThemeColor({}, 'background');
+  const tintColor = useThemeColor({}, "tint");
+  const backgroundColor = useThemeColor({}, "background");
 
   useEffect(() => {
     if (user) {
@@ -369,16 +448,16 @@ function UserTypeBadge() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('companies')
-        .select('status')
-        .eq('user_id', user.id)
+        .from("companies")
+        .select("status")
+        .eq("user_id", user.id)
         .single();
 
       if (!error && data) {
         setCompanyStatus(data.status);
       }
     } catch (err) {
-      console.error('Error fetching company status:', err);
+      console.error("Error fetching company status:", err);
     } finally {
       setLoading(false);
     }
@@ -386,50 +465,56 @@ function UserTypeBadge() {
 
   if (loading) {
     return (
-      <View style={[styles.badge, { backgroundColor: tintColor + '20' }]}>
-        <ThemedText style={[styles.badgeText, { color: tintColor }]}>Loading...</ThemedText>
+      <View style={[styles.badge, { backgroundColor: tintColor + "20" }]}>
+        <ThemedText style={[styles.badgeText, { color: tintColor }]}>
+          Loading...
+        </ThemedText>
       </View>
     );
   }
 
   if (!companyStatus) {
     return (
-      <View style={[styles.badge, { backgroundColor: '#f3f4f6' }]}>
-        <ThemedText style={[styles.badgeText, { color: '#6b7280' }]}>No Company</ThemedText>
+      <View style={[styles.badge, { backgroundColor: "#f3f4f6" }]}>
+        <ThemedText style={[styles.badgeText, { color: "#6b7280" }]}>
+          No Company
+        </ThemedText>
       </View>
     );
   }
 
   const getBadgeStyle = () => {
     switch (companyStatus) {
-      case 'approved':
-        return { backgroundColor: '#10b981', color: '#ffffff' };
-      case 'pending':
-        return { backgroundColor: '#f59e0b', color: '#ffffff' };
-      case 'rejected':
-        return { backgroundColor: '#ef4444', color: '#ffffff' };
+      case "approved":
+        return { backgroundColor: "#10b981", color: "#ffffff" };
+      case "pending":
+        return { backgroundColor: "#f59e0b", color: "#ffffff" };
+      case "rejected":
+        return { backgroundColor: "#ef4444", color: "#ffffff" };
       default:
-        return { backgroundColor: '#6b7280', color: '#ffffff' };
+        return { backgroundColor: "#6b7280", color: "#ffffff" };
     }
   };
 
   const getBadgeText = () => {
     switch (companyStatus) {
-      case 'approved':
-        return '✓ Approved';
-      case 'pending':
-        return '⏳ Pending';
-      case 'rejected':
-        return '✗ Rejected';
+      case "approved":
+        return "✓ Approved";
+      case "pending":
+        return "⏳ Pending";
+      case "rejected":
+        return "✗ Rejected";
       default:
-        return 'Unknown';
+        return "Unknown";
     }
   };
 
   const badgeStyle = getBadgeStyle();
 
   return (
-    <View style={[styles.badge, { backgroundColor: badgeStyle.backgroundColor }]}>
+    <View
+      style={[styles.badge, { backgroundColor: badgeStyle.backgroundColor }]}
+    >
       <ThemedText style={[styles.badgeText, { color: badgeStyle.color }]}>
         {getBadgeText()}
       </ThemedText>
@@ -443,16 +528,16 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 16,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 0.5,
@@ -462,11 +547,11 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   headerButton: {
     padding: 8,
@@ -474,10 +559,10 @@ const styles = StyleSheet.create({
   profileHeader: {
     paddingHorizontal: 16,
     paddingVertical: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   avatarSection: {
-    position: 'relative',
+    position: "relative",
     marginBottom: 16,
   },
   avatar: {
@@ -486,32 +571,32 @@ const styles = StyleSheet.create({
     borderRadius: 60,
   },
   editAvatarButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
     width: 32,
     height: 32,
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   profileInfo: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
   },
   profileName: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
   },
   profileUsername: {
     fontSize: 16,
     marginBottom: 8,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   userTypeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 8,
   },
@@ -525,17 +610,17 @@ const styles = StyleSheet.create({
   profileLocation: {
     fontSize: 14,
     marginBottom: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   profileExperience: {
     fontSize: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   editProfileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -544,7 +629,7 @@ const styles = StyleSheet.create({
   },
   editProfileText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   bioSection: {
     paddingHorizontal: 16,
@@ -554,23 +639,23 @@ const styles = StyleSheet.create({
   bioText: {
     fontSize: 16,
     lineHeight: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   statsSection: {
     paddingHorizontal: 16,
     marginBottom: 24,
   },
   statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
   },
   statItem: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
   },
   statLabel: {
@@ -582,45 +667,45 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 16,
   },
   quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
   quickActionCard: {
-    width: '48%',
+    width: "48%",
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   quickActionIcon: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
   quickActionTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 4,
   },
   quickActionSubtitle: {
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   skillsSection: {
     paddingHorizontal: 16,
     marginBottom: 24,
   },
   skillsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   skillChip: {
@@ -630,15 +715,15 @@ const styles = StyleSheet.create({
   },
   skillText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   contactSection: {
     paddingHorizontal: 16,
     marginBottom: 24,
   },
   contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 8,
     gap: 8,
   },
@@ -649,10 +734,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -1,5 +1,5 @@
 import { useThemeColor, useAuth, usePermissions } from "@/hooks";
-import { useCompanyFollows } from "@/hooks/companies";
+import { useCompanies } from "@/hooks/companies";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
@@ -21,10 +21,10 @@ import {
   Shadows,
 } from "@/constants/DesignSystem";
 
-export default function CompaniesList() {
+export default function ManagedCompaniesList() {
   const router = useRouter();
   const { isBusinessUser } = usePermissions();
-  const { companies, loading, error } = useCompanyFollows();
+  const { companies, loading, error } = useCompanies();
   const colorScheme = useColorScheme() ?? "light";
   const borderColor = useThemeColor({}, "border");
   const backgroundColor = useThemeColor({}, "background");
@@ -52,8 +52,29 @@ export default function CompaniesList() {
     <ThemedView style={styles.container}>
       <View style={styles.headerRow}>
         <ThemedText style={[styles.headerTitle, { color: textColor }]}>
-          Companies I Follow
+          Companies I Manage
         </ThemedText>
+        {isBusinessUser && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.addButton,
+              {
+                backgroundColor: pressed
+                  ? tintColor + "20"
+                  : tintColor + "15",
+              },
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/profile/CompanyManagement");
+            }}
+          >
+            <Feather name="plus" size={16} color={tintColor} />
+            <ThemedText style={[styles.addButtonText, { color: tintColor }]}>
+              Add New
+            </ThemedText>
+          </Pressable>
+        )}
       </View>
 
       {companies.length === 0 ? (
@@ -63,12 +84,12 @@ export default function CompaniesList() {
           <View
             style={[styles.emptyIcon, { backgroundColor: tintColor + "15" }]}
           >
-            <Feather name="briefcase" size={32} color={tintColor} />
+            <Feather name="building" size={32} color={tintColor} />
           </View>
           {isBusinessUser ? (
             <>
               <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
-                Get started with your companies
+                Start managing your companies
               </ThemedText>
               <ThemedText
                 style={[
@@ -77,13 +98,13 @@ export default function CompaniesList() {
                   styles.textCenter,
                 ]}
               >
-                Tap the Add New button to create your first company profile
+                Create your first company profile to start posting jobs and news
               </ThemedText>
             </>
           ) : (
             <>
               <ThemedText style={[styles.emptyTitle, { color: textColor }]}>
-                Follow companies you&apos;re interested in
+                No companies to manage
               </ThemedText>
               <ThemedText
                 style={[
@@ -92,8 +113,7 @@ export default function CompaniesList() {
                   styles.textCenter,
                 ]}
               >
-                Browse companies and tap the follow button to see their updates
-                here
+                Upgrade to a business account to create and manage companies
               </ThemedText>
             </>
           )}
@@ -114,11 +134,8 @@ export default function CompaniesList() {
                 },
               ]}
               onPress={() => {
-                if (isBusinessUser) {
-                  router.push(`/profile/CompanyManagement?id=${company.id}`);
-                } else {
-                  router.push(`/company/${company.id}`);
-                }
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/profile/CompanyManagement?id=${company.id}`);
               }}
             >
               <Image
@@ -127,7 +144,7 @@ export default function CompaniesList() {
                     company.logo_url ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
                       company.name
-                    )}&size=64&background=2563eb&color=ffffff`,
+                    )}&size=64&background=10b981&color=ffffff`,
                 }}
                 style={styles.companyLogo}
               />
@@ -174,6 +191,31 @@ export default function CompaniesList() {
                       </ThemedText>
                     </View>
                   )}
+                  <View
+                    style={[
+                      styles.statusChip,
+                      {
+                        backgroundColor:
+                          company.status === "approved"
+                            ? "#10b98115"
+                            : "#f59e0b15",
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.statusChipText,
+                        {
+                          color:
+                            company.status === "approved"
+                              ? "#10b981"
+                              : "#f59e0b",
+                        },
+                      ]}
+                    >
+                      {company.status === "approved" ? "Active" : "Pending"}
+                    </ThemedText>
+                  </View>
                 </ThemedView>
               </ThemedView>
               <View
@@ -182,7 +224,7 @@ export default function CompaniesList() {
                   { backgroundColor: tintColor + "15" },
                 ]}
               >
-                <Feather name="chevron-right" size={16} color={tintColor} />
+                <Feather name="edit-3" size={16} color={tintColor} />
               </View>
             </Pressable>
           ))}
@@ -312,6 +354,15 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   metaChipText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.medium,
+  },
+  statusChip: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  statusChipText: {
     fontSize: Typography.xs,
     fontWeight: Typography.medium,
   },

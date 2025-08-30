@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks";
 import NotificationBadge from "@/components/ui/NotificationBadge";
+import { Spacing, BorderRadius } from "@/constants/DesignSystem";
 
 interface UniversalHeaderProps {
   title: string;
@@ -14,7 +15,8 @@ interface UniversalHeaderProps {
   showAddButton?: boolean;
   onAddPress?: () => void;
   rightAction?: {
-    icon: string;
+    icon?: string;
+    text?: string;
     onPress: () => void;
   };
 }
@@ -85,15 +87,23 @@ export default function UniversalHeader({
           )}
           {rightAction && (
             <Pressable
-              style={styles.iconButton}
+              style={[styles.iconButton, rightAction.text && styles.textButton]}
               onPress={rightAction.onPress}
               hitSlop={8}
             >
-              <Feather
-                name={rightAction.icon as any}
-                size={22}
-                color={iconColor}
-              />
+              {rightAction.text ? (
+                <ThemedText
+                  style={[styles.rightActionText, { color: iconColor }]}
+                >
+                  {rightAction.text}
+                </ThemedText>
+              ) : (
+                <Feather
+                  name={rightAction.icon as any}
+                  size={22}
+                  color={iconColor}
+                />
+              )}
             </Pressable>
           )}
           {showNotifications && (
@@ -116,6 +126,7 @@ export default function UniversalHeader({
 
 const styles = StyleSheet.create({
   header: {
+    paddingHorizontal: Spacing.lg,
     paddingTop: 10,
     paddingBottom: 16,
   },
@@ -137,6 +148,7 @@ const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 12,
   },
+  textButton: {},
   titleSection: {
     flex: 1,
     marginLeft: 8,
@@ -152,5 +164,9 @@ const styles = StyleSheet.create({
   },
   bellContainer: {
     position: "relative",
+  },
+  rightActionText: {
+    fontSize: 16,
+    color: "#007AFF",
   },
 });

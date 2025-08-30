@@ -22,6 +22,7 @@ import {
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import ScreenContainer from "@/components/ScreenContainer";
+import UniversalHeader from "@/components/ui/UniversalHeader";
 import { supabase } from "@/utils/supabase";
 import { UserType } from "@/types/enums";
 import { Company } from "@/types";
@@ -100,11 +101,6 @@ export default function CompaniesManagement() {
         <StatusBar
           barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
         />
-        <View style={styles.loadingContainer}>
-          <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
-            Loading companies...
-          </ThemedText>
-        </View>
       </ScreenContainer>
     );
   }
@@ -115,17 +111,11 @@ export default function CompaniesManagement() {
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
       />
 
-      {/* Header */}
-      <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Feather name="arrow-left" size={24} color={textColor} />
-        </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Companies</ThemedText>
-        <View style={styles.headerRight} />
-      </ThemedView>
+      <UniversalHeader
+        title="Companies"
+        showBackButton={true}
+        showNotifications={false}
+      />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* For Business Users: Show My Companies first, then Followed Companies */}
@@ -242,7 +232,7 @@ export default function CompaniesManagement() {
         <ThemedView style={styles.section}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>
-              {isBusinessUser ? "Followed Companies" : "Companies I Follow"}
+              {isBusinessUser ? "Companies I Follow" : "Companies I Follow"}
             </ThemedText>
             <TouchableOpacity
               style={[styles.addButton, { borderColor }]}

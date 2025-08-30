@@ -1,36 +1,39 @@
-import CompaniesList from '@/components/profile/CompaniesList';
-import DocumentsList from '@/components/profile/DocumentsList';
-import FollowingGrid from '@/components/profile/FollowingGrid';
-import MyPostsList from '@/components/profile/MyPostsList';
-import ProfileHeader from '@/components/profile/Header';
-import ScreenContainer from '@/components/ScreenContainer';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import CategorySelector from '@/components/ui/CategorySelector';
-import { useFlashToast } from '@/components/ui/Flash';
-import { useAuth, useThemeColor, usePermissions } from '@/hooks';
-import { useRouter } from 'expo-router';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Animated, StyleSheet, View, RefreshControl, TouchableOpacity } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { ThemedAvatar } from '@/components/ui/ThemedAvatar';
-import { ThemedIconButton } from '@/components/ui/ThemedIconButton';
-import { calculateProfileStrength } from '@/utils/utils';
-
-const CATEGORY_OPTIONS = ['Documents', 'Companies'];
+import DocumentsList from "@/components/profile/DocumentsList";
+import MyPostsList from "@/components/profile/MyPostsList";
+import ProfileHeader from "@/components/profile/Header";
+import ScreenContainer from "@/components/ScreenContainer";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import CategorySelector from "@/components/ui/CategorySelector";
+import { useFlashToast } from "@/components/ui/Flash";
+import { useAuth, useThemeColor, usePermissions } from "@/hooks";
+import { useCompanyFollows, useCompanies } from "@/hooks/companies";
+import { useRouter } from "expo-router";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Animated, StyleSheet, View, RefreshControl } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
+import { ThemedIconButton } from "@/components/ui/ThemedIconButton";
+import { calculateProfileStrength } from "@/utils/utils";
+import { openGlobalSheet } from "@/utils/globalSheet";
+import FollowedCompaniesSheet from "@/components/profile/FollowedCompaniesSheet";
+import ManagedCompaniesSheet from "@/components/profile/ManagedCompaniesSheet";
 
 export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
-  const { profile, loading, error, isConnectionTimeoutError, refreshProfile } = useAuth();
+  const { profile, loading, error, isConnectionTimeoutError, refreshProfile } =
+    useAuth();
   const { isBusinessUser } = usePermissions();
+  const { companies: followedCompanies } = useCompanyFollows();
+  const { companies: managedCompanies } = useCompanies();
   const toast = useFlashToast();
 
   // Define category options based on user type
   const CATEGORY_OPTIONS = isBusinessUser
-    ? ['Documents', 'Companies', 'My Posts']
-    : ['Documents', 'Companies'];
+    ? ["Documents", "My Posts"]
+    : ["Documents"];
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -41,21 +44,53 @@ export default function Profile() {
     }
   }, [refreshProfile]);
 
+  const handleStatPress = useCallback((statLabel: string) => {
+    if (statLabel === "Following") {
+      openGlobalSheet({
+        dynamicSnapPoint: true,
+        dynamicOptions: {
+          minHeight: 300,
+          maxHeight: 0.8,
+          padding: 50,
+        },
+        children: (
+          <FollowedCompaniesSheet
+            onClose={() => openGlobalSheet({ children: null })}
+          />
+        ),
+      });
+    } else if (statLabel === "Managing") {
+      openGlobalSheet({
+        dynamicSnapPoint: true,
+        dynamicOptions: {
+          minHeight: 300,
+          maxHeight: 0.8,
+          padding: 50,
+        },
+        children: (
+          <ManagedCompaniesSheet
+            onClose={() => openGlobalSheet({ children: null })}
+          />
+        ),
+      });
+    }
+  }, []);
+
   const scrollY = useRef(new Animated.Value(0)).current;
-  const iconColor = useThemeColor({}, 'icon');
-  const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const textColor = useThemeColor({}, 'text');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
-  const tintColor = useThemeColor({}, 'tint');
+  const iconColor = useThemeColor({}, "icon");
+  const backgroundColor = useThemeColor({}, "background");
+  const borderColor = useThemeColor({}, "border");
+  const textColor = useThemeColor({}, "text");
+  const mutedTextColor = useThemeColor({}, "mutedText");
 
   // Show toast for connection timeout errors
   useEffect(() => {
     if (error && isConnectionTimeoutError({ message: error })) {
       toast.show({
-        type: 'danger',
-        title: 'Connection Error',
-        message: 'Network connection issue. Please check your internet connection and try again.',
+        type: "danger",
+        title: "Connection Error",
+        message:
+          "Network connection issue. Please check your internet connection and try again.",
       });
     }
   }, [error, isConnectionTimeoutError, toast]);
@@ -63,17 +98,15 @@ export default function Profile() {
   // If loading, you can show a loader or return null
   if (loading) return null;
 
-
   // Placeholder image for avatar, use name or username if available
   const avatarName = profile
     ? profile.name
       ? encodeURIComponent(profile.name)
       : profile.username
-        ? encodeURIComponent(profile.username)
-        : 'User'
-    : 'User';
-  const placeholderAvatar =
-    `https://ui-avatars.com/api/?name=${avatarName}&background=cccccc&color=222222&size=256`;
+      ? encodeURIComponent(profile.username)
+      : "User"
+    : "User";
+  const placeholderAvatar = `https://ui-avatars.com/api/?name=${avatarName}&background=cccccc&color=222222&size=256`;
 
   // Calculate profile strength and format user details
   const profileStrength = calculateProfileStrength(profile);
@@ -82,47 +115,54 @@ export default function Profile() {
   const subtitleParts = [];
   if (profile?.profession) subtitleParts.push(profile.profession);
   if (profile?.location) subtitleParts.push(profile.location);
-  const subtitle = subtitleParts.length > 0 ? subtitleParts.join(' • ') : 'No profession or location set';
+  const subtitle =
+    subtitleParts.length > 0
+      ? subtitleParts.join(" • ")
+      : "No profession or location set";
 
   // Compose header props from profile or fallback
   const headerProps = {
-    name: profile ? `${profile.name} ${profile.surname}` : 'User',
-    avatarUrl: profile && profile.avatar_url ? profile.avatar_url : placeholderAvatar,
-    status: 'Available',
+    name: profile ? `${profile.name} ${profile.surname}` : "User",
+    avatarUrl:
+      profile && profile.avatar_url ? profile.avatar_url : placeholderAvatar,
+    status: "Available",
     subtitle: subtitle,
     bio: profile?.bio || undefined,
     profileStrength: `Profile Strength: ${profileStrength.level} (${profileStrength.percentage}%)`,
     profileStrengthDescription: profileStrength.description,
     stats: [
-      { label: 'Following', value: 0 }, // TODO: Replace with real data
-      { label: 'Channels', value: 0 },  // TODO: Replace with real data
+      { label: "Following", value: followedCompanies.length },
+      ...(isBusinessUser
+        ? [{ label: "Managing", value: managedCompanies.length }]
+        : []),
     ],
-    onEdit: () => router.push('/settings'),
+    onEdit: () => router.push("/settings"),
+    onStatPress: handleStatPress,
   };
 
   // Animated values for header collapse
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [0, 1],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const headerHeight = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [0, 60],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const mainHeaderOpacity = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [1, 0],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const mainHeaderTranslateY = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [0, -50],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   return (
@@ -136,21 +176,22 @@ export default function Profile() {
             height: headerHeight,
             backgroundColor: `${backgroundColor}E6`, // 90% opacity
             borderBottomColor: borderColor,
-          }
+          },
         ]}
       >
         <View style={styles.compactHeaderContent}>
           <View style={styles.compactHeaderLeft}>
-            <ThemedAvatar
-              size={32}
-              image={headerProps.avatarUrl}
-            />
+            <ThemedAvatar size={32} image={headerProps.avatarUrl} />
             <View style={styles.compactUserInfo}>
-              <ThemedText style={[styles.compactUsername, { color: textColor }]}>
-                {profile && profile.username ? `@${profile.username}` : 'User'}
+              <ThemedText
+                style={[styles.compactUsername, { color: textColor }]}
+              >
+                {profile && profile.username ? `@${profile.username}` : "User"}
               </ThemedText>
               {profile && profile.profession && (
-                <ThemedText style={[styles.compactProfession, { color: mutedTextColor }]}>
+                <ThemedText
+                  style={[styles.compactProfession, { color: mutedTextColor }]}
+                >
                   {profile.profession}
                 </ThemedText>
               )}
@@ -158,7 +199,7 @@ export default function Profile() {
           </View>
           <ThemedIconButton
             icon={<Feather name="settings" size={20} color={iconColor} />}
-            onPress={() => router.push('/settings')}
+            onPress={() => router.push("/settings")}
           />
         </View>
       </Animated.View>
@@ -176,7 +217,7 @@ export default function Profile() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor="#007AFF"
-            colors={['#007AFF']}
+            colors={["#007AFF"]}
           />
         }
       >
@@ -187,7 +228,7 @@ export default function Profile() {
               {
                 opacity: mainHeaderOpacity,
                 transform: [{ translateY: mainHeaderTranslateY }],
-              }
+              },
             ]}
           >
             <ProfileHeader {...headerProps} isBusinessUser={isBusinessUser} />
@@ -203,10 +244,7 @@ export default function Profile() {
 
           <ThemedView style={styles.contentSection}>
             {selectedIndex === 0 && <DocumentsList />}
-            {selectedIndex === 1 && <CompaniesList />}
-            {selectedIndex === 2 && isBusinessUser && (
-              <MyPostsList />
-            )}
+            {selectedIndex === 1 && isBusinessUser && <MyPostsList />}
           </ThemedView>
         </ThemedView>
       </Animated.ScrollView>
@@ -220,24 +258,24 @@ const styles = StyleSheet.create({
     minHeight: 200, // Ensure minimum height for empty states
   },
   compactHeader: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
     borderBottomWidth: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   compactHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   compactHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   compactAvatar: {
@@ -245,21 +283,21 @@ const styles = StyleSheet.create({
   },
   compactUsername: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   compactUserInfo: {
-    flexDirection: 'column',
+    flexDirection: "column",
     gap: 2,
   },
   compactProfession: {
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   compactSettingsButton: {
     padding: 8,
   },
   mainHeaderContainer: {
-    width: '100%',
+    width: "100%",
   },
   categorySection: {
     marginTop: 24,
@@ -268,18 +306,18 @@ const styles = StyleSheet.create({
   contentSection: {
     marginTop: 16,
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   testButton: {
     marginTop: 16,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   testButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
