@@ -14,7 +14,6 @@ import { deletePost } from "@/hooks/posts/usePostOperations";
 import { useBottomSheetManager } from "@/components/content/BottomSheetManager";
 import { PostWithProfile } from "@/hooks/posts";
 
-// Extend PostWithProfile with properties needed by MyPostCard
 interface MyPost extends PostWithProfile {
   is_active: boolean;
   applications_count: number;
@@ -52,36 +51,17 @@ export default function MyPostsList() {
   };
 
   const handlePostDelete = async (postId: string) => {
-    Alert.alert(
-      "Delete Post",
-      "Are you sure you want to delete this post? This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const { error } = await deletePost(postId);
-              if (error) {
-                Alert.alert(
-                  "Error",
-                  "Failed to delete post. Please try again."
-                );
-              } else {
-                // Refresh the posts list
-                refreshPosts();
-              }
-            } catch (error) {
-              Alert.alert("Error", "Failed to delete post. Please try again.");
-            }
-          },
-        },
-      ]
-    );
+    try {
+      const { error } = await deletePost(postId);
+      if (error) {
+        Alert.alert("Error", "Failed to delete post. Please try again.");
+      } else {
+        // Refresh the posts list
+        refreshPosts();
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to delete post. Please try again.");
+    }
   };
 
   const renderPostItem = ({ item }: { item: PostWithProfile }) => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useCallback, memo } from 'react';
+import React, { useMemo, useRef, useState, useCallback, memo } from "react";
 import {
   Animated,
   Easing,
@@ -7,25 +7,32 @@ import {
   Pressable,
   View,
   RefreshControl,
-} from 'react-native';
+} from "react-native";
 
-
-import Header, { HEADER_HEIGHT } from '@/components/home/Header';
-import ScreenContainer from '@/components/ScreenContainer';
-import { useAuth, useHomeFeed } from '@/hooks';
-import { ThemedText } from '@/components/ThemedText';
-import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-import ContentCard from '@/components/content/ContentCard';
-import { PostType, UserType } from '@/types/enums';
-import { ContentCardSkeleton } from '@/components/ui/Skeleton';
-import NewPostsIndicator from '@/components/ui/NewPostsIndicator';
-import { useInteractions } from '@/hooks/posts/useInteractions';
-
+import Header, { HEADER_HEIGHT } from "@/components/home/Header";
+import ScreenContainer from "@/components/ScreenContainer";
+import { useAuth, useHomeFeed } from "@/hooks";
+import { ThemedText } from "@/components/ThemedText";
+import { useBottomSheetManager } from "@/components/content/BottomSheetManager";
+import ContentCard from "@/components/content/ContentCard";
+import { PostType, UserType } from "@/types/enums";
+import { ContentCardSkeleton } from "@/components/ui/Skeleton";
+import NewPostsIndicator from "@/components/ui/NewPostsIndicator";
+import { useInteractions } from "@/hooks/posts/useInteractions";
 
 const INDUSTRIES = [
-  'Technology', 'Finance', 'Healthcare', 'Retail', 'Logistics',
-  'Education', 'Design', 'Software', 'Entertainment',
-  'E-commerce', 'Fintech', 'Automotive'
+  "Technology",
+  "Finance",
+  "Healthcare",
+  "Retail",
+  "Logistics",
+  "Education",
+  "Design",
+  "Software",
+  "Entertainment",
+  "E-commerce",
+  "Fintech",
+  "Automotive",
 ];
 
 export default function Home() {
@@ -39,20 +46,15 @@ export default function Home() {
   const lastScrollY = useRef(0);
   const isAnimating = useRef(false);
 
-  const {
-    posts: cardPosts,
-    loading,
-    error,
-    refresh,
-  } = useHomeFeed();
+  const { posts: cardPosts, loading, error, refresh } = useHomeFeed();
   const { initializePosts } = useInteractions();
 
-  const getIndustryLabel = (index: number) => INDUSTRIES[index] || '';
+  const getIndustryLabel = (index: number) => INDUSTRIES[index] || "";
   const filteredPosts = useMemo(
     () =>
       cardPosts.filter((post) => {
-        if (selectedContentType === 1 && post.variant !== 'job') return false;
-        if (selectedContentType === 2 && post.variant !== 'news') return false;
+        if (selectedContentType === 1 && post.variant !== "job") return false;
+        if (selectedContentType === 2 && post.variant !== "news") return false;
         if (selectedIndustry !== -1) {
           const selectedIndustryLabel = getIndustryLabel(selectedIndustry);
           if (post.industry !== selectedIndustryLabel) return false;
@@ -63,8 +65,11 @@ export default function Home() {
   );
 
   // Initialize likes/bookmarks in batch for current list
-  const postIds = useMemo(() => filteredPosts.map((p: any) => p.id as string).filter(Boolean), [filteredPosts]);
-  const postIdsKey = useMemo(() => postIds.join(','), [postIds]);
+  const postIds = useMemo(
+    () => filteredPosts.map((p: any) => p.id as string).filter(Boolean),
+    [filteredPosts]
+  );
+  const postIdsKey = useMemo(() => postIds.join(","), [postIds]);
   React.useEffect(() => {
     if (postIds.length) initializePosts(postIds);
   }, [postIdsKey, initializePosts]);
@@ -115,7 +120,7 @@ export default function Home() {
     try {
       await refresh();
       // Small delay to ensure UI updates properly
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     } finally {
       setRefreshing(false);
     }
@@ -141,48 +146,54 @@ export default function Home() {
   }, []);
 
   // --- SHEET OPENERS ---
-  const { openCreatePostSheet, openJobApplicationSheet } = useBottomSheetManager({ onPostSuccess: handlePostSuccess });
+  const { openCreatePostSheet, openJobApplicationSheet } =
+    useBottomSheetManager({ onPostSuccess: handlePostSuccess });
 
   function handleShowCreatePost() {
     openCreatePostSheet();
   }
 
+  const handleApplyToJob = useCallback(
+    (post: any) => {
+      if (post.variant === "job" && post.id) {
+        const jobPost = {
+          id: post.id,
+          title: post.title,
+          content: post.description,
+          type: PostType.Job,
+          user_id: post.user_id || "",
+          created_at: post.createdAt || new Date().toISOString(),
+          updated_at: null,
+          image_url: post.mainImage || null,
+          industry: post.industry || null,
+          criteria: post.criteria || null,
+          is_sponsored: false,
+        };
 
-
-  const handleApplyToJob = useCallback((post: any) => {
-    if (post.variant === 'job' && post.id) {
-      const jobPost = {
-        id: post.id,
-        title: post.title,
-        content: post.description,
-        type: PostType.Job,
-        user_id: post.user_id || '',
-        created_at: post.createdAt || new Date().toISOString(),
-        updated_at: null,
-        image_url: post.mainImage || null,
-        industry: post.industry || null,
-        criteria: post.criteria || null,
-        is_sponsored: false,
-      };
-
-      openJobApplicationSheet(jobPost, {
-        onSuccess: () => {
-          console.log('Application submitted successfully');
-        }
-      });
-    }
-  }, [openJobApplicationSheet]);
+        openJobApplicationSheet(jobPost, {
+          onSuccess: () => {
+            console.log("Application submitted successfully");
+          },
+        });
+      }
+    },
+    [openJobApplicationSheet]
+  );
 
   if (loading && !cardPosts.length) {
     return (
       <ScreenContainer>
         {/* Sticky/animated header */}
-        <Animated.View style={{
-          transform: [{ translateY: headerAnim }],
-          zIndex: 10,
-          position: 'absolute',
-          top: 0, left: 0, right: 0,
-        }}>
+        <Animated.View
+          style={{
+            transform: [{ translateY: headerAnim }],
+            zIndex: 10,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
+        >
           <Header
             selectedContentType={selectedContentType}
             onContentTypeChange={setSelectedContentType}
@@ -201,7 +212,7 @@ export default function Home() {
               refreshing={refreshing}
               onRefresh={handleRefresh}
               tintColor="#007AFF"
-              colors={['#007AFF']}
+              colors={["#007AFF"]}
             />
           }
           contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
@@ -217,12 +228,16 @@ export default function Home() {
   return (
     <ScreenContainer>
       {/* Sticky/animated header */}
-      <Animated.View style={{
-        transform: [{ translateY: headerAnim }],
-        zIndex: 10,
-        position: 'absolute',
-        top: 0, left: 0, right: 0,
-      }}>
+      <Animated.View
+        style={{
+          transform: [{ translateY: headerAnim }],
+          zIndex: 10,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+        }}
+      >
         <Header
           selectedContentType={selectedContentType}
           onContentTypeChange={setSelectedContentType}
@@ -241,7 +256,9 @@ export default function Home() {
 
       <Animated.FlatList
         data={filteredPosts}
-        keyExtractor={(item, index) => `${item.title}-${item.variant}-${index}-${item.id ?? 'unknown'}`}
+        keyExtractor={(item, index) =>
+          `${item.title}-${item.variant}-${index}-${item.id ?? "unknown"}`
+        }
         renderItem={({ item, index }) => (
           <ContentCard
             {...item}
@@ -265,40 +282,53 @@ export default function Home() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor="#007AFF"
-            colors={['#007AFF']}
+            colors={["#007AFF"]}
           />
         }
         contentContainerStyle={{ paddingTop: 0 }}
         ListEmptyComponent={
-          <View style={{ flex: 1, padding: 20, alignItems: 'center', marginTop: HEADER_HEIGHT }}>
-            <ThemedText style={{ textAlign: 'center', marginTop: 40 }}>
+          <View
+            style={{
+              flex: 1,
+              padding: 20,
+              alignItems: "center",
+              marginTop: HEADER_HEIGHT,
+            }}
+          >
+            <ThemedText style={{ textAlign: "center", marginTop: 40 }}>
               {loading
-                ? 'Loading posts...'
+                ? "Loading posts..."
                 : error
-                  ? 'Error loading posts'
-                  : 'No posts found'}
+                ? "Error loading posts"
+                : "No posts found"}
             </ThemedText>
           </View>
         }
         ListFooterComponent={
           error ? (
-            <View style={{ padding: 20, alignItems: 'center' }}>
-              <ThemedText style={{ color: 'red', textAlign: 'center', marginBottom: 12 }}>Error: {error}</ThemedText>
+            <View style={{ padding: 20, alignItems: "center" }}>
+              <ThemedText
+                style={{ color: "red", textAlign: "center", marginBottom: 12 }}
+              >
+                Error: {error}
+              </ThemedText>
               <Pressable
                 style={{
                   paddingVertical: 12,
                   paddingHorizontal: 20,
-                  backgroundColor: '#007AFF',
+                  backgroundColor: "#007AFF",
                   borderRadius: 8,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
                 }}
                 onPress={() => refresh()}
                 accessibilityLabel="Retry loading posts"
                 accessibilityRole="button"
               >
-                <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Retry</ThemedText>
+                <ThemedText style={{ color: "#fff", fontWeight: "600" }}>
+                  Retry
+                </ThemedText>
               </Pressable>
             </View>
           ) : null
