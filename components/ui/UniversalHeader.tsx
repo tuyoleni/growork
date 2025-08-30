@@ -126,9 +126,8 @@ export default function UniversalHeader({
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: 10,
     paddingBottom: 16,
+    paddingHorizontal: 16,
   },
   topRow: {
     flexDirection: "row",

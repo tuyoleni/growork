@@ -1,13 +1,13 @@
-import React from 'react';
-import { Pressable, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { ThemedText } from '../ThemedText';
-import { useThemeColor } from '@/hooks';
+import React from "react";
+import { Pressable, StyleSheet, ViewStyle, TextStyle } from "react-native";
+import { ThemedText } from "../ThemedText";
+import { useThemeColor } from "@/hooks";
 
 export interface ThemedButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
-  size?: 'small' | 'medium' | 'large';
+  variant?: "primary" | "secondary" | "outline";
+  size?: "small" | "medium" | "large";
   disabled?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
@@ -17,24 +17,24 @@ export interface ThemedButtonProps {
 export default function ThemedButton({
   title,
   onPress,
-  variant = 'primary',
-  size = 'medium',
+  variant = "primary",
+  size = "medium",
   disabled = false,
   style,
   textStyle,
   children,
 }: ThemedButtonProps) {
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
+  const borderColor = useThemeColor({}, "border");
+  const mutedTextColor = useThemeColor({}, "mutedText");
 
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       borderRadius: 4,
       borderWidth: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
       opacity: disabled ? 0.6 : 1,
     };
 
@@ -66,7 +66,7 @@ export default function ThemedButton({
         borderColor: textColor,
       },
       outline: {
-        backgroundColor: 'transparent',
+        backgroundColor: "transparent",
         borderColor: textColor,
       },
     };
@@ -81,7 +81,7 @@ export default function ThemedButton({
 
   const getTextStyle = (): TextStyle => {
     const baseTextStyle: TextStyle = {
-      fontWeight: '500',
+      fontWeight: "500",
     };
 
     const sizeTextStyles = {
@@ -117,16 +117,8 @@ export default function ThemedButton({
   };
 
   return (
-    <Pressable
-      style={getButtonStyle()}
-      onPress={onPress}
-      disabled={disabled}
-    >
-      {children || (
-        <ThemedText style={getTextStyle()}>
-          {title}
-        </ThemedText>
-      )}
+    <Pressable style={getButtonStyle()} onPress={onPress} disabled={disabled}>
+      {children || <ThemedText style={getTextStyle()}>{title}</ThemedText>}
     </Pressable>
   );
-} 
+}

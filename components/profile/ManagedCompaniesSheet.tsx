@@ -70,18 +70,11 @@ export default function ManagedCompaniesSheet({
         <ThemedText style={[styles.headerTitle, { color: textColor }]}>
           Companies I Manage
         </ThemedText>
-        <View style={styles.headerRight}>
-          {companies.length > 0 && (
-            <View style={[styles.badge, { backgroundColor: tintColor }]}>
-              <ThemedText style={styles.badgeText}>
-                {companies.length}
-              </ThemedText>
-            </View>
-          )}
-          <Pressable onPress={onClose} style={styles.closeButton}>
-            <Feather name="x" size={24} color={mutedTextColor} />
-          </Pressable>
-        </View>
+        {companies.length > 0 && (
+          <ThemedText style={[styles.countText, { color: mutedTextColor }]}>
+            {companies.length}
+          </ThemedText>
+        )}
       </View>
 
       {companies.length === 0 ? (
@@ -202,11 +195,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.lg,
     marginBottom: Spacing.lg,
   },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
+
   headerTitle: {
     fontSize: Typography.xl,
     fontWeight: Typography.bold,
@@ -300,14 +289,9 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     fontWeight: Typography.medium,
   },
-  badge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-  },
-  badgeText: {
-    color: "#ffffff",
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
+  countText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.medium,
+    marginLeft: Spacing.sm,
   },
 });

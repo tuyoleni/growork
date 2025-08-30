@@ -1,30 +1,26 @@
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { AuthNavRow } from '@/components/ui/AuthNavRow';
-import { useFlashToast } from '@/components/ui/Flash';
-import { useAppContext } from '@/utils/AppContext';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-} from 'react-native';
-import ScreenContainer from '@/components/ScreenContainer';
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { AuthNavRow } from "@/components/ui/AuthNavRow";
+import { useFlashToast } from "@/components/ui/Flash";
+import { useAppContext } from "@/utils/AppContext";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { StyleSheet, TouchableOpacity, TextInput } from "react-native";
+import ScreenContainer from "@/components/ScreenContainer";
 
 export default function LoginScreen() {
   const { signIn, isLoading } = useAppContext();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const toast = useFlashToast();
   const router = useRouter();
 
   const handleLogin = async () => {
     if (!email || !password) {
       toast.show({
-        type: 'danger',
-        title: 'Missing fields',
-        message: 'Please enter both email and password.',
+        type: "danger",
+        title: "Missing fields",
+        message: "Please enter both email and password.",
       });
       return;
     }
@@ -32,9 +28,9 @@ export default function LoginScreen() {
     const { error } = await signIn(email, password);
     if (error) {
       toast.show({
-        type: 'danger',
-        title: 'Login failed',
-        message: error.message || 'Check your credentials and try again.',
+        type: "danger",
+        title: "Login failed",
+        message: error.message || "Check your credentials and try again.",
       });
     }
   };
@@ -75,13 +71,13 @@ export default function LoginScreen() {
             activeOpacity={0.8}
           >
             <ThemedText style={styles.loginButtonText}>
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? "Logging in..." : "Login"}
             </ThemedText>
           </TouchableOpacity>
         </ThemedView>
 
         <AuthNavRow
-          onNext={() => router.replace('/auth/email')}
+          onNext={() => router.replace("/auth/email")}
           nextLabel="Register instead"
         />
       </ThemedView>
@@ -92,39 +88,39 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    width: '100%',
-    alignSelf: 'center',
+    justifyContent: "center",
+    width: "100%",
+    alignSelf: "center",
     paddingHorizontal: 16,
   },
   heading: {
     marginBottom: 4,
-    textAlign: 'left',
+    textAlign: "left",
   },
   paragraph: {
     marginBottom: 12,
     maxWidth: 340,
-    textAlign: 'left',
+    textAlign: "left",
   },
   input: {
-    width: '100%',
+    width: "100%",
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 10,
-    backgroundColor: '#fff',
-    borderColor: '#ddd',
-    color: '#000',
+    backgroundColor: "#fff",
+    borderColor: "#ddd",
+    color: "#000",
   },
   loginButton: {
     marginTop: 12,
     paddingVertical: 14,
     borderRadius: 100,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loginButtonText: {
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 16,
   },
 });

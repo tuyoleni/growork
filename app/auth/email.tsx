@@ -1,16 +1,16 @@
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { AuthNavRow } from '@/components/ui/AuthNavRow';
-import { useFlashToast } from '@/components/ui/Flash';
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { StyleSheet, TextInput } from 'react-native';
-import ScreenContainer from '@/components/ScreenContainer';
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { AuthNavRow } from "@/components/ui/AuthNavRow";
+import { useFlashToast } from "@/components/ui/Flash";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { StyleSheet, TextInput } from "react-native";
+import ScreenContainer from "@/components/ScreenContainer";
 
 export default function EmailStep() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const toast = useFlashToast(); // ✅ grab flash message handler
   const router = useRouter();
 
@@ -18,16 +18,16 @@ export default function EmailStep() {
     if (!email || !password) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       toast.show({
-        type: 'danger',
-        title: 'Missing fields',
-        message: 'Please enter both email and password.',
+        type: "danger",
+        title: "Missing fields",
+        message: "Please enter both email and password.",
       });
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push({
-      pathname: './username',
+      pathname: "./username",
       params: { email, password },
     });
   };
@@ -67,7 +67,7 @@ export default function EmailStep() {
         <AuthNavRow
           onBack={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.replace('/auth/login');
+            router.replace("/auth/login");
           }}
           backLabel="Login instead"
           onNext={handleNext}
@@ -81,43 +81,43 @@ export default function EmailStep() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 16,
   },
   topTextContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   heading: {
     fontSize: 26,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
-    textAlign: 'left',
+    textAlign: "left",
   },
   paragraph: {
     fontSize: 16,
     marginBottom: 4,
-    textAlign: 'left',
+    textAlign: "left",
     maxWidth: 340,
   },
   input: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
     fontSize: 16,
-    backgroundColor: '#fff',
-    borderColor: '#ddd',
-    color: '#000',
+    backgroundColor: "#fff",
+    borderColor: "#ddd",
+    color: "#000",
   },
   formGroup: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 32,
   },
 });

@@ -1,7 +1,14 @@
-import { Colors } from '@/constants/Colors';
-import { Feather } from '@expo/vector-icons';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ViewStyle, useColorScheme } from 'react-native';
+import { Colors } from "@/constants/Colors";
+import { Feather } from "@expo/vector-icons";
+import React from "react";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+  useColorScheme,
+} from "react-native";
 
 interface AuthNavRowProps {
   onBack?: () => void;
@@ -32,7 +39,7 @@ export const AuthNavRow: React.FC<AuthNavRowProps> = ({
   nextDisabled,
   style,
 }) => {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() ?? "light";
   const color = Colors[scheme];
 
   // Count how many buttons are visible
@@ -54,14 +61,27 @@ export const AuthNavRow: React.FC<AuthNavRowProps> = ({
         <TouchableOpacity
           style={[
             styles.iconButton,
-            { backgroundColor: color.backgroundSecondary, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
+            {
+              backgroundColor: color.backgroundSecondary,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            },
             visibleButtonsCount === 1 && styles.onlyButtonLeft,
           ]}
           onPress={onBack}
           activeOpacity={0.7}
         >
-          {backIcon ?? <Feather name="arrow-left" size={24} color={color.tint} />}
-          {backLabel && <Text style={[styles.navText, { color: color.tint, marginLeft: 6 }]}>{backLabel}</Text>}
+          {backIcon ?? (
+            <Feather name="arrow-left" size={24} color={color.tint} />
+          )}
+          {backLabel && (
+            <Text
+              style={[styles.navText, { color: color.tint, marginLeft: 6 }]}
+            >
+              {backLabel}
+            </Text>
+          )}
         </TouchableOpacity>
       )}
 
@@ -83,7 +103,10 @@ export const AuthNavRow: React.FC<AuthNavRowProps> = ({
             <Text
               style={[
                 styles.centerButtonText,
-                { color: scheme === 'light' ? Colors.dark.text : Colors.light.text },
+                {
+                  color:
+                    scheme === "light" ? Colors.dark.text : Colors.light.text,
+                },
               ]}
             >
               {centerLabel}
@@ -97,7 +120,12 @@ export const AuthNavRow: React.FC<AuthNavRowProps> = ({
         <TouchableOpacity
           style={[
             styles.iconButton,
-            { backgroundColor: color.backgroundSecondary, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
+            {
+              backgroundColor: color.backgroundSecondary,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            },
             nextDisabled && styles.disabled,
             visibleButtonsCount === 1 && styles.onlyButtonRight,
           ]}
@@ -105,8 +133,16 @@ export const AuthNavRow: React.FC<AuthNavRowProps> = ({
           disabled={nextDisabled}
           activeOpacity={0.7}
         >
-          {nextLabel && <Text style={[styles.navText, { color: color.tint, marginRight: 6 }]}>{nextLabel}</Text>}
-          {nextIcon ?? <Feather name="arrow-right" size={24} color={color.tint} />}
+          {nextLabel && (
+            <Text
+              style={[styles.navText, { color: color.tint, marginRight: 6 }]}
+            >
+              {nextLabel}
+            </Text>
+          )}
+          {nextIcon ?? (
+            <Feather name="arrow-right" size={24} color={color.tint} />
+          )}
         </TouchableOpacity>
       )}
     </View>
@@ -115,13 +151,13 @@ export const AuthNavRow: React.FC<AuthNavRowProps> = ({
 
 const styles = StyleSheet.create({
   bottomRow: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingTop: 12,
     zIndex: 10,
@@ -136,29 +172,29 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 100,
-    alignItems: 'center',
+    alignItems: "center",
   },
   centerButtonText: {
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 16,
   },
   navText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   disabled: {
     opacity: 0.4,
   },
   onlyButtonLeft: {
     flex: 0,
-    marginRight: 'auto',
+    marginRight: "auto",
   },
   onlyButtonCenter: {
     flex: 0,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   onlyButtonRight: {
     flex: 0,
-    marginLeft: 'auto',
+    marginLeft: "auto",
   },
 });

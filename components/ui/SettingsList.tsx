@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   StyleSheet,
@@ -7,11 +7,11 @@ import {
   SectionList,
   Text,
   TextInput,
-} from 'react-native';
-import { Feather } from '@expo/vector-icons';
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
 
-import { useThemeColor } from '@/hooks';
-import { ThemedText } from '@/components/ThemedText';
+import { useThemeColor } from "@/hooks";
+import { ThemedText } from "@/components/ThemedText";
 
 interface SettingsItemProps {
   title: string;
@@ -58,16 +58,16 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
   rightComponent,
   // New text input props
   showTextInput = false,
-  textInputValue = '',
+  textInputValue = "",
   textInputPlaceholder,
   onTextInputChange,
   textInputProps = {},
 }) => {
-  const textColor = useThemeColor({}, 'text');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
-  const borderColor = useThemeColor({}, 'border');
-  const backgroundColor = useThemeColor({}, 'background');
-  const cardBg = useThemeColor({}, 'backgroundSecondary');
+  const textColor = useThemeColor({}, "text");
+  const mutedTextColor = useThemeColor({}, "mutedText");
+  const borderColor = useThemeColor({}, "border");
+  const backgroundColor = useThemeColor({}, "background");
+  const cardBg = useThemeColor({}, "backgroundSecondary");
 
   return (
     <View
@@ -75,33 +75,37 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
         styles.settingsItem,
         {
           backgroundColor,
-        }
+        },
       ]}
     >
       <View style={styles.settingsItemTop}>
         <View style={styles.settingsItemLeft}>
-          <View style={[
-            styles.iconContainer,
-            { backgroundColor: cardBg },
-            destructive && styles.destructiveIcon
-          ]}>
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: cardBg },
+              destructive && styles.destructiveIcon,
+            ]}
+          >
             <Feather
               name={icon as any}
               size={18}
-              color={iconColor || (destructive ? '#ef4444' : textColor)}
+              color={iconColor || (destructive ? "#ef4444" : textColor)}
             />
           </View>
           <View style={styles.settingsItemContent}>
             <ThemedText
               style={[
                 styles.settingsItemTitle,
-                { color: destructive ? '#ef4444' : textColor }
+                { color: destructive ? "#ef4444" : textColor },
               ]}
             >
               {title}
             </ThemedText>
             {subtitle && (
-              <ThemedText style={[styles.settingsItemSubtitle, { color: mutedTextColor }]}>
+              <ThemedText
+                style={[styles.settingsItemSubtitle, { color: mutedTextColor }]}
+              >
                 {subtitle}
               </ThemedText>
             )}
@@ -114,8 +118,8 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
           <Switch
             value={switchValue}
             onValueChange={onSwitchChange}
-            trackColor={{ false: '#e5e5e5', true: '#2563eb' }}
-            thumbColor={switchValue ? '#ffffff' : '#ffffff'}
+            trackColor={{ false: "#e5e5e5", true: "#2563eb" }}
+            thumbColor={switchValue ? "#ffffff" : "#ffffff"}
             ios_backgroundColor="#e5e5e5"
           />
         ) : showArrow && !showTextInput ? (
@@ -132,7 +136,7 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
                 color: textColor,
                 borderColor: borderColor,
                 backgroundColor: cardBg,
-              }
+              },
             ]}
             value={textInputValue}
             placeholder={textInputPlaceholder}
@@ -154,10 +158,14 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
   );
 };
 
-export default function SettingsList({ sections, style, contentContainerStyle }: SettingsListProps) {
-  const borderColor = useThemeColor({}, 'border');
-  const backgroundColor = useThemeColor({}, 'background');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
+export default function SettingsList({
+  sections,
+  style,
+  contentContainerStyle,
+}: SettingsListProps) {
+  const borderColor = useThemeColor({}, "border");
+  const backgroundColor = useThemeColor({}, "background");
+  const mutedTextColor = useThemeColor({}, "mutedText");
 
   const renderSectionHeader = ({ section }: { section: SettingsSection }) => (
     <View style={styles.sectionHeader}>
@@ -167,19 +175,31 @@ export default function SettingsList({ sections, style, contentContainerStyle }:
     </View>
   );
 
-  const renderItem = ({ item, index, section }: { item: SettingsItemProps; index: number; section: SettingsSection }) => {
+  const renderItem = ({
+    item,
+    index,
+    section,
+  }: {
+    item: SettingsItemProps;
+    index: number;
+    section: SettingsSection;
+  }) => {
     const isFirst = index === 0;
     const isLast = index === section.data.length - 1;
 
     return (
-      <View style={[
-        styles.itemContainer,
-        isFirst && styles.firstItem,
-        isLast && styles.lastItem,
-        !isFirst && !isLast && styles.middleItem,
-      ]}>
+      <View
+        style={[
+          styles.itemContainer,
+          isFirst && styles.firstItem,
+          isLast && styles.lastItem,
+          !isFirst && !isLast && styles.middleItem,
+        ]}
+      >
         <SettingsItem {...item} />
-        {!isLast && <View style={[styles.separator, { backgroundColor: borderColor }]} />}
+        {!isLast && (
+          <View style={[styles.separator, { backgroundColor: borderColor }]} />
+        )}
       </View>
     );
   };
@@ -214,14 +234,14 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     letterSpacing: 0.5,
   },
   sectionSeparator: {
     height: 20,
   },
   itemContainer: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     marginBottom: 1,
   },
   firstItem: {
@@ -239,37 +259,37 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   settingsItemTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   settingsItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   iconContainer: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   destructiveIcon: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: "#fef2f2",
   },
   settingsItemContent: {
     flex: 1,
   },
   settingsItemTitle: {
     fontSize: 16,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   settingsItemSubtitle: {
     fontSize: 14,
     marginTop: 2,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   separator: {
     height: 1,
@@ -287,10 +307,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 44, // Align with content (icon width + margin)
   },
   touchableOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
   },
-}); 
+});

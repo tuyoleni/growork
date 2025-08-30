@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
-import { ThemedText } from './ThemedText';
-import { Feather } from '@expo/vector-icons';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import React from "react";
+import { View, StyleSheet, Animated } from "react-native";
+import { ThemedText } from "./ThemedText";
+import { Feather } from "@expo/vector-icons";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 export default function NetworkStatusBanner() {
   const { isConnected, isInternetReachable } = useNetworkStatus();
@@ -11,7 +11,7 @@ export default function NetworkStatusBanner() {
 
   React.useEffect(() => {
     const shouldShow = !isConnected || isInternetReachable === false;
-    
+
     if (shouldShow && !visible) {
       setVisible(true);
       Animated.spring(slideAnim, {
@@ -30,15 +30,12 @@ export default function NetworkStatusBanner() {
   if (!visible) return null;
 
   return (
-    <Animated.View 
-      style={[
-        styles.banner,
-        { transform: [{ translateY: slideAnim }] }
-      ]}
+    <Animated.View
+      style={[styles.banner, { transform: [{ translateY: slideAnim }] }]}
     >
       <Feather name="wifi-off" size={16} color="#FFFFFF" />
       <ThemedText style={styles.text}>
-        {!isConnected ? 'No internet connection' : 'Limited connectivity'}
+        {!isConnected ? "No internet connection" : "Limited connectivity"}
       </ThemedText>
     </Animated.View>
   );
@@ -46,22 +43,22 @@ export default function NetworkStatusBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FF3B30',
+    backgroundColor: "#FF3B30",
     paddingVertical: 8,
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     zIndex: 1000,
   },
   text: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });

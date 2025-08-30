@@ -7,7 +7,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
 } from "react-native";
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useAppContext } from "@/utils/AppContext";
 import { ThemedText } from "../../ThemedText";
@@ -25,15 +25,13 @@ interface CommentsProps {
   disableScrolling?: boolean;
 }
 
-export default function Comments({ postId, disableScrolling = false }: CommentsProps) {
+export default function Comments({
+  postId,
+  disableScrolling = false,
+}: CommentsProps) {
   const { profile } = useAuth();
-  const {
-    comments,
-    loading,
-    error,
-    addComment,
-    deleteComment,
-  } = useComments(postId);
+  const { comments, loading, error, addComment, deleteComment } =
+    useComments(postId);
   const {
     toggleCommentLike: toggleLike,
     isCommentLiked: isLiked,
@@ -58,12 +56,18 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
   }, [postId]);
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-      setKeyboardVisible(true);
-    });
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardVisible(false);
-    });
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
     return () => {
       keyboardDidShowListener?.remove();
       keyboardDidHideListener?.remove();
@@ -74,10 +78,16 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
     const loadLikeData = async () => {
       if (comments.length > 0) {
         // Filter out any invalid comments first
-        const validComments = comments.filter(comment => comment && comment.id && typeof comment.id === 'string');
+        const validComments = comments.filter(
+          (comment) => comment && comment.id && typeof comment.id === "string"
+        );
 
         if (validComments.length !== comments.length) {
-          console.warn(`Filtered out ${comments.length - validComments.length} invalid comments`);
+          console.warn(
+            `Filtered out ${
+              comments.length - validComments.length
+            } invalid comments`
+          );
         }
 
         const likeStates: LikeMap = {};
@@ -92,7 +102,10 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
             likeStates[comment.id] = liked;
             counts[comment.id] = count;
           } catch (error) {
-            console.error(`Error loading like data for comment ${comment.id}:`, error);
+            console.error(
+              `Error loading like data for comment ${comment.id}:`,
+              error
+            );
             // Set default values on error
             likeStates[comment.id] = false;
             counts[comment.id] = 0;
@@ -157,15 +170,13 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 1) {
-      return 'Just now';
+      return "Just now";
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)}h ago`;
     } else {
       return date.toLocaleDateString();
     }
   };
-
-
 
   return (
     <View style={styles.container}>
@@ -178,16 +189,34 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
         {loading && (
           <View style={styles.skeletonContainer}>
             {[1, 2].map((index) => (
-              <View key={`comment-skeleton-${index}`} style={styles.skeletonItem}>
+              <View
+                key={`comment-skeleton-${index}`}
+                style={styles.skeletonItem}
+              >
                 <View style={styles.skeletonHeader}>
-                  <Skeleton width={32} height={32} borderRadius={16} style={styles.skeletonAvatar} />
+                  <Skeleton
+                    width={32}
+                    height={32}
+                    borderRadius={16}
+                    style={styles.skeletonAvatar}
+                  />
                   <View style={styles.skeletonText}>
-                    <Skeleton width={80} height={12} borderRadius={4} style={styles.skeletonName} />
+                    <Skeleton
+                      width={80}
+                      height={12}
+                      borderRadius={4}
+                      style={styles.skeletonName}
+                    />
                     <Skeleton width={60} height={10} borderRadius={4} />
                   </View>
                 </View>
                 <View style={styles.skeletonContent}>
-                  <Skeleton width="90%" height={12} borderRadius={4} style={styles.skeletonLine} />
+                  <Skeleton
+                    width="90%"
+                    height={12}
+                    borderRadius={4}
+                    style={styles.skeletonLine}
+                  />
                   <Skeleton width="70%" height={12} borderRadius={4} />
                 </View>
               </View>
@@ -201,21 +230,23 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
             </ThemedText>
           </View>
         )}
-        {comments && comments.length > 0 && comments
-          .filter(item => item && item.id && typeof item.id === 'string')
-          .map((item: CommentType) => (
-            <CommentItem
-              key={item.id}
-              item={item}
-              isOwn={profile ? item.user_id === profile.id : false}
-              isAuthor={item.user_id === profile?.id}
-              liked={likedComments[item.id] || false}
-              likeCount={likeCounts[item.id] || 0}
-              onLike={() => handleToggleLike(item.id)}
-              onMenu={() => handleMenu(item.id)}
-              formatDate={formatCommentDate}
-            />
-          ))}
+        {comments &&
+          comments.length > 0 &&
+          comments
+            .filter((item) => item && item.id && typeof item.id === "string")
+            .map((item: CommentType) => (
+              <CommentItem
+                key={item.id}
+                item={item}
+                isOwn={profile ? item.user_id === profile.id : false}
+                isAuthor={item.user_id === profile?.id}
+                liked={likedComments[item.id] || false}
+                likeCount={likeCounts[item.id] || 0}
+                onLike={() => handleToggleLike(item.id)}
+                onMenu={() => handleMenu(item.id)}
+                formatDate={formatCommentDate}
+              />
+            ))}
       </ScrollView>
       {/* Fixed bottom input bar */}
       <View style={styles.fixedInputContainer}>
@@ -223,11 +254,16 @@ export default function Comments({ postId, disableScrolling = false }: CommentsP
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
-          <View style={[
-            styles.inputSection,
-            keyboardVisible && styles.inputSectionKeyboard,
-          ]}>
-            <EmojiBar emojis={emojiReactions} onEmoji={(e) => setCommentText((prev) => prev + e)} />
+          <View
+            style={[
+              styles.inputSection,
+              keyboardVisible && styles.inputSectionKeyboard,
+            ]}
+          >
+            <EmojiBar
+              emojis={emojiReactions}
+              onEmoji={(e) => setCommentText((prev) => prev + e)}
+            />
             <CommentsInputBar
               profile={profile}
               value={commentText}
@@ -269,8 +305,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   skeletonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 6,
   },
   skeletonAvatar: {
@@ -293,12 +329,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: "#eee",
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    paddingBottom: Platform.OS === "ios" ? 20 : 8,
     paddingHorizontal: 8,
   },
   inputSectionKeyboard: {
     // If you want extra padding when keyboard is open (optional)
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+    paddingBottom: Platform.OS === "ios" ? 24 : 12,
   },
   emptyContainer: {
     flex: 1,
@@ -319,14 +355,14 @@ const styles = StyleSheet.create({
     color: "#ff4757",
   },
   fixedInputContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderColor: '#eee',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    borderColor: "#eee",
+    paddingBottom: Platform.OS === "ios" ? 20 : 8,
     paddingHorizontal: 8,
   },
 });

@@ -1,13 +1,13 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { ThemedText } from '../ThemedText';
-import { useThemeColor } from '@/hooks';
-import CustomOptionStrip from './CustomOptionStrip';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { ThemedText } from "../ThemedText";
+import { useThemeColor } from "@/hooks";
+import CustomOptionStrip from "./CustomOptionStrip";
 
 const BOOKMARK_CATEGORIES = [
-  { icon: 'briefcase', label: 'Jobs' },
-  { icon: 'book-open', label: 'News' },
-  { icon: 'coffee', label: 'Applications' },
+  { icon: "briefcase", label: "Jobs" },
+  { icon: "book-open", label: "News" },
+  { icon: "coffee", label: "Applications" },
 ];
 
 interface BookmarksHeaderProps {
@@ -16,13 +16,13 @@ interface BookmarksHeaderProps {
   subtitle: string;
 }
 
-export default function BookmarksHeader({ 
-  selectedCategory, 
-  onCategoryChange, 
-  subtitle 
+export default function BookmarksHeader({
+  selectedCategory,
+  onCategoryChange,
+  subtitle,
 }: BookmarksHeaderProps) {
-  const textColor = useThemeColor({}, 'text');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
+  const textColor = useThemeColor({}, "text");
+  const mutedTextColor = useThemeColor({}, "mutedText");
 
   return (
     <View style={styles.container}>
@@ -34,7 +34,7 @@ export default function BookmarksHeader({
           {subtitle}
         </ThemedText>
       </View>
-      
+
       <View style={styles.stripContainer}>
         <CustomOptionStrip
           visibleOptions={BOOKMARK_CATEGORIES}
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   subtitle: {
@@ -67,7 +67,5 @@ const styles = StyleSheet.create({
   stripContainer: {
     marginTop: 8,
   },
-  categoryStrip: {
-    paddingHorizontal: 0,
-  },
-}); 
+  categoryStrip: {},
+});

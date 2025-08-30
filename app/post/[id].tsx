@@ -15,10 +15,12 @@ import {
   useApplicationStatus,
   useTextToSpeech,
   usePostById,
+  useCompanies,
 } from "@/hooks";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import ScreenContainer from "@/components/ScreenContainer";
+import UniversalHeader from "@/components/ui/UniversalHeader";
 import { Post } from "@/types";
 import { PostType } from "@/types/enums";
 
@@ -28,7 +30,7 @@ import ApplyButton from "@/components/content/post/ApplyButton";
 import ThemedButton from "@/components/ui/ThemedButton";
 import { openGlobalSheet } from "@/utils/globalSheet";
 import JobApplicationForm from "@/components/content/JobApplicationForm";
-import { PostDetailSkeleton } from "@/components/ui/Skeleton";
+import { PostSkeleton } from "@/components/ui/Skeleton";
 
 const ICON_SIZE = 20;
 
@@ -37,6 +39,10 @@ const PostDetail = () => {
   const router = useRouter();
 
   const [post, setPost] = useState<Post | null>(null);
+  const [recommendedCompanies, setRecommendedCompanies] = useState<{
+    [key: string]: any;
+  }>({});
+  const [mainPostCompany, setMainPostCompany] = useState<any>(null);
 
   const borderColor = useThemeColor({}, "border");
   const textColor = useThemeColor({}, "text");
@@ -56,6 +62,7 @@ const PostDetail = () => {
   const hasApplied = !!application;
   const { speak, stop, isSpeaking, isPaused } = useTextToSpeech();
   const { getPostById, loading: postLoading } = usePostById();
+  const { getCompanyByIdPublic } = useCompanies();
 
   // Cleanup text-to-speech when component unmounts
   useEffect(() => {
@@ -75,12 +82,63 @@ const PostDetail = () => {
     fetchData();
   }, [id, fetchPosts, getPostById]);
 
+  // Fetch company data for main post
+  useEffect(() => {
+    const fetchMainPostCompany = async () => {
+      if (post?.criteria?.companyId) {
+        try {
+          const { company } = await getCompanyByIdPublic(
+            post.criteria.companyId
+          );
+          setMainPostCompany(company);
+        } catch (error) {
+          console.warn("Failed to fetch company data for main post:", error);
+        }
+      }
+    };
+
+    fetchMainPostCompany();
+  }, [post?.criteria?.companyId, getCompanyByIdPublic]);
+
   const recommendedPosts = useMemo(() => {
     if (!post || !allPosts) return [];
     return allPosts.filter(
       (p: Post) => p.type === post.type && p.id !== post.id
     );
   }, [post, allPosts]);
+
+  // Fetch company data for recommended posts
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      if (recommendedPosts.length > 0) {
+        const companyPromises = recommendedPosts
+          .filter((post) => post.criteria?.companyId)
+          .map(async (post) => {
+            try {
+              const { company } = await getCompanyByIdPublic(
+                post.criteria!.companyId!
+              );
+              return { postId: post.id, company };
+            } catch (error) {
+              console.warn("Failed to fetch company data for post:", post.id);
+              return { postId: post.id, company: null };
+            }
+          });
+
+        const results = await Promise.all(companyPromises);
+        const companiesMap = results.reduce((acc, { postId, company }) => {
+          if (company) {
+            acc[postId] = company;
+          }
+          return acc;
+        }, {} as { [key: string]: any });
+
+        setRecommendedCompanies(companiesMap);
+      }
+    };
+
+    fetchCompanyData();
+  }, [recommendedPosts, getCompanyByIdPublic]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -111,36 +169,12 @@ const PostDetail = () => {
   if (postLoading || feedLoading) {
     return (
       <ScreenContainer>
-        <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.iconButton}
-            accessibilityLabel="Go back"
-          >
-            <Feather name="arrow-left" size={ICON_SIZE} color={textColor} />
-          </TouchableOpacity>
-          <RNView style={styles.headerRightButtons}>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => console.log("Share pressed")}
-              accessibilityLabel="Share"
-            >
-              <Feather name="share-2" size={ICON_SIZE} color={textColor} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => console.log("More options pressed")}
-              accessibilityLabel="More options"
-            >
-              <Feather
-                name="more-horizontal"
-                size={ICON_SIZE}
-                color={textColor}
-              />
-            </TouchableOpacity>
-          </RNView>
-        </ThemedView>
-        <PostDetailSkeleton />
+        <UniversalHeader
+          title=""
+          showBackButton={true}
+          showNotifications={false}
+        />
+        <PostSkeleton />
       </ScreenContainer>
     );
   }
@@ -158,45 +192,20 @@ const PostDetail = () => {
 
   return (
     <ScreenContainer>
-      <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.iconButton}
-          accessibilityLabel="Go back"
-        >
-          <Feather name="arrow-left" size={ICON_SIZE} color={textColor} />
-        </TouchableOpacity>
-        <RNView style={styles.headerRightButtons}>
-          {post && (
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => {
-                const textToSpeak = `${post.title}. ${post.content}`;
-                speak(textToSpeak);
-              }}
-              accessibilityLabel="Listen to post"
-            >
-              <Feather
-                name={isSpeaking ? (isPaused ? "play" : "pause") : "volume-2"}
-                size={ICON_SIZE}
-                color={textColor}
-              />
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleMoreOptions}
-            accessibilityLabel="More options"
-          >
-            <Feather
-              name="more-horizontal"
-              size={ICON_SIZE}
-              color={textColor}
-            />
-          </TouchableOpacity>
-        </RNView>
-      </ThemedView>
+      <UniversalHeader
+        title=""
+        showBackButton={true}
+        showNotifications={false}
+        rightAction={{
+          icon: isSpeaking ? (isPaused ? "play" : "pause") : "volume-2",
+          onPress: () => {
+            if (post) {
+              const textToSpeak = `${post.title}. ${post.content}`;
+              speak(textToSpeak);
+            }
+          },
+        }}
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -210,18 +219,30 @@ const PostDetail = () => {
           {/* Company Info - Minimal */}
           {isJob && post.criteria?.company && (
             <RNView style={styles.companyRow}>
-              <ThemedText
-                style={[styles.companyName, { color: mutedTextColor }]}
-              >
-                {post.criteria.company}
-              </ThemedText>
-              {post.criteria.location && (
+              <Image
+                source={{
+                  uri:
+                    mainPostCompany?.logo_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      post.criteria.company
+                    )}&size=64`,
+                }}
+                style={styles.companyLogo}
+              />
+              <RNView style={styles.companyInfo}>
                 <ThemedText
-                  style={[styles.locationText, { color: mutedTextColor }]}
+                  style={[styles.companyName, { color: mutedTextColor }]}
                 >
-                  • {post.criteria.location}
+                  {post.criteria.company}
                 </ThemedText>
-              )}
+                {post.criteria.location && (
+                  <ThemedText
+                    style={[styles.locationText, { color: mutedTextColor }]}
+                  >
+                    • {post.criteria.location}
+                  </ThemedText>
+                )}
+              </RNView>
             </RNView>
           )}
 
@@ -345,31 +366,28 @@ const PostDetail = () => {
         </ThemedView>
 
         {recommendedPosts.length > 0 && (
-          <ThemedView
-            style={[styles.similarContainer, { borderTopColor: borderColor }]}
-          >
+          <ThemedView style={styles.similarContainer}>
             <ThemedText style={styles.similarTitle}>
               {isJob ? "Similar Jobs" : "Related News"}
             </ThemedText>
             <RNView style={styles.recommendedListContainer}>
               {recommendedPosts.map((item: Post) => {
                 const itemCompanyName = item.criteria?.company || "Company";
+                const companyData = recommendedCompanies[item.id];
+                const logoUrl =
+                  companyData?.logo_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    itemCompanyName
+                  )}&size=128`;
 
                 return (
                   <TouchableOpacity
                     key={item.id}
-                    style={[
-                      styles.recommendedItem,
-                      { borderColor: borderColor },
-                    ]}
+                    style={styles.recommendedItem}
                     onPress={() => router.push(`/post/${item.id}`)}
                   >
                     <Image
-                      source={{
-                        uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          itemCompanyName
-                        )}&size=128`,
-                      }}
+                      source={{ uri: logoUrl }}
                       style={styles.recommendedLogo}
                     />
                     <RNView style={styles.recommendedInfo}>
@@ -415,28 +433,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    minHeight: 56,
-  },
-  headerRightButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconButton: {
-    padding: 8,
-    borderRadius: 4,
-    minWidth: 32,
-    minHeight: 32,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+
   scrollView: {
     flex: 1,
   },
@@ -445,7 +442,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   postTitle: {
     fontSize: 24,
@@ -460,7 +457,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
-    gap: 8,
+    gap: 12,
+  },
+  companyLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
+  companyInfo: {
+    flex: 1,
   },
   companyName: {
     fontSize: 16,
@@ -539,26 +544,22 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   similarContainer: {
-    marginTop: 20,
-    borderTopWidth: 1,
-    paddingTop: 20,
+    marginTop: 16,
     paddingHorizontal: 16,
   },
   similarTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   recommendedListContainer: {
-    gap: 12,
+    gap: 8,
   },
   recommendedItem: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 4,
+    alignItems: "flex-start",
+    paddingVertical: 8,
     gap: 12,
-    borderWidth: 1,
   },
   recommendedLogo: {
     width: 40,

@@ -1,10 +1,10 @@
-import { useThemeColor } from '@/hooks';
-import { Document } from '@/types';
-import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { ThemedText } from '../ThemedText';
-import { ThemedView } from '../ThemedView';
-import DocumentCard from './DocumentCard';
+import { useThemeColor } from "@/hooks";
+import { Document } from "@/types";
+import React from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { ThemedText } from "../ThemedText";
+import { ThemedView } from "../ThemedView";
+import DocumentCard from "./DocumentCard";
 
 export interface DocumentListItem {
   document: Document;
@@ -16,7 +16,7 @@ export interface DocumentListProps {
   subtitle?: string;
   emptyText?: string;
   showCategory?: boolean;
-  variant?: 'default' | 'compact' | 'detailed';
+  variant?: "default" | "compact" | "detailed";
   onDocumentPress?: (document: Document) => void;
   onDocumentDownload?: (document: Document) => void;
   onDocumentShare?: (document: Document) => void;
@@ -30,9 +30,9 @@ export default function DocumentList({
   documents,
   title,
   subtitle,
-  emptyText = 'No documents found',
+  emptyText = "No documents found",
   showCategory = false,
-  variant = 'default',
+  variant = "default",
   onDocumentPress,
   onDocumentDownload,
   onDocumentShare,
@@ -41,8 +41,8 @@ export default function DocumentList({
   groupedByCategory = false,
   categoryTitle,
 }: DocumentListProps) {
-  const textColor = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
+  const textColor = useThemeColor({}, "text");
+  const mutedText = useThemeColor({}, "mutedText");
 
   const renderDocumentCard = (document: Document, index: number) => (
     <DocumentCard
@@ -62,9 +62,11 @@ export default function DocumentList({
     if (!groupedByCategory) return null;
 
     const grouped = documents.reduce((acc, doc) => {
-      const category = doc.type || 'Other';
+      const category = doc.type || "Other";
       // Map document types to display names
-      const categoryDisplayName = category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const categoryDisplayName = category
+        .replace("_", " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
       if (!acc[categoryDisplayName]) {
         acc[categoryDisplayName] = [];
       }
@@ -79,7 +81,7 @@ export default function DocumentList({
             {category}
           </ThemedText>
           <ThemedText style={[styles.categoryCount, { color: mutedText }]}>
-            {docs.length} document{docs.length !== 1 ? 's' : ''}
+            {docs.length} document{docs.length !== 1 ? "s" : ""}
           </ThemedText>
         </View>
         <ThemedView style={styles.documentGroup}>
@@ -129,11 +131,13 @@ export default function DocumentList({
       {documents.length === 0 ? (
         renderEmptyState()
       ) : (
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {groupedByCategory ? renderGroupedDocuments() : renderSimpleDocuments()}
+          {groupedByCategory
+            ? renderGroupedDocuments()
+            : renderSimpleDocuments()}
         </ScrollView>
       )}
     </ThemedView>
@@ -150,7 +154,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   subtitle: {
@@ -160,7 +164,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   documentList: {
-    width: '100%',
+    width: "100%",
   },
   categoryGroup: {
     marginBottom: 24,
@@ -171,23 +175,23 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 2,
   },
   categoryCount: {
     fontSize: 14,
   },
   documentGroup: {
-    width: '100%',
+    width: "100%",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 40,
   },
   emptyText: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
-}); 
+});

@@ -219,10 +219,34 @@ export function usePostOperations() {
     }
   }, []);
 
+  const deletePost = useCallback(async (postId: string) => {
+    try {
+      const { data } = await supabaseRequest<any>(
+        async () => {
+          const { data, error, status } = await supabase
+            .from('posts')
+            .delete()
+            .eq('id', postId)
+            .select('*')
+            .single();
+          return { data, error, status };
+        },
+        { logTag: 'posts:delete' }
+      );
+
+      console.log('✅ Post deleted successfully:', data);
+      return { data, error: null };
+    } catch (error) {
+      console.error('❌ Error in deletePost:', error);
+      return { data: null, error };
+    }
+  }, []);
+
   return {
     convertDbPostToContentCard,
     fetchPostsWithData,
     addPost,
+    deletePost,
   };
 }
 
@@ -262,6 +286,29 @@ export const addPost = async (postData: {
     return { data, error: null };
   } catch (error) {
     console.error('❌ Error in addPost:', error);
+    return { data: null, error };
+  }
+};
+
+export const deletePost = async (postId: string) => {
+  try {
+    const { data } = await supabaseRequest<any>(
+      async () => {
+        const { data, error, status } = await supabase
+          .from('posts')
+          .delete()
+          .eq('id', postId)
+          .select('*')
+          .single();
+        return { data, error, status };
+      },
+      { logTag: 'posts:delete' }
+    );
+
+    console.log('✅ Post deleted successfully:', data);
+    return { data, error: null };
+  } catch (error) {
+    console.error('❌ Error in deletePost:', error);
     return { data: null, error };
   }
 };

@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     paddingVertical: 10,
-    paddingHorizontal: 0,
   },
   content: {
     flex: 1,

@@ -234,13 +234,11 @@ export default function Profile() {
             <ProfileHeader {...headerProps} isBusinessUser={isBusinessUser} />
           </Animated.View>
 
-          <ThemedView style={styles.categorySection}>
-            <CategorySelector
-              options={CATEGORY_OPTIONS}
-              selectedIndex={selectedIndex}
-              onChange={setSelectedIndex}
-            />
-          </ThemedView>
+          <CategorySelector
+            options={CATEGORY_OPTIONS}
+            selectedIndex={selectedIndex}
+            onChange={setSelectedIndex}
+          />
 
           <ThemedView style={styles.contentSection}>
             {selectedIndex === 0 && <DocumentsList />}
@@ -270,7 +268,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
     paddingVertical: 8,
   },
   compactHeaderLeft: {
@@ -299,10 +296,7 @@ const styles = StyleSheet.create({
   mainHeaderContainer: {
     width: "100%",
   },
-  categorySection: {
-    marginTop: 24,
-    paddingHorizontal: 16,
-  },
+
   contentSection: {
     marginTop: 16,
     flex: 1,

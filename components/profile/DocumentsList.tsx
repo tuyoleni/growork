@@ -1,24 +1,24 @@
-import { useThemeColor , useDocuments , useAuth } from '@/hooks';
-import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import React, { useState, useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { ThemedText } from '../ThemedText';
-import DocumentList from '../content/DocumentList';
-import { Document } from '@/types';
-import CustomOptionStrip from '../ui/CustomOptionStrip';
-import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
+import { useThemeColor, useDocuments, useAuth } from "@/hooks";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import React, { useState, useEffect } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { ThemedText } from "../ThemedText";
+import DocumentList from "../content/DocumentList";
+import { Document } from "@/types";
+import CustomOptionStrip from "../ui/CustomOptionStrip";
+import { useBottomSheetManager } from "@/components/content/BottomSheetManager";
 
 const DOCUMENT_FILTERS = [
-  { icon: 'briefcase', label: 'CV' },
-  { icon: 'mail', label: 'Cover Letter' },
-  { icon: 'award', label: 'Certificate' },
+  { icon: "briefcase", label: "CV" },
+  { icon: "mail", label: "Cover Letter" },
+  { icon: "award", label: "Certificate" },
 ];
 
 const ALL_DOCUMENT_OPTIONS = [
-  { icon: 'briefcase', label: 'CV' },
-  { icon: 'mail', label: 'Cover Letter' },
-  { icon: 'award', label: 'Certificate' },
+  { icon: "briefcase", label: "CV" },
+  { icon: "mail", label: "Cover Letter" },
+  { icon: "award", label: "Certificate" },
 ];
 
 interface DocumentsListProps {
@@ -28,38 +28,44 @@ interface DocumentsListProps {
   onUploadPress?: () => void;
 }
 
-function filterDocumentsByCategory(documents: Document[], categoryFilter: string) {
-  if (!categoryFilter || categoryFilter === 'All') return documents;
+function filterDocumentsByCategory(
+  documents: Document[],
+  categoryFilter: string
+) {
+  if (!categoryFilter || categoryFilter === "All") return documents;
 
-  return documents.filter(doc => {
-    const docCategory = doc.type?.toLowerCase() || '';
+  return documents.filter((doc) => {
+    const docCategory = doc.type?.toLowerCase() || "";
     const filterCategory = categoryFilter.toLowerCase();
 
     // Map filter labels to document categories
     const categoryMapping: Record<string, string[]> = {
-      'cv': ['cv', 'resume'],
-      'cover letter': ['cover_letter', 'coverletter'],
-      'certificate': ['certificate', 'cert', 'diploma', 'achievement']
+      cv: ["cv", "resume"],
+      "cover letter": ["cover_letter", "coverletter"],
+      certificate: ["certificate", "cert", "diploma", "achievement"],
     };
 
-    const mappedCategories = categoryMapping[filterCategory] || [filterCategory];
-    return mappedCategories.some(cat => docCategory.includes(cat));
+    const mappedCategories = categoryMapping[filterCategory] || [
+      filterCategory,
+    ];
+    return mappedCategories.some((cat) => docCategory.includes(cat));
   });
 }
 
 function DocumentsListInner({
-  selectedDocumentFilter = 'All',
+  selectedDocumentFilter = "All",
   showHeader = true,
   showUploadButton = true,
-  onUploadPress
+  onUploadPress,
 }: DocumentsListProps) {
   const { user } = useAuth();
   const { documents, loading, fetchDocuments } = useDocuments(user?.id);
   const [, setModalVisible] = useState(false);
-  const tintColor = useThemeColor({}, 'tint');
-  const mutedText = useThemeColor({}, 'mutedText');
-  const textColor = useThemeColor({}, 'text');
-  const [selectedDocumentFilterIndex, setSelectedDocumentFilterIndex] = useState(-1);
+  const tintColor = useThemeColor({}, "tint");
+  const mutedText = useThemeColor({}, "mutedText");
+  const textColor = useThemeColor({}, "text");
+  const [selectedDocumentFilterIndex, setSelectedDocumentFilterIndex] =
+    useState(-1);
   const [visibleDocumentFilters] = useState(DOCUMENT_FILTERS);
   const { openDocumentsSheet } = useBottomSheetManager();
 
@@ -83,36 +89,41 @@ function DocumentsListInner({
   };
 
   const getSelectedDocumentFilterLabel = () => {
-    return selectedDocumentFilterIndex >= 0 ? DOCUMENT_FILTERS[selectedDocumentFilterIndex]?.label : 'All';
+    return selectedDocumentFilterIndex >= 0
+      ? DOCUMENT_FILTERS[selectedDocumentFilterIndex]?.label
+      : "All";
   };
 
   // Filter documents by category
-  const categoryFilteredDocuments = filterDocumentsByCategory(documents, getSelectedDocumentFilterLabel());
+  const categoryFilteredDocuments = filterDocumentsByCategory(
+    documents,
+    getSelectedDocumentFilterLabel()
+  );
 
   const handleDocumentPress = (document: Document) => {
-    console.log('Document pressed:', document.name);
+    console.log("Document pressed:", document.name);
     // Handle document press - could open preview, etc.
   };
 
   const handleDocumentDownload = (document: Document) => {
-    if (process.env.EXPO_OS === 'ios') {
+    if (process.env.EXPO_OS === "ios") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    console.log('Download document:', document.name);
+    console.log("Download document:", document.name);
   };
 
   const handleDocumentShare = (document: Document) => {
-    if (process.env.EXPO_OS === 'ios') {
+    if (process.env.EXPO_OS === "ios") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    console.log('Share document:', document.name);
+    console.log("Share document:", document.name);
   };
 
   const handleDocumentDelete = (document: Document) => {
-    if (process.env.EXPO_OS === 'ios') {
+    if (process.env.EXPO_OS === "ios") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    console.log('Delete document:', document.name);
+    console.log("Delete document:", document.name);
   };
 
   return (
@@ -124,7 +135,7 @@ function DocumentsListInner({
           {showUploadButton && (
             <Pressable
               onPress={() => {
-                if (process.env.EXPO_OS === 'ios') {
+                if (process.env.EXPO_OS === "ios") {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }
                 openModal();
@@ -139,7 +150,9 @@ function DocumentsListInner({
       )}
 
       {/* Document Filter */}
-      <View style={{ paddingHorizontal: 16, paddingVertical: 8, marginBottom: 16 }}>
+      <View
+        style={{ paddingHorizontal: 16, paddingVertical: 8, marginBottom: 16 }}
+      >
         <CustomOptionStrip
           visibleOptions={visibleDocumentFilters}
           selectedIndex={selectedDocumentFilterIndex}
@@ -162,10 +175,10 @@ function DocumentsListInner({
           <Pressable
             style={({ pressed }) => [
               styles.emptyState,
-              { opacity: pressed ? 0.7 : 1 }
+              { opacity: pressed ? 0.7 : 1 },
             ]}
             onPress={() => {
-              if (process.env.EXPO_OS === 'ios') {
+              if (process.env.EXPO_OS === "ios") {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }
               openModal();
@@ -211,27 +224,27 @@ export default function DocumentsList(props: DocumentsListProps) {
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    width: "100%",
+    flexDirection: "column",
+    alignItems: "flex-start",
     gap: 16,
     paddingTop: 8,
   },
   headerRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 16,
     paddingHorizontal: 16,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   headerRightRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   countText: {
@@ -239,8 +252,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 8,
     borderWidth: 1,
     paddingVertical: 6,
@@ -248,44 +261,44 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   uploadText: {
-    fontWeight: '500',
+    fontWeight: "500",
     fontSize: 14,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
     paddingHorizontal: 16,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 16,
     marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
     marginBottom: 16,
   },
   loadingContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
     paddingHorizontal: 16,
   },
   loadingText: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
   list: {
-    width: '100%',
-    flexDirection: 'column',
+    width: "100%",
+    flexDirection: "column",
     gap: 12,
   },
   card: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 0,
     borderWidth: 0,
     paddingVertical: 14,
@@ -296,18 +309,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 2,
   },
   cardTextWrap: {
     flex: 1,
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    flexDirection: "column",
+    alignItems: "flex-start",
     gap: 2,
   },
   cardTitle: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 15,
     marginBottom: 2,
   },
@@ -317,12 +330,12 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 6,
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   categoryHeading: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 2,
   },
   categoryCount: {
@@ -330,7 +343,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   statLabel: {
     fontSize: 12,

@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
-  FlatList,
   TouchableOpacity,
   Pressable,
   StyleSheet,
-  RefreshControl,
   Alert,
-} from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
-import { MyPostCard } from '@/components/content/MyPostCard';
-import { useAuth, useMyPosts, useThemeColor } from '@/hooks';
-import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-import { PostWithProfile } from '@/hooks/posts';
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { ThemedText } from "@/components/ThemedText";
+import { MyPostCard } from "@/components/content/MyPostCard";
+import { useAuth, useMyPosts, useThemeColor } from "@/hooks";
+import { deletePost } from "@/hooks/posts/usePostOperations";
+import { useBottomSheetManager } from "@/components/content/BottomSheetManager";
+import { PostWithProfile } from "@/hooks/posts";
 
 // Extend PostWithProfile with properties needed by MyPostCard
 interface MyPost extends PostWithProfile {
@@ -23,14 +22,13 @@ interface MyPost extends PostWithProfile {
 
 export default function MyPostsList() {
   const { user } = useAuth();
-  const [refreshing, setRefreshing] = useState(false);
 
   const { openCreatePostSheet } = useBottomSheetManager({
     onPostSuccess: () => {
       if (user) {
         refreshPosts();
       }
-    }
+    },
   });
 
   const {
@@ -38,30 +36,52 @@ export default function MyPostsList() {
     loading,
     error,
     refresh: refreshPosts,
-  } = useMyPosts(user?.id || '');
+  } = useMyPosts(user?.id || "");
 
-  const textColor = useThemeColor({}, 'text');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
-  const tintColor = useThemeColor({}, 'tint');
+  const textColor = useThemeColor({}, "text");
+  const mutedTextColor = useThemeColor({}, "mutedText");
+  const tintColor = useThemeColor({}, "tint");
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    if (user) {
-      await refreshPosts();
-    }
-    setRefreshing(false);
-  };
-
-  const handlePostStatusUpdate = async (postId: string, status: 'active' | 'inactive') => {
+  const handlePostStatusUpdate = async (
+    postId: string,
+    status: "active" | "inactive"
+  ) => {
     // TODO: Implement post status update functionality
-    console.log('Update post status:', postId, status);
-    Alert.alert('Info', 'Post status update functionality coming soon');
+    console.log("Update post status:", postId, status);
+    Alert.alert("Info", "Post status update functionality coming soon");
   };
 
   const handlePostDelete = async (postId: string) => {
-    // TODO: Implement post deletion functionality
-    console.log('Delete post:', postId);
-    Alert.alert('Info', 'Post deletion functionality coming soon');
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await deletePost(postId);
+              if (error) {
+                Alert.alert(
+                  "Error",
+                  "Failed to delete post. Please try again."
+                );
+              } else {
+                // Refresh the posts list
+                refreshPosts();
+              }
+            } catch (error) {
+              Alert.alert("Error", "Failed to delete post. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderPostItem = ({ item }: { item: PostWithProfile }) => {
@@ -81,7 +101,7 @@ export default function MyPostsList() {
     );
   };
 
-  if (loading && !refreshing) {
+  if (loading) {
     return (
       <View style={styles.centerContainer}>
         <ThemedText style={[styles.loadingText, { color: mutedTextColor }]}>
@@ -92,25 +112,36 @@ export default function MyPostsList() {
   }
 
   // If there are no posts, show empty state
-  if (posts.length === 0) {
+  if (posts.length === 0)
     return (
       <View style={styles.centerContainer}>
         <Feather name="file-text" size={48} color={mutedTextColor} />
-        <ThemedText style={[styles.emptyTitle, { color: textColor, marginTop: 16 }]}>
+        <ThemedText
+          style={[styles.emptyTitle, { color: textColor, marginTop: 16 }]}
+        >
           No Posts Yet
         </ThemedText>
-        <ThemedText style={[styles.emptyDescription, { color: mutedTextColor, marginTop: 8 }]}>
-          You haven't created any posts yet.
+        <ThemedText
+          style={[
+            styles.emptyDescription,
+            { color: mutedTextColor, marginTop: 8 },
+          ]}
+        >
+          You haven&apos;t created any posts yet.
         </ThemedText>
         <Pressable
-          style={[styles.createPostButton, { backgroundColor: tintColor, marginTop: 16 }]}
+          style={[
+            styles.createPostButton,
+            { backgroundColor: tintColor, marginTop: 16 },
+          ]}
           onPress={() => openCreatePostSheet()}
         >
-          <ThemedText style={styles.createPostButtonText}>Create Your First Post</ThemedText>
+          <ThemedText style={styles.createPostButtonText}>
+            Create Your First Post
+          </ThemedText>
         </Pressable>
       </View>
     );
-  }
 
   if (error) {
     return (
@@ -124,7 +155,7 @@ export default function MyPostsList() {
         </ThemedText>
         <TouchableOpacity
           style={[styles.retryButton, { backgroundColor: tintColor }]}
-          onPress={handleRefresh}
+          onPress={refreshPosts}
         >
           <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
         </TouchableOpacity>
@@ -134,20 +165,11 @@ export default function MyPostsList() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={posts}
-        renderItem={renderPostItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={tintColor}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      <View style={styles.listContent}>
+        {posts.map((item) => (
+          <View key={item.id}>{renderPostItem({ item })}</View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -155,7 +177,7 @@ export default function MyPostsList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   listContent: {
     paddingHorizontal: 16,
@@ -163,19 +185,19 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
-    width: '100%',
+    width: "100%",
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   emptyDescription: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   createPostButton: {
@@ -185,25 +207,22 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   createPostButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  listContainer: {
-    padding: 16,
+    color: "white",
+    fontWeight: "600",
+    textAlign: "center",
   },
   loadingText: {
     fontSize: 16,
   },
   errorText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 16,
     marginBottom: 8,
   },
   errorSubtext: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 20,
   },
   retryButton: {
@@ -212,20 +231,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptySubtext: {
-    fontSize: 16,
-    textAlign: 'center',
-    maxWidth: 280,
-    marginBottom: 20,
+    fontWeight: "600",
   },
 });

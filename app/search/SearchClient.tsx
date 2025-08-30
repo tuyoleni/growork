@@ -1,24 +1,34 @@
-import React, { useState, useCallback } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Document } from '@/types/documents';
-import DocumentCard from '@/components/content/DocumentCard';
-import { Feather } from '@expo/vector-icons';
-import { PostWithProfile, SearchResult, useSearch, useThemeColor } from '@/hooks';
-import SearchBar from './components/SearchBar';
-import FilterTabs from './components/FilterTabs';
-import IndustryFilter from './components/IndustryFilter';
-import { FilterKey } from '@/constants/searchConfig';
-import { PostType } from '@/types/enums';
-import ScreenContainer from '@/components/ScreenContainer';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
-import ContentCard from '@/components/content/ContentCard';
-import { useBottomSheetManager } from '@/components/content/BottomSheetManager';
-import { SearchResultsSkeleton } from '@/components/ui/Skeleton';
+import React, { useState, useCallback } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+} from "react-native";
+import { Document } from "@/types/documents";
+import DocumentCard from "@/components/content/DocumentCard";
+import { Feather } from "@expo/vector-icons";
+import {
+  PostWithProfile,
+  SearchResult,
+  useSearch,
+  useThemeColor,
+} from "@/hooks";
+import SearchBar from "./components/SearchBar";
+import FilterTabs from "./components/FilterTabs";
+import IndustryFilter from "./components/IndustryFilter";
+import { FilterKey } from "@/constants/searchConfig";
+import { PostType } from "@/types/enums";
+import ScreenContainer from "@/components/ScreenContainer";
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedText } from "@/components/ThemedText";
+import ContentCard from "@/components/content/ContentCard";
+import { useBottomSheetManager } from "@/components/content/BottomSheetManager";
+import { SearchResultsSkeleton } from "@/components/ui/Skeleton";
 
 export default function SearchClient() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<FilterKey>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState<FilterKey>("all");
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -49,35 +59,48 @@ export default function SearchClient() {
   // };
 
   const handleIndustryChange = (industry: string) => {
-    setSelectedIndustry(industry === 'All' ? null : industry);
+    setSelectedIndustry(industry === "All" ? null : industry);
     if (searchTerm) {
-      const postType = selectedFilter === 'jobs' ? PostType.Job : selectedFilter === 'news' ? PostType.News : undefined;
-      search(searchTerm, postType, industry === 'All' ? undefined : industry);
+      const postType =
+        selectedFilter === "jobs"
+          ? PostType.Job
+          : selectedFilter === "news"
+          ? PostType.News
+          : undefined;
+      search(searchTerm, postType, industry === "All" ? undefined : industry);
     }
   };
 
   // Filter results based on selected filter
   const filteredResults = results.filter((result: SearchResult) => {
-    if (selectedFilter === 'all') return true;
-    if (selectedFilter === 'jobs' && result._type === 'post') return result.type === PostType.Job;
-    if (selectedFilter === 'news' && result._type === 'post') return result.type === PostType.News;
-    if (selectedFilter === 'documents' && result._type === 'document') return true;
+    if (selectedFilter === "all") return true;
+    if (selectedFilter === "jobs" && result._type === "post")
+      return result.type === PostType.Job;
+    if (selectedFilter === "news" && result._type === "post")
+      return result.type === PostType.News;
+    if (selectedFilter === "documents" && result._type === "document")
+      return true;
     return false;
   });
 
   // Calculate counts for each filter
   const counts = {
     all: results.length,
-    jobs: results.filter((r: SearchResult) => r._type === 'post' && r.type === PostType.Job).length,
-    news: results.filter((r: SearchResult) => r._type === 'post' && r.type === PostType.News).length,
-    documents: results.filter((r: SearchResult) => r._type === 'document').length,
+    jobs: results.filter(
+      (r: SearchResult) => r._type === "post" && r.type === PostType.Job
+    ).length,
+    news: results.filter(
+      (r: SearchResult) => r._type === "post" && r.type === PostType.News
+    ).length,
+    documents: results.filter((r: SearchResult) => r._type === "document")
+      .length,
   };
 
   const filterOptions = [
-    { key: 'all' as FilterKey, label: 'All' },
-    { key: 'jobs' as FilterKey, label: 'Jobs' },
-    { key: 'news' as FilterKey, label: 'News' },
-    { key: 'documents' as FilterKey, label: 'Documents' },
+    { key: "all" as FilterKey, label: "All" },
+    { key: "jobs" as FilterKey, label: "Jobs" },
+    { key: "news" as FilterKey, label: "News" },
+    { key: "documents" as FilterKey, label: "Documents" },
   ];
 
   return (
@@ -91,7 +114,7 @@ export default function SearchClient() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor="#007AFF"
-            colors={['#007AFF']}
+            colors={["#007AFF"]}
           />
         }
       >
@@ -100,8 +123,8 @@ export default function SearchClient() {
             value={searchTerm}
             onChange={handleSearch}
             onClear={() => {
-              setSearchTerm('');
-              search('');
+              setSearchTerm("");
+              search("");
             }}
           />
         </ThemedView>
@@ -142,10 +165,10 @@ interface SearchResultsProps {
 }
 
 function SearchResults({ results, loading }: SearchResultsProps) {
-  const tintColor = useThemeColor({}, 'tint');
-  const iconColor = useThemeColor({}, 'iconSecondary');
-  const backgroundSecondary = useThemeColor({}, 'backgroundSecondary');
-  const mutedTextColor = useThemeColor({}, 'mutedText');
+  const tintColor = useThemeColor({}, "tint");
+  const iconColor = useThemeColor({}, "iconSecondary");
+  const backgroundSecondary = useThemeColor({}, "backgroundSecondary");
+  const mutedTextColor = useThemeColor({}, "mutedText");
 
   if (loading) {
     return <SearchResultsSkeleton />;
@@ -154,12 +177,15 @@ function SearchResults({ results, loading }: SearchResultsProps) {
   if (results.length === 0) {
     return (
       <ThemedView style={styles.centered}>
-        <ThemedView style={[styles.iconCircle, { backgroundColor: backgroundSecondary }]}>
+        <ThemedView
+          style={[styles.iconCircle, { backgroundColor: backgroundSecondary }]}
+        >
           <Feather name="search" size={32} color={iconColor} />
         </ThemedView>
         <ThemedText style={styles.noResultsTitle}>No results found</ThemedText>
         <ThemedText style={[styles.noResultsSub, { color: mutedTextColor }]}>
-          Try adjusting your search terms or filters to find what you are looking for
+          Try adjusting your search terms or filters to find what you are
+          looking for
         </ThemedText>
       </ThemedView>
     );
@@ -167,18 +193,21 @@ function SearchResults({ results, loading }: SearchResultsProps) {
 
   // Split results into posts and documents for display groups
   const postResults = results.filter(
-    item => item._type === 'post'
-  ) as (PostWithProfile & { _type: 'post' })[];
+    (item) => item._type === "post"
+  ) as (PostWithProfile & { _type: "post" })[];
   const documentResults = results.filter(
-    item => item._type === 'document'
-  ) as (Document & { _type: 'document' })[];
+    (item) => item._type === "document"
+  ) as (Document & { _type: "document" })[];
 
   return (
     <ThemedView>
       {postResults.length > 0 && (
         <ThemedView style={styles.postsSection}>
           {postResults.map((item, index) => (
-            <ThemedView key={`post-${item.id || index}`} style={styles.resultItem}>
+            <ThemedView
+              key={`post-${item.id || index}`}
+              style={styles.resultItem}
+            >
               <PostResultItem post={item} />
             </ThemedView>
           ))}
@@ -186,8 +215,15 @@ function SearchResults({ results, loading }: SearchResultsProps) {
       )}
 
       {documentResults.length > 0 && postResults.length > 0 && (
-        <ThemedView style={[styles.sectionHeader, { backgroundColor: backgroundSecondary }]}>
-          <ThemedText style={[styles.sectionHeaderText, { color: mutedTextColor }]}>
+        <ThemedView
+          style={[
+            styles.sectionHeader,
+            { backgroundColor: backgroundSecondary },
+          ]}
+        >
+          <ThemedText
+            style={[styles.sectionHeaderText, { color: mutedTextColor }]}
+          >
             Your Documents
           </ThemedText>
         </ThemedView>
@@ -196,7 +232,10 @@ function SearchResults({ results, loading }: SearchResultsProps) {
       {documentResults.length > 0 && (
         <ThemedView style={styles.documentsSection}>
           {documentResults.map((item, index) => (
-            <ThemedView key={`document-${item.id || index}`} style={styles.resultItem}>
+            <ThemedView
+              key={`document-${item.id || index}`}
+              style={styles.resultItem}
+            >
               <DocumentResultItem document={item} />
             </ThemedView>
           ))}
@@ -206,17 +245,20 @@ function SearchResults({ results, loading }: SearchResultsProps) {
   );
 }
 
-function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } }) {
+function PostResultItem({
+  post,
+}: {
+  post: PostWithProfile & { _type: "post" };
+}) {
   const { openJobApplicationSheet } = useBottomSheetManager();
   // Card variant: job or news
-  const cardVariant =
-    post.type === PostType.Job ? 'job' : 'news';
+  const cardVariant = post.type === PostType.Job ? "job" : "news";
 
-  const description = post.content || '';
+  const description = post.content || "";
 
   // Validate and get main image
   const getMainImage = () => {
-    if (!post.image_url || post.image_url.trim() === '') {
+    if (!post.image_url || post.image_url.trim() === "") {
       return undefined;
     }
 
@@ -234,9 +276,7 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
   const handleApplyToJob = () => {
     if (post.type === PostType.Job) {
       openJobApplicationSheet(post, {
-        onSuccess: () => {
-  
-        }
+        onSuccess: () => {},
       });
     }
   };
@@ -245,7 +285,7 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
     <ContentCard
       variant={cardVariant}
       id={post.id}
-      title={post.title || ''}
+      title={post.title || ""}
       description={description}
       mainImage={mainImage}
       createdAt={post.created_at}
@@ -256,8 +296,14 @@ function PostResultItem({ post }: { post: PostWithProfile & { _type: 'post' } })
   );
 }
 
-function DocumentResultItem({ document }: { document: Document & { _type: 'document' } }) {
-  return <DocumentCard document={document} variant="detailed" showCategory={true} />;
+function DocumentResultItem({
+  document,
+}: {
+  document: Document & { _type: "document" };
+}) {
+  return (
+    <DocumentCard document={document} variant="detailed" showCategory={true} />
+  );
 }
 
 const styles = StyleSheet.create({
@@ -297,12 +343,12 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   centered: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 32,
     minHeight: 300,
   },
@@ -313,15 +359,15 @@ const styles = StyleSheet.create({
   },
   noResultsTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   noResultsSub: {
     fontSize: 14,
     marginTop: 8,
     maxWidth: 300,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
   loadingText: {
@@ -333,11 +379,11 @@ const styles = StyleSheet.create({
     margin: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
+    borderColor: "#ef4444",
+    backgroundColor: "#fef2f2",
   },
   errorText: {
     fontSize: 14,
-    color: '#dc2626',
+    color: "#dc2626",
   },
 });

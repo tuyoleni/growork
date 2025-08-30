@@ -260,9 +260,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: Typography.sm,
   },
-  listContainer: {
-    paddingHorizontal: 0,
-  },
+  listContainer: {},
   item: {
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
