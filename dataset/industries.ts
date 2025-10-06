@@ -4,10 +4,11 @@ export interface Industry {
 }
 
 export const INDUSTRIES: Industry[] = [
-  { icon: 'briefcase', label: 'Technology' },
-  { icon: 'briefcase', label: 'Finance' },
-  { icon: 'heart', label: 'Healthcare' },
-  { icon: 'shopping-bag', label: 'Retail' },
-  { icon: 'truck', label: 'Logistics' },
-  { icon: 'book', label: 'Education' },
+  { icon: "briefcase", label: "Technology" },
+  { icon: "briefcase", label: "Finance" },
+  { icon: "heart", label: "Healthcare" },
+  { icon: "shopping-bag", label: "Retail" },
+  { icon: "truck", label: "Logistics" },
+  { icon: "book", label: "Education" },
+  { icon: "activity", label: "Sports" },
 ];

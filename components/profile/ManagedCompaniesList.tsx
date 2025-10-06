@@ -59,9 +59,7 @@ export default function ManagedCompaniesList() {
             style={({ pressed }) => [
               styles.addButton,
               {
-                backgroundColor: pressed
-                  ? tintColor + "20"
-                  : tintColor + "15",
+                backgroundColor: pressed ? tintColor + "20" : tintColor + "15",
               },
             ]}
             onPress={() => {
@@ -84,7 +82,7 @@ export default function ManagedCompaniesList() {
           <View
             style={[styles.emptyIcon, { backgroundColor: tintColor + "15" }]}
           >
-            <Feather name="building" size={32} color={tintColor} />
+            <Feather name="home" size={32} color={tintColor} />
           </View>
           {isBusinessUser ? (
             <>

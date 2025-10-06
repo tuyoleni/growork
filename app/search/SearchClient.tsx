@@ -1,12 +1,5 @@
 import React, { useState, useCallback } from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-} from "react-native";
-import { Document } from "@/types/documents";
-import DocumentCard from "@/components/content/DocumentCard";
+import { StyleSheet, ScrollView, RefreshControl } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import {
   PostWithProfile,
@@ -65,8 +58,8 @@ export default function SearchClient() {
         selectedFilter === "jobs"
           ? PostType.Job
           : selectedFilter === "news"
-          ? PostType.News
-          : undefined;
+            ? PostType.News
+            : undefined;
       search(searchTerm, postType, industry === "All" ? undefined : industry);
     }
   };
@@ -78,8 +71,6 @@ export default function SearchClient() {
       return result.type === PostType.Job;
     if (selectedFilter === "news" && result._type === "post")
       return result.type === PostType.News;
-    if (selectedFilter === "documents" && result._type === "document")
-      return true;
     return false;
   });
 
@@ -92,15 +83,12 @@ export default function SearchClient() {
     news: results.filter(
       (r: SearchResult) => r._type === "post" && r.type === PostType.News
     ).length,
-    documents: results.filter((r: SearchResult) => r._type === "document")
-      .length,
   };
 
   const filterOptions = [
     { key: "all" as FilterKey, label: "All" },
     { key: "jobs" as FilterKey, label: "Jobs" },
     { key: "news" as FilterKey, label: "News" },
-    { key: "documents" as FilterKey, label: "Documents" },
   ];
 
   return (
@@ -165,7 +153,6 @@ interface SearchResultsProps {
 }
 
 function SearchResults({ results, loading }: SearchResultsProps) {
-  const tintColor = useThemeColor({}, "tint");
   const iconColor = useThemeColor({}, "iconSecondary");
   const backgroundSecondary = useThemeColor({}, "backgroundSecondary");
   const mutedTextColor = useThemeColor({}, "mutedText");
@@ -191,13 +178,10 @@ function SearchResults({ results, loading }: SearchResultsProps) {
     );
   }
 
-  // Split results into posts and documents for display groups
+  // Filter results to only show posts
   const postResults = results.filter(
     (item) => item._type === "post"
   ) as (PostWithProfile & { _type: "post" })[];
-  const documentResults = results.filter(
-    (item) => item._type === "document"
-  ) as (Document & { _type: "document" })[];
 
   return (
     <ThemedView>
@@ -209,34 +193,6 @@ function SearchResults({ results, loading }: SearchResultsProps) {
               style={styles.resultItem}
             >
               <PostResultItem post={item} />
-            </ThemedView>
-          ))}
-        </ThemedView>
-      )}
-
-      {documentResults.length > 0 && postResults.length > 0 && (
-        <ThemedView
-          style={[
-            styles.sectionHeader,
-            { backgroundColor: backgroundSecondary },
-          ]}
-        >
-          <ThemedText
-            style={[styles.sectionHeaderText, { color: mutedTextColor }]}
-          >
-            Your Documents
-          </ThemedText>
-        </ThemedView>
-      )}
-
-      {documentResults.length > 0 && (
-        <ThemedView style={styles.documentsSection}>
-          {documentResults.map((item, index) => (
-            <ThemedView
-              key={`document-${item.id || index}`}
-              style={styles.resultItem}
-            >
-              <DocumentResultItem document={item} />
             </ThemedView>
           ))}
         </ThemedView>
@@ -296,16 +252,6 @@ function PostResultItem({
   );
 }
 
-function DocumentResultItem({
-  document,
-}: {
-  document: Document & { _type: "document" };
-}) {
-  return (
-    <DocumentCard document={document} variant="detailed" showCategory={true} />
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -327,9 +273,6 @@ const styles = StyleSheet.create({
   },
 
   postsSection: {
-    gap: 12,
-  },
-  documentsSection: {
     gap: 12,
   },
   resultItem: {

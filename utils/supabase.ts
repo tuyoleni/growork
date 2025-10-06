@@ -6,7 +6,7 @@ import { checkNetworkStatus } from "./networkUtils";
 const withTimeout = async (
   input: RequestInfo | URL | string,
   init: RequestInit = {},
-  timeoutMs = 15000
+  timeoutMs = 60000
 ): Promise<Response> => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -37,7 +37,7 @@ export const supabase = createClient(
         "X-Client-Info": "growork-app",
       },
       fetch: (input: RequestInfo | URL | string, init?: RequestInit) =>
-        withTimeout(input, init, 15000),
+        withTimeout(input, init, 60000),
     },
     db: {
       schema: "public",

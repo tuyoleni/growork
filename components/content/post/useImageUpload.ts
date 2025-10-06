@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
-import { uploadImage as uploadImageUtil , STORAGE_BUCKETS } from '@/utils/uploadUtils';
-import { useAuth } from '@/hooks';
+import { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
+import {
+  uploadImage as uploadImageUtil,
+  STORAGE_BUCKETS,
+} from "@/utils/uploadUtils";
+import { useAuth } from "@/hooks";
 
 export const useImageUpload = () => {
   const [uploading, setUploading] = useState(false);
@@ -11,7 +14,7 @@ export const useImageUpload = () => {
   const pickImage = async (): Promise<string | null> => {
     setError(null);
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.7,
@@ -26,7 +29,7 @@ export const useImageUpload = () => {
 
   const uploadPostImage = async (uri: string): Promise<string | null> => {
     if (!user) {
-      setError('User not authenticated');
+      setError("User not authenticated");
       return null;
     }
 
@@ -39,16 +42,16 @@ export const useImageUpload = () => {
         bucket: STORAGE_BUCKETS.POSTS,
         userId: user.id,
         uri,
-        fileNamePrefix: 'post'
+        fileNamePrefix: "post",
       });
 
       if (!publicUrl) {
-        throw new Error('Failed to upload image');
+        throw new Error("Failed to upload image");
       }
 
       return publicUrl;
     } catch (e: any) {
-      setError(e.message || 'Failed to upload image');
+      setError(e.message || "Failed to upload image");
       return null;
     } finally {
       setUploading(false);
@@ -60,6 +63,6 @@ export const useImageUpload = () => {
     uploadImage: uploadPostImage,
     uploading,
     error,
-    setError
+    setError,
   };
 };

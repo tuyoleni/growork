@@ -4,7 +4,13 @@ import { INDUSTRIES } from "@/dataset/industries";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  useColorScheme,
+  View,
+  Image,
+} from "react-native";
 import { ThemedText } from "../ThemedText";
 import CustomOptionStrip from "@/components/ui/CustomOptionStrip";
 import NotificationBadge from "@/components/ui/NotificationBadge";
@@ -44,9 +50,11 @@ const Header = ({
       ]}
     >
       <View style={styles.topRow}>
-        <ThemedText style={styles.appName} numberOfLines={1}>
-          Growork
-        </ThemedText>
+        <Image
+          source={require("@/assets/logo.png")}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           {showAdd && (
             <Pressable
@@ -95,10 +103,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 16,
   },
-  appName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
+  logoImage: {
+    width: 100,
+    height: 28,
   },
   notificationContainer: {
     position: "relative",

@@ -79,7 +79,7 @@ export default function ManagedCompaniesSheet({
 
       {companies.length === 0 ? (
         <View style={styles.emptyState}>
-          <Feather name="building" size={32} color={mutedTextColor} />
+          <Feather name="home" size={32} color={mutedTextColor} />
           {isBusinessUser ? (
             <>
               <ThemedText style={[styles.emptyTitle, { color: textColor }]}>

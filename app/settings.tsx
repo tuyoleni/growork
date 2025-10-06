@@ -1,20 +1,20 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   StyleSheet,
   Alert,
   StatusBar,
   useColorScheme,
-  TouchableOpacity
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+  TouchableOpacity,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 
-import { useAuth , useThemeColor } from '@/hooks';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import ScreenContainer from '@/components/ScreenContainer';
-import SettingsList from '@/components/ui/SettingsList';
+import { useAuth, useThemeColor } from "@/hooks";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import ScreenContainer from "@/components/ScreenContainer";
+import SettingsList from "@/components/ui/SettingsList";
 
 interface SettingsItemProps {
   title: string;
@@ -44,163 +44,196 @@ export default function Settings() {
   const router = useRouter();
   const { signOut, user } = useAuth();
   const colorScheme = useColorScheme();
-    const textColor = useThemeColor({}, 'text');
-  const borderColor = useThemeColor({}, 'border');
+  const textColor = useThemeColor({}, "text");
+  const borderColor = useThemeColor({}, "border");
 
   const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-            router.replace('/auth/login');
-          }
-        }
-      ]
-    );
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          await signOut();
+          router.replace("/auth/login");
+        },
+      },
+    ]);
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'This action cannot be undone. All your data will be permanently deleted.',
+      "Delete Account",
+      "This action cannot be undone. All your data will be permanently deleted.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: () => {
-            Alert.alert('Not implemented', 'Account deletion will be implemented soon.');
-          }
-        }
+            Alert.alert(
+              "Not implemented",
+              "Account deletion will be implemented soon."
+            );
+          },
+        },
       ]
     );
   };
 
   const settingsData: SettingsSection[] = [
     {
-      title: 'Account',
+      title: "Account",
       data: [
         {
-          title: 'Edit Profile',
-          subtitle: 'Update your personal information',
-          icon: 'user',
-          onPress: () => router.push('/profile/edit-profile'),
+          title: "Edit Profile",
+          subtitle: "Update your personal information",
+          icon: "user",
+          onPress: () => router.push("/profile/edit-profile"),
         },
         {
-          title: 'Change Password',
-          subtitle: 'Update your password',
-          icon: 'lock',
-          onPress: () => Alert.alert('Not implemented', 'Password change will be implemented soon.'),
+          title: "Change Password",
+          subtitle: "Update your password",
+          icon: "lock",
+          onPress: () =>
+            Alert.alert(
+              "Not implemented",
+              "Password change will be implemented soon."
+            ),
         },
         {
-          title: 'Privacy',
-          subtitle: 'Manage your privacy settings',
-          icon: 'shield',
-          onPress: () => Alert.alert('Not implemented', 'Privacy settings will be implemented soon.'),
+          title: "Privacy",
+          subtitle: "Manage your privacy settings",
+          icon: "shield",
+          onPress: () =>
+            Alert.alert(
+              "Not implemented",
+              "Privacy settings will be implemented soon."
+            ),
         },
-      ]
+      ],
     },
     {
-      title: 'Documents & Media',
+      title: "Documents & Media",
       data: [
         {
-          title: 'Manage Documents',
-          subtitle: 'CV, certificates, portfolio',
-          icon: 'folder',
-          onPress: () => router.push('/profile/documents'),
+          title: "Manage Documents",
+          subtitle: "CV, certificates, portfolio",
+          icon: "folder",
+          onPress: () => router.push("/profile/documents"),
         },
         {
-          title: 'Companies',
-          subtitle: 'Manage followed companies',
-          icon: 'briefcase',
-          onPress: () => router.push('/profile/companies'),
+          title: "Companies",
+          subtitle: "Manage followed companies",
+          icon: "briefcase",
+          onPress: () => router.push("/profile/companies"),
         },
         {
-          title: 'Media Outlets',
-          subtitle: 'Podcasts, news, voice content',
-          icon: 'radio',
-          onPress: () => router.push('/profile/media'),
+          title: "Media Outlets",
+          subtitle: "Podcasts, news, voice content",
+          icon: "radio",
+          onPress: () => router.push("/profile/documents"),
         },
-      ]
+      ],
     },
     {
-      title: 'Preferences',
+      title: "Preferences",
       data: [
         {
-          title: 'Notifications',
-          subtitle: 'Manage notification preferences',
-          icon: 'bell',
-          onPress: () => Alert.alert('Not implemented', 'Notification settings will be implemented soon.'),
+          title: "Notifications",
+          subtitle: "Manage notification preferences",
+          icon: "bell",
+          onPress: () =>
+            Alert.alert(
+              "Not implemented",
+              "Notification settings will be implemented soon."
+            ),
         },
         {
-          title: 'Dark Mode',
-          subtitle: 'Toggle dark mode',
-          icon: 'moon',
+          title: "Dark Mode",
+          subtitle: "Toggle dark mode",
+          icon: "moon",
           showSwitch: true,
-          switchValue: colorScheme === 'dark',
-          onSwitchChange: () => Alert.alert('Not implemented', 'Dark mode toggle will be implemented soon.'),
+          switchValue: colorScheme === "dark",
+          onSwitchChange: () =>
+            Alert.alert(
+              "Not implemented",
+              "Dark mode toggle will be implemented soon."
+            ),
         },
         {
-          title: 'Language',
-          subtitle: 'English',
-          icon: 'globe',
-          onPress: () => Alert.alert('Not implemented', 'Language settings will be implemented soon.'),
+          title: "Language",
+          subtitle: "English",
+          icon: "globe",
+          onPress: () =>
+            Alert.alert(
+              "Not implemented",
+              "Language settings will be implemented soon."
+            ),
         },
-      ]
+      ],
     },
     {
-      title: 'Support',
+      title: "Support",
       data: [
         {
-          title: 'Help Center',
-          subtitle: 'Get help and support',
-          icon: 'help-circle',
-          onPress: () => Alert.alert('Not implemented', 'Help center will be implemented soon.'),
+          title: "Help Center",
+          subtitle: "Get help and support",
+          icon: "help-circle",
+          onPress: () =>
+            Alert.alert(
+              "Not implemented",
+              "Help center will be implemented soon."
+            ),
         },
         {
-          title: 'Contact Us',
-          subtitle: 'Reach out to our team',
-          icon: 'mail',
-          onPress: () => Alert.alert('Not implemented', 'Contact form will be implemented soon.'),
+          title: "Contact Us",
+          subtitle: "Reach out to our team",
+          icon: "mail",
+          onPress: () =>
+            Alert.alert(
+              "Not implemented",
+              "Contact form will be implemented soon."
+            ),
         },
         {
-          title: 'About',
-          subtitle: 'App version and information',
-          icon: 'info',
-          onPress: () => Alert.alert('About', 'Growork v1.0.0\n\nA modern job search and networking platform.'),
+          title: "About",
+          subtitle: "App version and information",
+          icon: "info",
+          onPress: () =>
+            Alert.alert(
+              "About",
+              "Growork v1.0.0\n\nA modern job search and networking platform."
+            ),
         },
-      ]
+      ],
     },
     {
-      title: 'Danger Zone',
+      title: "Danger Zone",
       data: [
         {
-          title: 'Sign Out',
-          subtitle: 'Sign out of your account',
-          icon: 'log-out',
+          title: "Sign Out",
+          subtitle: "Sign out of your account",
+          icon: "log-out",
           onPress: handleSignOut,
           destructive: true,
         },
         {
-          title: 'Delete Account',
-          subtitle: 'Permanently delete your account',
-          icon: 'trash-2',
+          title: "Delete Account",
+          subtitle: "Permanently delete your account",
+          icon: "trash-2",
           onPress: handleDeleteAccount,
           destructive: true,
         },
-      ]
-    }
+      ],
+    },
   ];
 
   return (
     <ScreenContainer>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <StatusBar
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+      />
 
       {/* Custom Header */}
       <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
@@ -210,9 +243,7 @@ export default function Settings() {
         >
           <Feather name="arrow-left" size={24} color={textColor} />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>
-          Settings
-        </ThemedText>
+        <ThemedText style={styles.headerTitle}>Settings</ThemedText>
         <View style={styles.headerSpacer} />
       </ThemedView>
 
@@ -223,9 +254,9 @@ export default function Settings() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
@@ -234,7 +265,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   headerSpacer: {
     width: 40,

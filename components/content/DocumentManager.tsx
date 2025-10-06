@@ -18,7 +18,7 @@ import { ThemedView } from "../ThemedView";
 import BadgeSelector, { BadgeOption } from "../ui/BadgeSelector";
 import DocumentCard from "./DocumentCard";
 import * as Haptics from "expo-haptics";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 
 type DocumentManagerProps = {
   userId?: string;
@@ -137,7 +137,7 @@ export default function DocumentManager({
 
       // Read file as base64
       const base64 = await FileSystem.readAsStringAsync(file.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: "base64" as const,
       });
 
       // Convert base64 to Uint8Array for React Native compatibility

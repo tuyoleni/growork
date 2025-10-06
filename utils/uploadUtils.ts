@@ -1,22 +1,22 @@
-import * as FileSystem from 'expo-file-system';
-import { z } from 'zod';
-import { supabase } from './supabase';
+import * as FileSystem from "expo-file-system/legacy";
+import { supabase } from "./supabase";
 
 export const STORAGE_BUCKETS = {
-  POSTS: 'posts',
-  DOCUMENTS: 'documents',
-  AVATARS: 'avatars',
+  POSTS: "posts",
+  DOCUMENTS: "documents",
+  AVATARS: "avatars",
 } as const;
 
-export type StorageBucket = typeof STORAGE_BUCKETS[keyof typeof STORAGE_BUCKETS];
+export type StorageBucket =
+  (typeof STORAGE_BUCKETS)[keyof typeof STORAGE_BUCKETS];
 
 export const FILE_TYPES = {
-  IMAGE: 'image',
-  DOCUMENT: 'document',
-  AVATAR: 'avatar',
+  IMAGE: "image",
+  DOCUMENT: "document",
+  AVATAR: "avatar",
 } as const;
 
-export type FileType = typeof FILE_TYPES[keyof typeof FILE_TYPES];
+export type FileType = (typeof FILE_TYPES)[keyof typeof FILE_TYPES];
 
 export const FILE_LIMITS = {
   [FILE_TYPES.IMAGE]: 10 * 1024 * 1024, // 10MB
@@ -24,29 +24,25 @@ export const FILE_LIMITS = {
   [FILE_TYPES.AVATAR]: 5 * 1024 * 1024, // 5MB
 } as const;
 
-// Enhanced file validation with Zod
+// Enhanced file validation with better error handling
 const validateFile = async (
   uri: string,
   type: FileType
-): Promise<{ fileInfo: FileSystem.FileInfo; fileExt: string; fileSize?: number }> => {
-  const fileSchema = z.object({
-    exists: z.boolean(),
-    size: z.number().optional(),
-  });
-
+): Promise<{
+  fileInfo: FileSystem.FileInfo;
+  fileExt: string;
+  fileSize?: number;
+}> => {
   try {
     const fileInfo = await FileSystem.getInfoAsync(uri);
 
-    // Zod validation
-    fileSchema.parse(fileInfo);
-
     if (!fileInfo.exists) {
-      throw new Error('File does not exist');
+      throw new Error("File does not exist");
     }
 
     // Get file size safely
     let fileSize: number | undefined;
-    if ('size' in fileInfo && typeof fileInfo.size === 'number') {
+    if ("size" in fileInfo && typeof fileInfo.size === "number") {
       fileSize = fileInfo.size;
     }
 
@@ -56,14 +52,14 @@ const validateFile = async (
     }
 
     // Get file extension with more robust parsing
-    const fileExt = uri.split('.').pop()?.toLowerCase();
+    const fileExt = uri.split(".").pop()?.toLowerCase();
     if (!fileExt) {
-      throw new Error('Invalid file extension');
+      throw new Error("Invalid file extension");
     }
 
     return { fileInfo, fileExt, fileSize };
   } catch (error) {
-    console.error('File validation error:', error);
+    console.error("File validation error:", error);
     throw error;
   }
 };
@@ -73,14 +69,14 @@ export const uploadImage = async ({
   bucket = STORAGE_BUCKETS.POSTS,
   userId,
   uri,
-  fileNamePrefix = 'image',
-  onProgress
+  fileNamePrefix = "image",
+  onProgress,
 }: {
   bucket: StorageBucket;
   userId: string;
   uri: string;
   fileNamePrefix?: string;
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void;
 }) => {
   try {
     // Validate file
@@ -92,35 +88,37 @@ export const uploadImage = async ({
 
     // Improved base64 conversion
     const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: "base64" as const,
     });
 
     // More robust base64 to Uint8Array conversion
-    const byteArray = Uint8Array.from(
-      atob(base64),
-      char => char.charCodeAt(0)
-    );
+    const binaryString = atob(base64);
+    const byteArray = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      byteArray[i] = binaryString.charCodeAt(i);
+    }
 
-    // Upload to Supabase
+    // Upload to Supabase with better error handling
     const { error } = await supabase.storage
       .from(bucket)
       .upload(filePath, byteArray, {
         contentType: `image/${fileExt}`,
-        cacheControl: '3600',
-        upsert: false
+        cacheControl: "3600",
+        upsert: false,
       });
 
-    if (error) throw new Error(`Upload failed: ${error.message}`);
+    if (error) {
+      console.error("Supabase upload error:", error);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
 
     // Return public URL
-    const publicUrl = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath).data.publicUrl;
+    const publicUrl = supabase.storage.from(bucket).getPublicUrl(filePath)
+      .data.publicUrl;
 
     return publicUrl;
-
   } catch (error) {
-    console.error('Image upload error:', error);
+    console.error("Image upload error:", error);
     throw error;
   }
 };
@@ -130,20 +128,20 @@ export const uploadDocument = async ({
   bucket = STORAGE_BUCKETS.DOCUMENTS,
   userId,
   uri,
-  fileNamePrefix = 'document',
-  documentType = 'other',
-  onProgress
+  fileNamePrefix = "document",
+  documentType = "other",
+  onProgress,
 }: {
   bucket: StorageBucket;
   userId: string;
   uri: string;
   fileNamePrefix?: string;
   documentType?: string;
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void;
 }) => {
   try {
     // Validate file
-    const { fileInfo, fileExt, fileSize } = await validateFile(uri, FILE_TYPES.DOCUMENT);
+    const { fileExt, fileSize } = await validateFile(uri, FILE_TYPES.DOCUMENT);
 
     // Generate unique filename with more robust naming
     const fileName = `${fileNamePrefix}_${userId}_${Date.now()}.${fileExt}`;
@@ -151,25 +149,29 @@ export const uploadDocument = async ({
 
     // Improved base64 conversion
     const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: "base64" as const,
     });
 
     // More robust base64 to Uint8Array conversion
-    const byteArray = Uint8Array.from(
-      atob(base64),
-      char => char.charCodeAt(0)
-    );
+    const binaryString = atob(base64);
+    const byteArray = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      byteArray[i] = binaryString.charCodeAt(i);
+    }
 
-    // Upload to Supabase
+    // Upload to Supabase with better error handling
     const { error } = await supabase.storage
       .from(bucket)
       .upload(filePath, byteArray, {
         contentType: `application/${fileExt}`,
-        cacheControl: '3600',
-        upsert: false
+        cacheControl: "3600",
+        upsert: false,
       });
 
-    if (error) throw new Error(`Upload failed: ${error.message}`);
+    if (error) {
+      console.error("Supabase upload error:", error);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
 
     // Return upload result
     const result = {
@@ -177,31 +179,25 @@ export const uploadDocument = async ({
       path: filePath,
       size: fileSize,
       type: documentType,
-      name: fileName
+      name: fileName,
     };
 
     return result;
-
   } catch (error) {
-    console.error('Document upload error:', error);
+    console.error("Document upload error:", error);
     throw error;
   }
 };
 
-export const deleteFile = async (
-  bucket: StorageBucket,
-  filePath: string
-) => {
+export const deleteFile = async (bucket: StorageBucket, filePath: string) => {
   try {
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([filePath]);
+    const { error } = await supabase.storage.from(bucket).remove([filePath]);
 
     if (error) throw error;
 
     return true;
   } catch (error) {
-    console.error('Delete file error:', error);
+    console.error("Delete file error:", error);
     throw error;
   }
-}; 
+};

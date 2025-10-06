@@ -1,52 +1,56 @@
-import { useThemeColor , useAuth } from '@/hooks';
-import { useBottomSheetModal } from '@gorhom/bottom-sheet';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
-import { useState } from 'react';
-import { Alert } from 'react-native';
-import { supabase } from '@/utils/supabase';
-import { STORAGE_BUCKETS } from '@/utils/uploadUtils';
+import { useThemeColor, useAuth } from "@/hooks";
+import { useBottomSheetModal } from "@gorhom/bottom-sheet";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import { useState } from "react";
+import { Alert } from "react-native";
+import { supabase } from "@/utils/supabase";
+import { STORAGE_BUCKETS } from "@/utils/uploadUtils";
 
-export const CATEGORIES = ['CV', 'Cover Letter', 'Certificate'];
+export const CATEGORIES = ["CV", "Cover Letter", "Certificate"];
 
 export function useDocumentUpload() {
   const [uploading, setUploading] = useState(false);
   const [documents, setDocuments] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
-  const borderColor = useThemeColor({}, 'border');
-  const backgroundColor = useThemeColor({}, 'background');
-  const tintColor = useThemeColor({}, 'tint');
-  const textColor = useThemeColor({}, 'text');
+  const borderColor = useThemeColor({}, "border");
+  const backgroundColor = useThemeColor({}, "background");
+  const tintColor = useThemeColor({}, "tint");
+  const textColor = useThemeColor({}, "text");
   const { dismiss } = useBottomSheetModal();
   const { user } = useAuth();
 
   // Upload document to Supabase
-  const uploadDocumentToSupabase = async (fileUri: string, fileName: string, documentType: string) => {
+  const uploadDocumentToSupabase = async (
+    fileUri: string,
+    fileName: string,
+    documentType: string
+  ) => {
     if (!user?.id) {
-      throw new Error('User not authenticated');
+      throw new Error("User not authenticated");
     }
 
     try {
       // Validate file exists
       const fileInfo = await FileSystem.getInfoAsync(fileUri);
       if (!fileInfo.exists) {
-        throw new Error('Document file does not exist');
+        throw new Error("Document file does not exist");
       }
 
       // Check file size (50MB limit)
       const maxSize = 50 * 1024 * 1024;
       if (fileInfo.size && fileInfo.size > maxSize) {
-        throw new Error('Document file is too large (max 50MB)');
+        throw new Error("Document file is too large (max 50MB)");
       }
 
       // Get file extension
-      const fileExt = fileName.split('.').pop()?.toLowerCase() || 'pdf';
+      const fileExt = fileName.split(".").pop()?.toLowerCase() || "pdf";
       const uniqueFileName = `document_${user.id}_${Date.now()}.${fileExt}`;
       const filePath = `${uniqueFileName}`;
 
       // Read file as base64
       const base64 = await FileSystem.readAsStringAsync(fileUri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: "base64" as const,
       });
 
       // Convert base64 to Uint8Array for React Native compatibility
@@ -62,24 +66,26 @@ export function useDocumentUpload() {
         .from(STORAGE_BUCKETS.DOCUMENTS)
         .upload(filePath, byteArray, {
           contentType: `application/${fileExt}`,
-          cacheControl: '3600',
-          upsert: false
+          cacheControl: "3600",
+          upsert: false,
         });
 
       if (error) {
-        console.error('Document upload error:', error);
+        console.error("Document upload error:", error);
         throw new Error(`Upload failed: ${error.message}`);
       }
 
       // Get public URL
-      const publicUrl = supabase.storage.from(STORAGE_BUCKETS.DOCUMENTS).getPublicUrl(filePath).data.publicUrl;
+      const publicUrl = supabase.storage
+        .from(STORAGE_BUCKETS.DOCUMENTS)
+        .getPublicUrl(filePath).data.publicUrl;
 
       // Save document record to database
       const { data: docData, error: dbError } = await supabase
-        .from('documents')
+        .from("documents")
         .insert({
           user_id: user.id,
-          type: documentType.toLowerCase().replace(' ', '_'),
+          type: documentType.toLowerCase().replace(" ", "_"),
           name: fileName,
           file_url: publicUrl,
         })
@@ -87,7 +93,7 @@ export function useDocumentUpload() {
         .single();
 
       if (dbError) {
-        console.error('Database error:', dbError);
+        console.error("Database error:", dbError);
         throw new Error(`Failed to save document: ${dbError.message}`);
       }
 
@@ -98,17 +104,19 @@ export function useDocumentUpload() {
         type: documentType,
         uploaded_at: docData.uploaded_at,
       };
-
     } catch (error: any) {
-      console.error('Document upload error:', error);
+      console.error("Document upload error:", error);
       throw error;
     }
   };
 
   // Handler for picking a document file
-  const handlePickDocument = async (note: string, setNote: (v: string) => void) => {
+  const handlePickDocument = async (
+    note: string,
+    setNote: (v: string) => void
+  ) => {
     if (!user?.id) {
-      Alert.alert('Error', 'Please log in to upload documents');
+      Alert.alert("Error", "Please log in to upload documents");
       return;
     }
 
@@ -116,14 +124,14 @@ export function useDocumentUpload() {
       setUploading(true);
 
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
+        type: "application/pdf",
         copyToCacheDirectory: false,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
 
-        if (asset.mimeType === 'application/pdf') {
+        if (asset.mimeType === "application/pdf") {
           // Upload to Supabase
           const uploadedDoc = await uploadDocumentToSupabase(
             asset.uri,
@@ -132,11 +140,11 @@ export function useDocumentUpload() {
           );
 
           // Update local state
-          setDocuments(prev => [
+          setDocuments((prev) => [
             {
               id: uploadedDoc.id,
               name: uploadedDoc.name,
-              updated: 'Just now',
+              updated: "Just now",
               category: selectedCategory,
               note: note.trim(),
               url: uploadedDoc.url,
@@ -144,16 +152,16 @@ export function useDocumentUpload() {
             ...prev,
           ]);
 
-          setNote('');
+          setNote("");
           dismiss();
-          Alert.alert('Success', 'Document uploaded successfully!');
+          Alert.alert("Success", "Document uploaded successfully!");
         } else {
-          Alert.alert('Error', 'Please select a PDF file.');
+          Alert.alert("Error", "Please select a PDF file.");
         }
       }
     } catch (error: any) {
-      console.error('Document pick error:', error);
-      Alert.alert('Upload Error', error.message || 'Failed to upload document');
+      console.error("Document pick error:", error);
+      Alert.alert("Upload Error", error.message || "Failed to upload document");
     } finally {
       setUploading(false);
     }
@@ -165,28 +173,28 @@ export function useDocumentUpload() {
 
     try {
       const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('uploaded_at', { ascending: false });
+        .from("documents")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("uploaded_at", { ascending: false });
 
       if (error) {
-        console.error('Error loading documents:', error);
+        console.error("Error loading documents:", error);
         return;
       }
 
-      const formattedDocs = data.map(doc => ({
+      const formattedDocs = data.map((doc) => ({
         id: doc.id,
         name: doc.name,
         updated: new Date(doc.uploaded_at).toLocaleDateString(),
-        category: doc.type.replace('_', ' ').toUpperCase(),
-        note: '',
+        category: doc.type.replace("_", " ").toUpperCase(),
+        note: "",
         url: doc.file_url,
       }));
 
       setDocuments(formattedDocs);
     } catch (error) {
-      console.error('Error loading documents:', error);
+      console.error("Error loading documents:", error);
     }
   };
 
@@ -205,4 +213,4 @@ export function useDocumentUpload() {
     dismiss,
     CATEGORIES,
   };
-} 
+}

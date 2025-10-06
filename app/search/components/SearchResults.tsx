@@ -7,9 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Post } from "@/types/posts";
-import { Document } from "@/types/documents";
 import { Profile } from "@/types/profile";
-import DocumentCard from "@/components/content/DocumentCard";
 import { Feather } from "@expo/vector-icons";
 import { PostType } from "@/types";
 import ScreenContainer from "@/components/ScreenContainer";
@@ -23,9 +21,7 @@ interface PostWithProfile extends Post {
 }
 
 interface SearchResultsProps {
-  results:
-    | (PostWithProfile & { _type: "post" })[]
-    | (Document & { _type: "document" })[];
+  results: (PostWithProfile & { _type: "post" })[];
   loading: boolean;
 }
 
@@ -53,44 +49,20 @@ export default function SearchResults({
     );
   }
 
-  const postResults = results.filter(
-    (item) => item._type === "post"
-  ) as (PostWithProfile & { _type: "post" })[];
   React.useEffect(() => {
-    const ids = postResults.map((p) => p.id as string).filter(Boolean);
+    const ids = results.map((p) => p.id as string).filter(Boolean);
     if (ids.length) initializePosts(ids);
-  }, [postResults, initializePosts]);
-  const documentResults = results.filter(
-    (item) => item._type === "document"
-  ) as (Document & { _type: "document" })[];
+  }, [results, initializePosts]);
 
   return (
     <ScreenContainer>
-      {postResults.length > 0 && (
+      {results.length > 0 && (
         <FlatList
-          data={postResults}
+          data={results}
           keyExtractor={(item, index) => `post-${item.id || index}`}
           renderItem={({ item }) => (
             <View style={styles.itemContainer}>
               <PostResultItem post={item} />
-            </View>
-          )}
-        />
-      )}
-
-      {documentResults.length > 0 && postResults.length > 0 && (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionHeaderText}>Your Documents</Text>
-        </View>
-      )}
-
-      {documentResults.length > 0 && (
-        <FlatList
-          data={documentResults}
-          keyExtractor={(item, index) => `document-${item.id || index}`}
-          renderItem={({ item }) => (
-            <View style={styles.itemContainer}>
-              <DocumentResultItem document={item} />
             </View>
           )}
         />
@@ -155,12 +127,6 @@ function PostResultItem({ post }: { post: PostWithProfile }) {
       authorName={authorName}
       authorAvatarUrl={authorAvatarUrl}
     />
-  );
-}
-
-function DocumentResultItem({ document }: { document: Document }) {
-  return (
-    <DocumentCard document={document} variant="detailed" showCategory={true} />
   );
 }
 

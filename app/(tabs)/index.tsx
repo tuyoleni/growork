@@ -19,21 +19,7 @@ import { PostType, UserType } from "@/types/enums";
 import { ContentCardSkeleton } from "@/components/ui/Skeleton";
 import NewPostsIndicator from "@/components/ui/NewPostsIndicator";
 import { useInteractions } from "@/hooks/posts/useInteractions";
-
-const INDUSTRIES = [
-  "Technology",
-  "Finance",
-  "Healthcare",
-  "Retail",
-  "Logistics",
-  "Education",
-  "Design",
-  "Software",
-  "Entertainment",
-  "E-commerce",
-  "Fintech",
-  "Automotive",
-];
+import { INDUSTRIES } from "@/dataset/industries";
 
 export default function Home() {
   const { profile } = useAuth();
@@ -49,7 +35,7 @@ export default function Home() {
   const { posts: cardPosts, loading, error, refresh } = useHomeFeed();
   const { initializePosts } = useInteractions();
 
-  const getIndustryLabel = (index: number) => INDUSTRIES[index] || "";
+  const getIndustryLabel = (index: number) => INDUSTRIES[index]?.label || "";
   const filteredPosts = useMemo(
     () =>
       cardPosts.filter((post) => {
@@ -299,8 +285,8 @@ export default function Home() {
               {loading
                 ? "Loading posts..."
                 : error
-                ? "Error loading posts"
-                : "No posts found"}
+                  ? "Error loading posts"
+                  : "No posts found"}
             </ThemedText>
           </View>
         }

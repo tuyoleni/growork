@@ -198,6 +198,19 @@ export const CoverLetterSkeleton: React.FC = () => {
   );
 };
 
+export const SearchResultsSkeleton: React.FC = () => {
+  const backgroundColor = useThemeColor({}, "background");
+  const borderColor = useThemeColor({}, "border");
+
+  return (
+    <View style={[styles.searchResults, { borderColor, backgroundColor }]}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <ContentCardSkeleton key={index} />
+      ))}
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   companyCard: {
     flexDirection: "row",
@@ -278,5 +291,8 @@ const styles = StyleSheet.create({
   },
   documentList: {
     width: "100%",
+  },
+  searchResults: {
+    padding: 16,
   },
 });
