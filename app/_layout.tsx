@@ -34,6 +34,7 @@ import { CommentsBottomSheetWithContext } from "@/components/content/comments/Co
 import { useColorScheme } from "react-native";
 import { CommentsBottomSheetProvider } from "@/hooks/ui/useBottomSheet";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 interface AuthContextType {
   session: Session | null;
@@ -192,6 +193,19 @@ function AppContent() {
     let isMounted = true;
     const getInitialSession = async () => {
       try {
+        // Add safety check for environment variables
+        if (
+          !process.env.EXPO_PUBLIC_SUPABASE_URL ||
+          !process.env.EXPO_PUBLIC_SUPABASE_KEY
+        ) {
+          console.error("Missing Supabase environment variables");
+          if (isMounted) {
+            setAuthError("App configuration error. Please contact support.");
+            setInitialLoading(false);
+          }
+          return;
+        }
+
         const {
           data: { session: currentSession },
           error: sessionError,
@@ -389,8 +403,10 @@ function AppContent() {
 
 export default function RootLayout() {
   return (
-    <CommentsBottomSheetProvider>
-      <AppContent />
-    </CommentsBottomSheetProvider>
+    <ErrorBoundary>
+      <CommentsBottomSheetProvider>
+        <AppContent />
+      </CommentsBottomSheetProvider>
+    </ErrorBoundary>
   );
 }

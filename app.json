@@ -2,7 +2,7 @@
   "expo": {
     "name": "growork",
     "slug": "growork",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "growork",
@@ -78,10 +78,12 @@
       "router": {},
       "eas": {
         "projectId": "e9f82c73-b582-475e-8a1c-20e3671c9f90"
-      }
+      },
+      "EXPO_PUBLIC_SUPABASE_URL": "https://gkjtpxzmbvispwmfgzrc.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdranRweHptYnZpc3B3bWZnenJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyMzgwMzQsImV4cCI6MjA2NzgxNDAzNH0.3P9z-8SSe6VU5wNCekswhsf9geue4D0td6M-Agv-M28"
     },
     "owner": "tuyoleni",
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "1.0.1",
     "updates": {
       "url": "https://u.expo.dev/e9f82c73-b582-475e-8a1c-20e3671c9f90"
     }
