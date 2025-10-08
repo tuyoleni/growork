@@ -29,6 +29,8 @@ import React, {
 } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
+import "react-native-screens";
+import "@react-native-masked-view/masked-view";
 import SimpleBottomSheet from "@/components/GlobalBottomSheet";
 import { CommentsBottomSheetWithContext } from "@/components/content/comments/CommentsBottomSheet";
 import { useColorScheme } from "react-native";
@@ -115,6 +117,16 @@ function AppContent() {
       }
     };
     preventAutoHide();
+  }, []);
+
+  // Initialize gesture handler
+  useEffect(() => {
+    // This ensures gesture handler is properly initialized
+    const initGestureHandler = () => {
+      // Gesture handler initialization is handled by the GestureHandlerRootView
+      console.log("Gesture handler initialized");
+    };
+    initGestureHandler();
   }, []);
 
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -387,8 +399,6 @@ function AppContent() {
                         {sheetProps.children}
                       </SimpleBottomSheet>
                     )}
-
-                    {/* Comments Bottom Sheet - now managed by context */}
                     <CommentsBottomSheetWithContext />
                   </BottomSheetModalProvider>
                 </NotificationProvider>

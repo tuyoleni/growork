@@ -14,7 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 
 import { useAuth, useThemeColor, useCompanies } from "@/hooks";
 import { Colors, Spacing, BorderRadius } from "@/constants/DesignSystem";
-import { Company, CompanyFormData } from "@/types";
+import { Company, CompanyFormData, COMPANY_SIZES } from "@/types";
 import { STORAGE_BUCKETS, uploadImage } from "@/utils/uploadUtils";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedAvatar } from "@/components/ui/ThemedAvatar";
@@ -22,6 +22,7 @@ import { ThemedIconButton } from "@/components/ui/ThemedIconButton";
 import SettingsList from "@/components/ui/SettingsList";
 import ScreenContainer from "@/components/ScreenContainer";
 import UniversalHeader from "@/components/ui/UniversalHeader";
+import BadgeSelector from "@/components/ui/BadgeSelector";
 
 const CompanyManagement = () => {
   const router = useRouter();
@@ -250,7 +251,7 @@ const CompanyManagement = () => {
               {
                 title: "Company Name",
                 subtitle: editedCompany.name || "Not set",
-                icon: "building",
+                icon: "home",
                 showTextInput: true,
                 textInputValue: editedCompany.name,
                 textInputPlaceholder: "Enter company name",
@@ -297,11 +298,17 @@ const CompanyManagement = () => {
                 title: "Company Size",
                 subtitle: editedCompany.size || "Not set",
                 icon: "users",
-                showTextInput: true,
-                textInputValue: editedCompany.size,
-                textInputPlaceholder: "e.g., 1-10, 51-200",
-                onTextInputChange: (text: string) =>
-                  setEditedCompany((p) => ({ ...p, size: text })),
+                showCustomComponent: true,
+                customComponent: (
+                  <BadgeSelector
+                    options={COMPANY_SIZES}
+                    selectedValue={editedCompany.size}
+                    onValueChange={(value: string) =>
+                      setEditedCompany((p) => ({ ...p, size: value }))
+                    }
+                    title="Select Company Size"
+                  />
+                ),
               },
               {
                 title: "Founded Year",
@@ -351,7 +358,6 @@ const createStyles = (themeColors: {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      padding: Spacing.xl,
     },
     loadingText: {
       marginTop: Spacing.md,

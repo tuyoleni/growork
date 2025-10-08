@@ -31,6 +31,9 @@ interface SettingsItemProps {
   textInputPlaceholder?: string;
   onTextInputChange?: (text: string) => void;
   textInputProps?: any; // Additional TextInput props
+  // Custom component props
+  showCustomComponent?: boolean;
+  customComponent?: React.ReactNode;
 }
 
 interface SettingsSection {
@@ -62,6 +65,9 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
   textInputPlaceholder,
   onTextInputChange,
   textInputProps = {},
+  // Custom component props
+  showCustomComponent = false,
+  customComponent,
 }) => {
   const textColor = useThemeColor({}, "text");
   const mutedTextColor = useThemeColor({}, "mutedText");
@@ -122,7 +128,7 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
             thumbColor={switchValue ? "#ffffff" : "#ffffff"}
             ios_backgroundColor="#e5e5e5"
           />
-        ) : showArrow && !showTextInput ? (
+        ) : showArrow && !showTextInput && !showCustomComponent ? (
           <Feather name="chevron-right" size={16} color={mutedTextColor} />
         ) : null}
       </View>
@@ -147,7 +153,11 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
         </View>
       )}
 
-      {!showTextInput && onPress && (
+      {showCustomComponent && (
+        <View style={styles.customComponentContainer}>{customComponent}</View>
+      )}
+
+      {!showTextInput && !showCustomComponent && onPress && (
         <TouchableOpacity
           style={styles.touchableOverlay}
           onPress={onPress}
@@ -303,6 +313,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   textInputContainer: {
+    marginTop: 12,
+    paddingHorizontal: 44, // Align with content (icon width + margin)
+  },
+  customComponentContainer: {
     marginTop: 12,
     paddingHorizontal: 44, // Align with content (icon width + margin)
   },

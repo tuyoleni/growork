@@ -33,7 +33,8 @@ function withKeyboardAvoidance(children: React.ReactNode) {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 16 : 0}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      enabled={true}
     >
       {children}
     </KeyboardAvoidingView>
@@ -55,9 +56,9 @@ export function useBottomSheetManager(props?: BottomSheetManagerProps) {
     openGlobalSheet({
       dynamicSnapPoint: true,
       dynamicOptions: {
-        minHeight: 300,
-        maxHeight: 0.85, // 85% max height
-        padding: 60, // Extra padding for better spacing
+        minHeight: 400, // Increased minimum height for better keyboard handling
+        maxHeight: 0.9, // Increased max height to 90% for better keyboard space
+        padding: 80, // Increased padding for better keyboard spacing
       },
       children: withKeyboardAvoidance(
         <CreatePostSheetUI onSuccess={onPostSuccess} />

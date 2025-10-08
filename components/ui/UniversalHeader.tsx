@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks";
 import NotificationBadge from "@/components/ui/NotificationBadge";
-import { Spacing, BorderRadius } from "@/constants/DesignSystem";
+// import { Spacing, BorderRadius } from "@/constants/DesignSystem";
 
 interface UniversalHeaderProps {
   title: string;
@@ -143,10 +143,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  iconButton: {
-    padding: 4,
-    marginLeft: 12,
-  },
+  iconButton: {},
   textButton: {},
   titleSection: {
     flex: 1,

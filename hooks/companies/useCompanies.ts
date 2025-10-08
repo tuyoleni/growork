@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from "react";
-import { Platform } from "react-native";
 import { useAuth } from "../auth";
 import { Company } from "@/types/company";
 import { supabase } from "@/utils/supabase";
@@ -45,14 +44,56 @@ export const useCompanies = () => {
     async (companyData: Partial<Company>) => {
       if (!user) return { error: "User not authenticated" };
       try {
+        // Debug: Log the company data being sent
+        console.log(
+          "🔍 Creating company with data:",
+          JSON.stringify(companyData, null, 2)
+        );
+
+        // Validate size field - if provided, it must be valid
+        if (
+          companyData.size !== undefined &&
+          companyData.size !== null &&
+          companyData.size !== ""
+        ) {
+          const validSizes = ["1-10", "11-50", "51-200", "201-500", "500+"];
+          if (!validSizes.includes(companyData.size)) {
+            console.error("❌ Invalid company size:", companyData.size);
+            return {
+              error: `Invalid company size. Must be one of: ${validSizes.join(
+                ", "
+              )}`,
+            };
+          }
+        }
+
+        // Clean the data - remove empty strings and set to null if needed
+        const cleanedData = {
+          ...companyData,
+          size:
+            companyData.size && companyData.size.trim()
+              ? companyData.size
+              : null,
+          user_id: user.id,
+        };
+
+        console.log(
+          "🔍 Cleaned company data:",
+          JSON.stringify(cleanedData, null, 2)
+        );
+
         const { data, error } = await supabase
           .from("companies")
-          .insert([{ ...companyData, user_id: user.id }])
+          .insert([cleanedData])
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Database error:", error);
+          throw error;
+        }
 
+        console.log("✅ Company created successfully:", data);
         setCompanies((prev) => [data, ...prev]);
         return { company: data };
       } catch (err: any) {
@@ -66,15 +107,53 @@ export const useCompanies = () => {
   const updateCompany = useCallback(
     async (id: string, updates: Partial<Company>) => {
       try {
+        // Debug: Log the update data being sent
+        console.log(
+          "🔍 Updating company with data:",
+          JSON.stringify(updates, null, 2)
+        );
+
+        // Validate size field - if provided, it must be valid
+        if (
+          updates.size !== undefined &&
+          updates.size !== null &&
+          updates.size !== ""
+        ) {
+          const validSizes = ["1-10", "11-50", "51-200", "201-500", "500+"];
+          if (!validSizes.includes(updates.size)) {
+            console.error("❌ Invalid company size:", updates.size);
+            return {
+              error: `Invalid company size. Must be one of: ${validSizes.join(
+                ", "
+              )}`,
+            };
+          }
+        }
+
+        // Clean the data - remove empty strings and set to null if needed
+        const cleanedUpdates = {
+          ...updates,
+          size: updates.size && updates.size.trim() ? updates.size : null,
+        };
+
+        console.log(
+          "🔍 Cleaned update data:",
+          JSON.stringify(cleanedUpdates, null, 2)
+        );
+
         const { data, error } = await supabase
           .from("companies")
-          .update(updates)
+          .update(cleanedUpdates)
           .eq("id", id)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Database error:", error);
+          throw error;
+        }
 
+        console.log("✅ Company updated successfully:", data);
         setCompanies((prev) =>
           prev.map((company) => (company.id === id ? data : company))
         );

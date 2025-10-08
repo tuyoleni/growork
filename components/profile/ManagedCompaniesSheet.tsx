@@ -75,6 +75,17 @@ export default function ManagedCompaniesSheet({
             {companies.length}
           </ThemedText>
         )}
+        {isBusinessUser && (
+          <Pressable
+            style={styles.addButton}
+            onPress={() => {
+              router.push("/profile/CompanyManagement");
+              onClose?.();
+            }}
+          >
+            <Feather name="plus" size={20} color={tintColor} />
+          </Pressable>
+        )}
       </View>
 
       {companies.length === 0 ? (
@@ -91,7 +102,10 @@ export default function ManagedCompaniesSheet({
                 Create your first company profile to start posting jobs and news
               </ThemedText>
               <Pressable
-                style={styles.addButton}
+                style={[
+                  styles.emptyAddButton,
+                  { backgroundColor: tintColor + "20" },
+                ]}
                 onPress={() => {
                   router.push("/profile/CompanyManagement");
                   onClose?.();
@@ -195,7 +209,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.lg,
     marginBottom: Spacing.lg,
   },
-
   headerTitle: {
     fontSize: Typography.xl,
     fontWeight: Typography.bold,
@@ -240,13 +253,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   addButton: {
+    padding: Spacing.xs,
+  },
+  emptyAddButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
     gap: Spacing.xs,
-    backgroundColor: "#f3f4f6",
   },
   addButtonText: {
     fontWeight: Typography.medium,

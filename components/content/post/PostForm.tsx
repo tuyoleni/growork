@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, View, ScrollView, Image, StyleSheet } from "react-native";
+import {
+  Animated,
+  View,
+  ScrollView,
+  Image,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import { ThemedInput } from "@/components/ThemedInput";
 import { ThemedText } from "@/components/ThemedText";
 import Button from "@/components/ui/Button";
@@ -157,7 +165,6 @@ export default function PostForm({ onSuccess, onCancel }: PostFormProps) {
       case WizardStep.Review:
         return (
           <View style={[styles.reviewContainer]}>
-            {/* Image */}
             {imageUrl && (
               <View style={styles.imageContainer}>
                 <Image
@@ -305,75 +312,80 @@ export default function PostForm({ onSuccess, onCancel }: PostFormProps) {
   const atLastStep = currentStep === 2;
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* Progress Indicator */}
-      <View
-        style={{
-          paddingVertical: Spacing.sm,
-        }}
-      >
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={{ flex: 1 }}>
+        {/* Progress Indicator */}
         <View
           style={{
-            flexDirection: "row",
-            gap: Spacing.xs,
-            marginBottom: Spacing.md,
+            paddingVertical: Spacing.sm,
           }}
         >
-          {[0, 1, 2].map((step) => (
-            <View
-              key={step}
-              style={{
-                flex: 1,
-                height: 3,
-                backgroundColor: step <= currentStep ? "#007AFF" : "#333",
-                borderRadius: 2,
-              }}
-            />
-          ))}
+          <View
+            style={{
+              flexDirection: "row",
+              gap: Spacing.xs,
+              marginBottom: Spacing.md,
+            }}
+          >
+            {[0, 1, 2].map((step) => (
+              <View
+                key={step}
+                style={{
+                  flex: 1,
+                  height: 3,
+                  backgroundColor: step <= currentStep ? "#007AFF" : "#333",
+                  borderRadius: 2,
+                }}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Content */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingBottom: Spacing.lg,
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets={true}
+          keyboardDismissMode="interactive"
+        >
+          {renderStepContent()}
+        </ScrollView>
+
+        {/* Navigation */}
+        <View
+          style={{
+            padding: Spacing.lg,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <ThemedText
+            style={{
+              color: atFirstStep ? "#666" : "#007AFF",
+              fontSize: 16,
+              fontWeight: "500",
+            }}
+            onPress={atFirstStep ? handleCancel : handlePrevStep}
+          >
+            {atFirstStep ? "Cancel" : "Back"}
+          </ThemedText>
+
+          <Button
+            title={atLastStep ? "Post" : "Next"}
+            onPress={handleNextStep}
+            loading={loading}
+            disabled={!isFormValid}
+            variant="ghost"
+          />
         </View>
       </View>
-
-      {/* Content */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingBottom: Spacing.lg,
-        }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {renderStepContent()}
-      </ScrollView>
-
-      {/* Navigation */}
-      <View
-        style={{
-          padding: Spacing.lg,
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <ThemedText
-          style={{
-            color: atFirstStep ? "#666" : "#007AFF",
-            fontSize: 16,
-            fontWeight: "500",
-          }}
-          onPress={atFirstStep ? handleCancel : handlePrevStep}
-        >
-          {atFirstStep ? "Cancel" : "Back"}
-        </ThemedText>
-
-        <Button
-          title={atLastStep ? "Post" : "Next"}
-          onPress={handleNextStep}
-          loading={loading}
-          disabled={!isFormValid}
-          variant="ghost"
-        />
-      </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 

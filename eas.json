@@ -22,6 +22,15 @@
     "preview4": {
       "distribution": "internal"
     },
+    "development": {
+      "developmentClient": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
     "production": {}
   },
   "submit": {
